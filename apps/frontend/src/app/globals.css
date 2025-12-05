@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* Light mode (default) */
+  :root,
+  .light {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -24,17 +26,19 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 262 83% 58%;
     --radius: 0.75rem;
-    --sidebar: 250 30% 18%;
+    /* Light mode sidebar - purple gradient */
+    --sidebar: 262 60% 30%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-accent: 250 30% 25%;
+    --sidebar-accent: 262 50% 40%;
   }
 
+  /* Dark mode */
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 224 71% 8%;
     --popover-foreground: 210 40% 98%;
     --primary: 262 83% 58%;
     --primary-foreground: 210 40% 98%;
@@ -49,6 +53,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 262 83% 58%;
+    /* Dark mode sidebar */
     --sidebar: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-accent: 217.2 32.6% 17.5%;

@@ -33,7 +33,39 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 }
 
+/**
+ * Gets the auth token from localStorage.
+ */
+function getToken(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('token') || '';
+}
+
 export const api = {
+  // Generic methods for new endpoints
+  get: <T>(endpoint: string) =>
+    fetchApi<T>(`/api${endpoint}`, { token: getToken() }),
+  
+  post: <T>(endpoint: string, data: any) =>
+    fetchApi<T>(`/api${endpoint}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      token: getToken(),
+    }),
+  
+  patch: <T>(endpoint: string, data: any) =>
+    fetchApi<T>(`/api${endpoint}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      token: getToken(),
+    }),
+  
+  delete: <T>(endpoint: string) =>
+    fetchApi<T>(`/api${endpoint}`, {
+      method: 'DELETE',
+      token: getToken(),
+    }),
+
   users: {
     update: (data: { displayName?: string; status?: string; avatarUrl?: string }, token: string) =>
       fetchApi<any>('/api/users/me', {

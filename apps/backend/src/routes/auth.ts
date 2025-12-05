@@ -2,20 +2,62 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@chatterbox/database';
-import { generateToken, authenticateToken, AuthRequest } from '../middleware/auth';
+import { generateToken, generateRefreshToken, verifyRefreshToken, revokeToken, authenticateToken, AuthRequest } from '../middleware/auth';
+import { logSecurityEvent } from '../middleware/security';
+import { 
+  isLdapEnabled, 
+  getLdapConfig, 
+  authenticateLdap, 
+  syncLdapUser, 
+  testLdapConnection 
+} from '../services/ldap';
+import {
+  isAccountLocked,
+  recordFailedLogin,
+  clearFailedLogins,
+  recordFailedAttempt,
+  clearFailedAttempts,
+  getClientIp,
+  isPasswordCompromised,
+  logSecurityAudit,
+} from '../middleware/advanced-security';
 
 const router = Router();
 
+/**
+ * Password validation schema with security requirements.
+ * - Minimum 8 characters
+ * - At least one uppercase letter
+ * - At least one lowercase letter
+ * - At least one number
+ * - At least one special character
+ */
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must be less than 128 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
+
 const registerSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/),
-  displayName: z.string().min(1).max(50),
-  password: z.string().min(6),
+  email: z.string().email().max(255).toLowerCase(),
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be less than 30 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
+    .toLowerCase(),
+  displayName: z.string().min(1).max(50).trim(),
+  password: passwordSchema,
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  email: z.string().email().toLowerCase(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+const refreshSchema = z.object({
+  refreshToken: z.string(),
 });
 
 // Register
@@ -33,7 +75,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email or username already exists' });
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    // Use higher bcrypt cost factor for better security
+    const passwordHash = await bcrypt.hash(data.password, 12);
     
     const user = await prisma.user.create({
       data: {
@@ -62,7 +105,7 @@ router.post('/register', async (req, res) => {
         members: {
           create: {
             userId: user.id,
-            role: 'owner',
+            roleName: 'owner',
           },
         },
         channels: {
@@ -81,10 +124,14 @@ router.post('/register', async (req, res) => {
     });
 
     const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    logSecurityEvent('USER_REGISTERED', { userId: user.id, email: data.email });
 
     res.status(201).json({
       user,
       token,
+      refreshToken,
       workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug },
     });
   } catch (error) {
@@ -100,6 +147,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const data = loginSchema.parse(req.body);
+    const clientIp = getClientIp(req);
     
     const user = await prisma.user.findUnique({
       where: { email: data.email },
@@ -114,21 +162,89 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) {
+      // Record IP-based failed attempt
+      recordFailedAttempt(clientIp);
+      logSecurityEvent('LOGIN_FAILED', { email: data.email, reason: 'user_not_found', ip: clientIp });
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if account is locked
+    const lockStatus = await isAccountLocked(user.id);
+    if (lockStatus.locked) {
+      logSecurityAudit('LOGIN_FAILED', {
+        userId: user.id,
+        ip: clientIp,
+        metadata: { reason: 'account_locked', lockedUntil: lockStatus.lockedUntil },
+      });
+      return res.status(423).json({ 
+        error: 'Account is temporarily locked',
+        lockedUntil: lockStatus.lockedUntil,
+        message: 'Too many failed login attempts. Please try again later.',
+      });
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      logSecurityEvent('LOGIN_FAILED', { userId: user.id, reason: 'account_disabled', ip: clientIp });
+      return res.status(403).json({ error: 'Account has been disabled' });
     }
 
     const validPassword = await bcrypt.compare(data.password, user.passwordHash);
     if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Record failed login attempt
+      recordFailedAttempt(clientIp);
+      const lockResult = await recordFailedLogin(user.id);
+      
+      logSecurityEvent('LOGIN_FAILED', { userId: user.id, reason: 'invalid_password', ip: clientIp });
+      
+      if (lockResult.locked) {
+        logSecurityAudit('ACCOUNT_LOCKED', {
+          userId: user.id,
+          ip: clientIp,
+          metadata: { lockedUntil: lockResult.lockedUntil, failedAttempts: lockResult.failedAttempts },
+        });
+        return res.status(423).json({ 
+          error: 'Account has been locked',
+          lockedUntil: lockResult.lockedUntil,
+          message: 'Too many failed login attempts. Please try again later.',
+        });
+      }
+      
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        remainingAttempts: 5 - lockResult.failedAttempts,
+      });
     }
 
-    // Update status to online
+    // Clear failed attempts on successful login
+    clearFailedAttempts(clientIp);
+    await clearFailedLogins(user.id);
+
+    // Check if MFA is required
+    if (user.mfaEnabled) {
+      // Return partial auth - client needs to complete MFA
+      const mfaToken = generateToken(user.id, '5m'); // Short-lived token for MFA
+      return res.json({
+        mfaRequired: true,
+        mfaToken,
+        userId: user.id,
+      });
+    }
+
+    // Update status to online and last login
     await prisma.user.update({
       where: { id: user.id },
-      data: { status: 'online' },
+      data: { 
+        status: 'online',
+        lastLoginAt: new Date(),
+        lastLoginIp: clientIp,
+      },
     });
 
     const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    logSecurityEvent('LOGIN_SUCCESS', { userId: user.id, ip: clientIp });
 
     res.json({
       user: {
@@ -138,8 +254,10 @@ router.post('/login', async (req, res) => {
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
         status: 'online',
+        mfaEnabled: user.mfaEnabled,
       },
       token,
+      refreshToken,
       workspace: user.workspaceMemberships[0]?.workspace || null,
     });
   } catch (error) {
@@ -147,6 +265,71 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: error.errors });
     }
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = refreshSchema.parse(req.body);
+    
+    const payload = verifyRefreshToken(refreshToken);
+    if (!payload) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    // Verify user still exists
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Generate new tokens
+    const newToken = generateToken(user.id);
+    const newRefreshToken = generateRefreshToken(user.id);
+
+    // Revoke old refresh token
+    if (payload.jti) {
+      revokeToken(payload.jti);
+    }
+
+    res.json({
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Refresh error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Logout (revoke token)
+router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    if (req.tokenId) {
+      revokeToken(req.tokenId);
+    }
+
+    // Update user status to offline
+    if (req.userId) {
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: { status: 'offline' },
+      });
+      logSecurityEvent('LOGOUT', { userId: req.userId });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -175,6 +358,113 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
     res.json(user);
   } catch (error) {
     console.error('Get me error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// LDAP Authentication
+// ============================================================================
+
+const ldapLoginSchema = z.object({
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+/**
+ * Get authentication configuration (LDAP status).
+ */
+router.get('/config', async (req, res) => {
+  try {
+    const ldapConfig = getLdapConfig();
+    res.json({
+      ldap: {
+        enabled: ldapConfig.enabled,
+      },
+      localAuth: true,
+    });
+  } catch (error) {
+    console.error('Get auth config error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Login with LDAP credentials.
+ */
+router.post('/ldap/login', async (req, res) => {
+  try {
+    if (!isLdapEnabled()) {
+      return res.status(400).json({ error: 'LDAP authentication is not enabled' });
+    }
+
+    const { username, password } = ldapLoginSchema.parse(req.body);
+
+    // Authenticate against LDAP
+    const ldapUser = await authenticateLdap(username, password);
+
+    if (!ldapUser) {
+      logSecurityEvent('LDAP_LOGIN_FAILED', { username, ip: req.ip });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Sync user to local database
+    const user = await syncLdapUser(ldapUser);
+
+    // Update last login info
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginAt: new Date(),
+        lastLoginIp: req.ip,
+        failedLoginAttempts: 0,
+      },
+    });
+
+    // Generate tokens
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    logSecurityEvent('LDAP_LOGIN_SUCCESS', { userId: user.id, username, ip: req.ip });
+
+    // Get user's workspace
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: user.id },
+      include: { workspace: true },
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        status: user.status,
+      },
+      token,
+      refreshToken,
+      workspace: membership?.workspace || null,
+      authMethod: 'ldap',
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('LDAP login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Test LDAP connection (admin only).
+ */
+router.post('/ldap/test', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const result = await testLdapConnection();
+    res.json(result);
+  } catch (error) {
+    console.error('LDAP test error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

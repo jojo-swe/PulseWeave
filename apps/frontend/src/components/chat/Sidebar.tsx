@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/store';
 import { api } from '@/lib/api';
 import { cn, getInitials, generateAvatarColor } from '@/lib/utils';
@@ -12,7 +12,9 @@ import { CreateChannelModal } from './CreateChannelModal';
 import { UserProfileModal } from './UserProfileModal';
 import { WorkspaceSettingsModal } from './WorkspaceSettingsModal';
 import { StatusPicker } from './StatusPicker';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Portal } from '@/components/ui/portal';
+import Link from 'next/link';
 import {
   Hash,
   Lock,
@@ -22,6 +24,7 @@ import {
   LogOut,
   MessageCircle,
   Star,
+  Shield,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,6 +37,8 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [statusPickerPosition, setStatusPickerPosition] = useState({ left: 0, bottom: 0 });
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
   
   const {
     user,
@@ -312,8 +317,16 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
                   </AvatarFallback>
                 </Avatar>
                 <button
+                  ref={statusButtonRef}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (statusButtonRef.current) {
+                      const rect = statusButtonRef.current.getBoundingClientRect();
+                      setStatusPickerPosition({
+                        left: rect.left,
+                        bottom: window.innerHeight - rect.top + 8,
+                      });
+                    }
                     setShowStatusPicker(true);
                   }}
                   className="absolute -bottom-0.5 -right-0.5 hover:scale-110 transition-transform"
@@ -334,13 +347,30 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
                 </p>
               </div>
             </button>
-            {/* Status Picker */}
-            {showStatusPicker && (
-              <div className="absolute bottom-full left-0 mb-2">
-                <StatusPicker onClose={() => setShowStatusPicker(false)} />
-              </div>
-            )}
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            asChild
+            title="Admin Panel"
+          >
+            <Link href="/admin">
+              <Shield className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            asChild
+            title="Settings"
+          >
+            <Link href="/settings">
+              <Settings className="h-4 w-4" />
+            </Link>
+          </Button>
+          <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent" />
           <Button
             variant="ghost"
             size="icon"
@@ -373,6 +403,21 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
       {showWorkspaceSettings && (
         <Portal>
           <WorkspaceSettingsModal onClose={() => setShowWorkspaceSettings(false)} />
+        </Portal>
+      )}
+
+      {/* Status Picker */}
+      {showStatusPicker && (
+        <Portal>
+          <div 
+            className="fixed z-50"
+            style={{ 
+              left: statusPickerPosition.left, 
+              bottom: statusPickerPosition.bottom 
+            }}
+          >
+            <StatusPicker onClose={() => setShowStatusPicker(false)} />
+          </div>
         </Portal>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '@/store';
+import { useTheme } from '@/components/theme-provider';
 import { cn, getInitials, generateAvatarColor } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -66,6 +67,7 @@ export function CommandPalette({
   const listRef = useRef<HTMLDivElement>(null);
   
   const { channels, members, setCurrentChannel, starredChannels, toggleStarChannel } = useStore();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   // Build command items
   const allItems = useMemo<CommandItem[]>(() => {
@@ -162,12 +164,12 @@ export function CommandPalette({
       },
       {
         id: 'action-theme',
-        title: 'Toggle Theme',
-        description: 'Switch between light and dark mode',
-        icon: <Sun className="h-4 w-4" />,
+        title: resolvedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+        description: `Currently using ${resolvedTheme} mode`,
+        icon: resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />,
         category: 'actions',
         action: () => {
-          onToggleTheme?.();
+          setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
           onClose();
         },
         keywords: ['theme', 'dark', 'light', 'mode', 'toggle'],
@@ -187,7 +189,7 @@ export function CommandPalette({
     ];
 
     return [...items, ...actions];
-  }, [channels, members, setCurrentChannel, onClose, onStartDM, onCreateChannel, onOpenProfile, onOpenSettings, onOpenShortcuts, onToggleTheme, onLogout]);
+  }, [channels, members, setCurrentChannel, onClose, onStartDM, onCreateChannel, onOpenProfile, onOpenSettings, onOpenShortcuts, onLogout, resolvedTheme, setTheme]);
 
   // Filter items based on query
   const filteredItems = useMemo(() => {

@@ -2,7 +2,6 @@
 trigger: always_on
 ---
 
-
 # Overview
 
 You are an expert in TypeScript and Node.js development. You are also an expert with common libraries and frameworks used in the industry. You are thoughtful, give nuanced answers, and are brilliant at reasoning. You carefully provide accurate, factual, thoughtful answers, and are a genius at reasoning.
@@ -18,6 +17,8 @@ The application we are working on uses the following tech stack:
 - Node.js
 - Lodash
 - Zod
+- Tailwind
+- Next
 
 ## Shortcuts
 

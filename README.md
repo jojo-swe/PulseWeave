@@ -2,17 +2,19 @@
 
 A modern, real-time team communication platform built as a Slack alternative. Features a beautiful dark UI, real-time messaging, emoji reactions, and more.
 
-![PulseWeave](https://via.placeholder.com/800x400?text=Chatterbox+Screenshot)
+![PulseWeave](https://via.placeholder.com/800x400?text=PulseWeave+Screenshot)
 
 ## Features
 
-- **Real-time Messaging** - Instant message delivery with Socket.io
-- **Channels** - Organize conversations by topic
-- **Emoji Reactions** - React to messages with emojis
-- **Typing Indicators** - See when others are typing
-- **User Presence** - Online/offline status for team members
-- **Modern UI** - Beautiful dark theme with smooth animations
-- **Responsive Design** - Works on desktop and mobile
+- **Real-time Messaging** - Instant delivery with Socket.io
+- **Channels & DMs** - Organize conversations by topic or 1:1
+- **RBAC & Admin Panel** - Roles, permissions, audit log, user management
+- **MFA (TOTP + WebAuthn)** - Authenticator apps, YubiKey/Passkeys, backup codes
+- **LDAP / SSO** - Directory-based login with auto-sync
+- **Advanced Security** - Rate limiting, IP blocking, account lockout, HSTS, CSRF readiness, security dashboard
+- **Emoji Reactions & Typing Indicators** - Expressive, real-time UX
+- **User Presence** - Online/away/busy/offline with quick status picker
+- **Modern UI** - Dark theme, responsive, mobile-friendly
 
 ## Tech Stack
 
@@ -109,9 +111,54 @@ PulseWeave/
 
 ### Backend (`apps/backend/.env`)
 ```env
+# Core
 PORT=3001
-JWT_SECRET=your-secret-key
+NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
+
+# JWT
+JWT_SECRET=change-this-in-production
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_EXPIRES_IN=30d
+
+# SSL/TLS
+SSL_ENABLED=false
+SSL_KEY_PATH=./certs/server.key
+SSL_CERT_PATH=./certs/server.crt
+SSL_CA_PATH=./certs/ca.crt
+SSL_PORT=3443
+SSL_HTTP_REDIRECT=true
+SSL_MIN_VERSION=TLSv1.2
+
+# Cookies
+COOKIE_SECRET=change-this-cookie-secret
+
+# Security (lockout & IP blocking)
+ACCOUNT_MAX_FAILED_ATTEMPTS=5
+ACCOUNT_LOCKOUT_DURATION_MINUTES=15
+LOCKOUT_PROGRESSIVE_MULTIPLIER=2
+MAX_FAILED_ATTEMPTS=10
+IP_BLOCK_DURATION_MINUTES=30
+ATTEMPT_WINDOW_MINUTES=15
+
+# Rate limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+AUTH_RATE_LIMIT_MAX=10
+
+# LDAP (optional)
+LDAP_ENABLED=false
+LDAP_URL=ldap://localhost:389
+LDAP_BIND_DN=cn=admin,dc=example,dc=com
+LDAP_BIND_PASSWORD=your-bind-password
+LDAP_SEARCH_BASE=dc=example,dc=com
+LDAP_SEARCH_FILTER=(uid={{username}})
+LDAP_USERNAME_ATTR=uid
+LDAP_EMAIL_ATTR=mail
+LDAP_DISPLAY_NAME_ATTR=cn
+LDAP_GROUP_SEARCH_BASE=ou=groups,dc=example,dc=com
+LDAP_GROUP_SEARCH_FILTER=(member={{dn}})
+LDAP_ADMIN_GROUP=cn=admins,ou=groups,dc=example,dc=com
 ```
 
 ### Database (`packages/database/.env`)
@@ -127,9 +174,22 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Create account
-- `POST /api/auth/login` - Sign in
+- `POST /api/auth/register` - Create account (local)
+- `POST /api/auth/login` - Sign in (local, MFA-aware)
+- `POST /api/auth/ldap/login` - Sign in with LDAP
+- `GET /api/auth/config` - Auth capability flags (LDAP enabled?)
 - `GET /api/auth/me` - Get current user
+
+### MFA
+- `POST /api/mfa/totp/setup` - Generate TOTP secret + QR
+- `POST /api/mfa/totp/enable` - Verify + enable TOTP
+- `POST /api/mfa/totp/disable` - Disable TOTP (password required)
+- `POST /api/mfa/webauthn/register/options` - WebAuthn registration options
+- `POST /api/mfa/webauthn/register/verify` - Complete WebAuthn registration
+- `POST /api/mfa/webauthn/authenticate/options` - WebAuthn auth options
+- `POST /api/mfa/webauthn/authenticate/verify` - Complete WebAuthn auth
+- `GET /api/mfa/webauthn/credentials` - List credentials
+- `DELETE /api/mfa/webauthn/credentials/:id` - Remove credential
 
 ### Workspaces
 - `GET /api/workspaces` - List user's workspaces
@@ -147,6 +207,18 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 - `PATCH /api/messages/:id` - Edit message
 - `DELETE /api/messages/:id` - Delete message
 - `POST /api/messages/:id/reactions` - Add reaction
+
+### Admin & Security
+- `GET /api/admin/workspaces/:id/users` - List users with roles
+- `PATCH /api/admin/workspaces/:id/users/:userId/role` - Change user role
+- `POST /api/admin/workspaces/:id/users/:userId/ban` - Ban user
+- `POST /api/admin/workspaces/:id/users/:userId/unban` - Unban user
+- `GET /api/admin/workspaces/:id/audit-log` - Audit log
+- `GET /api/security/status` - Security status (SSL, failed logins, MFA adoption)
+- `GET /api/security/locked-accounts` - Locked/disabled accounts
+- `POST /api/security/unlock-account/:userId` - Unlock account
+- `POST /api/security/block-ip` - Block an IP
+- `GET /api/security/check-ip/:ip` - Check IP block status
 
 ## WebSocket Events
 
