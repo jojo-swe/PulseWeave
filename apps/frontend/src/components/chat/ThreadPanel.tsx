@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Hash } from 'lucide-react';
+import { X, Send, Hash, MessageCircle } from 'lucide-react';
 import { useStore } from '@/store';
 import { api } from '@/lib/api';
 import { cn, formatMessageTime, getInitials, generateAvatarColor } from '@/lib/utils';
@@ -149,9 +149,14 @@ export function ThreadPanel({ parentMessage, channelName, onClose, onSendReply }
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
           </div>
         ) : replies.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            <p className="text-sm">No replies yet</p>
-            <p className="text-xs mt-1">Start the conversation!</p>
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="h-7 w-7 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-white mb-1">No replies yet</p>
+              <p className="text-xs text-gray-500">Be the first to reply to this thread!</p>
+            </div>
           </div>
         ) : (
           <div className="p-4 space-y-4">

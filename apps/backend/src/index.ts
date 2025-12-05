@@ -8,6 +8,8 @@ import { workspaceRouter } from './routes/workspace';
 import { channelRouter } from './routes/channel';
 import { messageRouter } from './routes/message';
 import { dmRouter } from './routes/dm';
+import uploadRouter from './routes/upload';
+import path from 'path';
 import { setupSocketHandlers } from './socket';
 import { authenticateToken } from './middleware/auth';
 
@@ -57,6 +59,10 @@ app.use('/api/workspaces', authenticateToken, workspaceRouter);
 app.use('/api/channels', authenticateToken, channelRouter);
 app.use('/api/messages', authenticateToken, messageRouter);
 app.use('/api/dm', authenticateToken, dmRouter);
+app.use('/api/upload', uploadRouter);
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Socket.io setup
 setupSocketHandlers(io);
@@ -64,7 +70,7 @@ setupSocketHandlers(io);
 const PORT = process.env.PORT || 3001;
 
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Chatterbox API running on http://localhost:${PORT}`);
+  console.log(`🚀 PulseWeave API running on http://localhost:${PORT}`);
   console.log(`📡 WebSocket server ready`);
 });
 

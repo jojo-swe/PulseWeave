@@ -178,4 +178,50 @@ export const api = {
     search: (workspaceId: string, query: string, token: string) =>
       fetchApi<any[]>(`/api/messages/search?workspaceId=${workspaceId}&q=${encodeURIComponent(query)}`, { token }),
   },
+  upload: {
+    single: async (file: File, token: string) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(error.error || 'Upload failed');
+      }
+      
+      return response.json();
+    },
+    multiple: async (files: File[], token: string) => {
+      const formData = new FormData();
+      files.forEach((file) => formData.append('files', file));
+      
+      const response = await fetch(`${API_URL}/api/upload/multiple`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(error.error || 'Upload failed');
+      }
+      
+      return response.json();
+    },
+    delete: (filename: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/upload/${filename}`, {
+        method: 'DELETE',
+        token,
+      }),
+    getUrl: (filename: string) => `${API_URL}/uploads/${filename}`,
+  },
 };

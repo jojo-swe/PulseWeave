@@ -99,6 +99,19 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
               </Button>
             </div>
             <div className="mt-1 space-y-0.5">
+              {channels.length === 0 && (
+                <div className="px-2 py-4 text-center">
+                  <div className="text-sidebar-foreground/50 text-sm">
+                    No channels yet
+                  </div>
+                  <button
+                    onClick={() => setShowCreateChannel(true)}
+                    className="mt-2 text-xs text-primary hover:underline"
+                  >
+                    Create your first channel
+                  </button>
+                </div>
+              )}
               {channels.map((channel) => {
                 const unreadCount = unreadCounts[channel.id] || 0;
                 const isActive = currentChannel?.id === channel.id;
@@ -150,6 +163,11 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
               </span>
             </div>
             <div className="mt-1 space-y-0.5">
+              {members.length === 0 && (
+                <div className="px-2 py-4 text-center text-sidebar-foreground/50 text-sm">
+                  No team members yet
+                </div>
+              )}
               {/* Online Members */}
               {onlineMembers.map(({ user: member }) => (
                 <button

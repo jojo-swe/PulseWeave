@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useStore } from '@/store';
 import { MessageList } from './MessageList';
+import { VirtualizedMessageList } from './VirtualizedMessageList';
 import { MessageInput } from './MessageInput';
 import { SearchMessages } from './SearchMessages';
 import { ThreadPanel } from './ThreadPanel';
@@ -10,7 +11,7 @@ import { ChannelSettingsModal } from './ChannelSettingsModal';
 import { NotificationCenter } from './NotificationCenter';
 import { Portal } from '@/components/ui/portal';
 import { Button } from '@/components/ui/button';
-import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu } from 'lucide-react';
+import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap } from 'lucide-react';
 
 interface ChatAreaProps {
   onSendMessage: (content: string) => void;
@@ -26,7 +27,7 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { currentChannel, members, typingUsers, activeThread, setActiveThread } = useStore();
+  const { currentChannel, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList } = useStore();
 
   // Get typing users for current channel
   const channelTypingUsers = Array.from(typingUsers.entries())
@@ -117,6 +118,15 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
             >
               <Settings className="h-4 w-4" />
             </Button>
+            <Button 
+              variant={useVirtualizedList ? "default" : "ghost"}
+              size="icon" 
+              className="h-8 w-8 hidden sm:flex"
+              onClick={toggleVirtualizedList}
+              title={useVirtualizedList ? "Using virtualized list (better for large channels)" : "Using standard list"}
+            >
+              <Zap className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -142,12 +152,21 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
         )}
 
         {/* Messages */}
-        <MessageList 
-          onReaction={onReaction} 
-          onEdit={onEditMessage}
-          onDelete={onDeleteMessage}
-          onOpenThread={setActiveThread}
-        />
+        {useVirtualizedList ? (
+          <VirtualizedMessageList 
+            onReaction={onReaction} 
+            onEdit={onEditMessage}
+            onDelete={onDeleteMessage}
+            onOpenThread={setActiveThread}
+          />
+        ) : (
+          <MessageList 
+            onReaction={onReaction} 
+            onEdit={onEditMessage}
+            onDelete={onDeleteMessage}
+            onOpenThread={setActiveThread}
+          />
+        )}
 
         {/* Typing Indicator */}
         {channelTypingUsers.length > 0 && (

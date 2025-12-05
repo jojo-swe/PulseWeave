@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '@/store';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FileButton, AttachedFiles } from './FileUpload';
+import { Loader2 } from 'lucide-react';
 import {
   Bold,
   Italic,
@@ -26,15 +28,26 @@ interface MessageInputProps {
   disabled?: boolean;
 }
 
+interface UploadedFile {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+}
+
 export function MessageInput({
   onSend,
   onTyping,
   placeholder = 'Message',
   disabled = false,
 }: MessageInputProps) {
-  const { currentChannel } = useStore();
+  const { currentChannel, token } = useStore();
   const [content, setContent] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -80,18 +93,40 @@ export function MessageInput({
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = content.trim();
-    if ((trimmed || attachedFiles.length > 0) && !disabled) {
-      // Include file info in message if files attached
+    if ((trimmed || attachedFiles.length > 0) && !disabled && !uploading) {
       let messageContent = trimmed;
-      if (attachedFiles.length > 0) {
-        const fileNames = attachedFiles.map(f => `📎 ${f.name}`).join('\n');
-        messageContent = trimmed ? `${trimmed}\n\n${fileNames}` : fileNames;
+      
+      // Upload files first if any
+      if (attachedFiles.length > 0 && token) {
+        setUploading(true);
+        try {
+          const uploaded = await api.upload.multiple(attachedFiles, token);
+          setUploadedFiles(uploaded);
+          
+          // Add file links to message
+          const fileLinks = uploaded.map((f: UploadedFile) => {
+            const isImage = f.mimeType.startsWith('image/');
+            if (isImage) {
+              return `![${f.originalName}](${api.upload.getUrl(f.filename)})`;
+            }
+            return `[📎 ${f.originalName}](${api.upload.getUrl(f.filename)})`;
+          }).join('\n');
+          
+          messageContent = trimmed ? `${trimmed}\n\n${fileLinks}` : fileLinks;
+        } catch (error) {
+          console.error('Upload failed:', error);
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
       }
+      
       onSend(messageContent);
       setContent('');
       setAttachedFiles([]);
+      setUploadedFiles([]);
       textareaRef.current?.focus();
     }
   };
@@ -180,9 +215,13 @@ export function MessageInput({
                   : 'bg-muted text-muted-foreground'
               )}
               onClick={handleSend}
-              disabled={(!content.trim() && attachedFiles.length === 0) || disabled}
+              disabled={(!content.trim() && attachedFiles.length === 0) || disabled || uploading}
             >
-              <Send className="h-4 w-4" />
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>

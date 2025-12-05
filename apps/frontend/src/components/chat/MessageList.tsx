@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Markdown } from '@/components/ui/markdown';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
-import { Smile, MessageSquare, MoreHorizontal, Pencil, Trash2, Copy, Check, X } from 'lucide-react';
+import { Smile, MessageSquare, MoreHorizontal, Pencil, Trash2, Copy, Check, X, Hash, Sparkles } from 'lucide-react';
 
 interface MessageListProps {
   onReaction?: (messageId: string, emoji: string) => void;
@@ -18,7 +18,7 @@ interface MessageListProps {
 }
 
 export function MessageList({ onReaction, onEdit, onDelete, onOpenThread }: MessageListProps) {
-  const { messages, user } = useStore();
+  const { messages, user, currentChannel } = useStore();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -68,6 +68,39 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread }: Mess
     setCopiedId(messageId);
     setTimeout(() => setCopiedId(null), 2000);
   };
+
+  // Empty state when no messages
+  if (messages.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="relative mx-auto w-20 h-20 mb-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-2xl rotate-6" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary to-purple-500 rounded-2xl flex items-center justify-center">
+              <Hash className="h-10 w-10 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-1.5 shadow-lg">
+              <Sparkles className="h-4 w-4 text-yellow-900" />
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold mb-2">
+            Welcome to #{currentChannel?.name || 'this channel'}!
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            This is the very beginning of the <span className="font-medium text-foreground">#{currentChannel?.name}</span> channel.
+            {currentChannel?.description && (
+              <span className="block mt-2 text-sm italic">"{currentChannel.description}"</span>
+            )}
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 text-sm text-muted-foreground">
+            <span className="px-3 py-1.5 bg-accent rounded-full">👋 Say hello</span>
+            <span className="px-3 py-1.5 bg-accent rounded-full">📝 Share updates</span>
+            <span className="px-3 py-1.5 bg-accent rounded-full">🎉 Celebrate wins</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="flex-1 px-4">

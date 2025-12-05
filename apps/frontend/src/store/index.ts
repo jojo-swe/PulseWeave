@@ -89,6 +89,8 @@ interface AppState {
   // UI
   sidebarOpen: boolean;
   toggleSidebar: () => void;
+  useVirtualizedList: boolean;
+  toggleVirtualizedList: () => void;
 
   // Unread
   unreadCounts: Record<string, number>;
@@ -211,6 +213,8 @@ export const useStore = create<AppState>()(
       // UI
       sidebarOpen: true,
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      useVirtualizedList: false,
+      toggleVirtualizedList: () => set((state) => ({ useVirtualizedList: !state.useVirtualizedList })),
 
       // Unread
       unreadCounts: {},

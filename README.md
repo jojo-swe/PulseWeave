@@ -74,7 +74,7 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 ## Project Structure
 
 ```
-windsurf-project/
+PulseWeave/
 ├── apps/
 │   ├── backend/          # Express + Socket.io API
 │   │   └── src/

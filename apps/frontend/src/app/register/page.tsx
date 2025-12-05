@@ -7,7 +7,7 @@ import { useStore } from '@/store';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Loader2, Check } from 'lucide-react';
+import { Zap, Loader2, Check } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -74,14 +74,14 @@ export default function RegisterPage() {
       <div className="hidden lg:flex lg:w-1/2 p-12 items-center justify-center">
         <div className="max-w-md">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-8">
-            <MessageSquare className="h-8 w-8 text-primary-foreground" />
+            <Zap className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-4xl font-bold mb-4">
             Team communication,{' '}
             <span className="text-primary">reimagined</span>
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
-            Chatterbox brings your team together with modern, real-time messaging
+            PulseWeave brings your team together with modern, real-time messaging
             that&apos;s fast, secure, and beautiful.
           </p>
           <ul className="space-y-4">
@@ -102,14 +102,14 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8 lg:hidden">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
-              <MessageSquare className="h-8 w-8 text-primary-foreground" />
+              <Zap className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
 
           <div className="bg-card rounded-xl border shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-2">Create your account</h2>
             <p className="text-muted-foreground mb-6">
-              Get started with Chatterbox in seconds
+              Get started with PulseWeave in seconds
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
