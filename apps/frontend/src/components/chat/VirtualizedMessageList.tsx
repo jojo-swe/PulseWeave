@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
-import { VariableSizeList as List } from 'react-window';
+import { FixedSizeList as List } from 'react-window';
 import { useStore } from '@/store';
 import { cn, formatMessageTime, formatMessageDate, getInitials, generateAvatarColor } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

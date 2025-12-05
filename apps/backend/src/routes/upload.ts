@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { AuthRequest, authMiddleware } from '../middleware/auth';
+import { AuthRequest, authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -68,7 +68,7 @@ const upload = multer({
 });
 
 // Upload single file
-router.post('/', authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
+router.post('/', authenticateToken, upload.single('file'), async (req: AuthRequest, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -96,7 +96,7 @@ router.post('/', authMiddleware, upload.single('file'), async (req: AuthRequest,
 });
 
 // Upload multiple files
-router.post('/multiple', authMiddleware, upload.array('files', 5), async (req: AuthRequest, res) => {
+router.post('/multiple', authenticateToken, upload.array('files', 5), async (req: AuthRequest, res) => {
   try {
     const files = req.files as Express.Multer.File[];
     
@@ -123,7 +123,7 @@ router.post('/multiple', authMiddleware, upload.array('files', 5), async (req: A
 });
 
 // Delete file
-router.delete('/:filename', authMiddleware, async (req: AuthRequest, res) => {
+router.delete('/:filename', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { filename } = req.params;
     const filePath = path.join(uploadsDir, filename);
