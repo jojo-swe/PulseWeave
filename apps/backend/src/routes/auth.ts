@@ -144,7 +144,10 @@ router.post('/register', async (req, res) => {
     });
 
     res.status(201).json({
-      user,
+      user: {
+        ...user,
+        role: 'owner', // New user is owner of their workspace
+      },
       token,
       refreshToken,
       workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug },
@@ -299,6 +302,9 @@ router.post('/login', async (req, res) => {
       },
     });
 
+    // Get user's role from workspace membership
+    const userRole = user.workspaceMemberships[0]?.roleName || 'member';
+
     res.json({
       user: {
         id: user.id,
@@ -308,6 +314,7 @@ router.post('/login', async (req, res) => {
         avatarUrl: user.avatarUrl,
         status: 'online',
         mfaEnabled: user.mfaEnabled,
+        role: userRole,
       },
       token,
       refreshToken,
@@ -506,6 +513,19 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
         status: true,
         statusMessage: true,
         createdAt: true,
+        workspaceMemberships: {
+          select: {
+            roleName: true,
+            workspace: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+          take: 1,
+        },
       },
     });
 
@@ -513,7 +533,15 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user);
+    // Extract role from first workspace membership
+    const role = user.workspaceMemberships[0]?.roleName || 'member';
+    const { workspaceMemberships, ...userData } = user;
+
+    res.json({
+      ...userData,
+      role,
+      workspace: workspaceMemberships[0]?.workspace || null,
+    });
   } catch (error) {
     console.error('Get me error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -37,7 +37,7 @@ export function NavigationRail({
   const statusRef = useRef<HTMLButtonElement>(null);
   
   // Check if user is admin
-  const isAdmin = true; //user?.role === 'admin' || user?.role === 'owner';
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   const handleProfileClick = () => {
     setShowProfile(true);

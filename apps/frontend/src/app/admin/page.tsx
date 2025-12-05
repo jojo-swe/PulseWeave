@@ -162,11 +162,19 @@ export default function AdminPage() {
   const [securityStatus, setSecurityStatus] = useState<SecurityStatus | null>(null);
   const [lockedAccounts, setLockedAccounts] = useState<LockedAccount[]>([]);
 
+  // Check if user is admin/owner
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+
   useEffect(() => {
     if (!token) {
       router.push('/login');
+      return;
     }
-  }, [token, router]);
+    // Redirect non-admins away from admin page
+    if (user && !isAdmin) {
+      router.push('/');
+    }
+  }, [token, user, isAdmin, router]);
 
   useEffect(() => {
     if (currentWorkspace?.id) {
@@ -353,6 +361,28 @@ export default function AdminPage() {
     member: 'bg-green-500/10 text-green-500',
     guest: 'bg-gray-500/10 text-gray-500',
   };
+
+  // Show loading or redirect for non-admins
+  if (!token || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <Shield className="h-16 w-16 text-muted-foreground" />
+        <h1 className="text-xl font-semibold">Access Denied</h1>
+        <p className="text-muted-foreground">You don't have permission to access this page.</p>
+        <Button asChild>
+          <Link href="/">Return to Chat</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
