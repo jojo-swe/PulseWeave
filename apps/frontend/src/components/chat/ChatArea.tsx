@@ -9,6 +9,7 @@ import { SearchMessages } from './SearchMessages';
 import { ThreadPanel } from './ThreadPanel';
 import { ChannelSettingsModal } from './ChannelSettingsModal';
 import { NotificationCenter } from './NotificationCenter';
+import { PinnedMessagesPanel } from './PinnedMessagesPanel';
 import { Portal } from '@/components/ui/portal';
 import { Button } from '@/components/ui/button';
 import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap } from 'lucide-react';
@@ -27,6 +28,7 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [pinnedOpen, setPinnedOpen] = useState(false);
   const { currentChannel, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList } = useStore();
 
   // Get typing users for current channel
@@ -91,7 +93,13 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
               <span>{members.length}</span>
             </Button>
             <div className="w-px h-4 bg-border mx-1 hidden sm:block" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:flex">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hidden md:flex"
+              onClick={() => setPinnedOpen(true)}
+              title="Pinned messages"
+            >
               <Pin className="h-4 w-4" />
             </Button>
             <Button 
@@ -148,6 +156,13 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
         {notificationsOpen && (
           <Portal>
             <NotificationCenter onClose={() => setNotificationsOpen(false)} />
+          </Portal>
+        )}
+
+        {/* Pinned Messages Panel */}
+        {pinnedOpen && (
+          <Portal>
+            <PinnedMessagesPanel onClose={() => setPinnedOpen(false)} />
           </Portal>
         )}
 

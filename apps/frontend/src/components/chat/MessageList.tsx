@@ -8,17 +8,34 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Markdown } from '@/components/ui/markdown';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
-import { Smile, MessageSquare, MoreHorizontal, Pencil, Trash2, Copy, Check, X, Hash, Sparkles } from 'lucide-react';
+import { Smile, MessageSquare, MoreHorizontal, Pencil, Trash2, Copy, Check, X, Hash, Sparkles, Pin } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface MessageListProps {
   onReaction?: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onOpenThread?: (message: any) => void;
+  onPin?: (messageId: string) => void;
 }
 
-export function MessageList({ onReaction, onEdit, onDelete, onOpenThread }: MessageListProps) {
-  const { messages, user, currentChannel } = useStore();
+export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin }: MessageListProps) {
+  const { messages, user, currentChannel, token } = useStore();
+  const [pinningId, setPinningId] = useState<string | null>(null);
+
+  // Handle pin message
+  const handlePin = async (messageId: string) => {
+    if (!token) return;
+    setPinningId(messageId);
+    try {
+      await api.messages.pin(messageId, token);
+      onPin?.(messageId);
+    } catch (error) {
+      console.error('Failed to pin message:', error);
+    } finally {
+      setPinningId(null);
+    }
+  };
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -307,6 +324,16 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread }: Mess
                           ) : (
                             <Copy className="h-4 w-4" />
                           )}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 hover:bg-gray-700"
+                          onClick={() => handlePin(message.id)}
+                          disabled={pinningId === message.id}
+                          title="Pin message"
+                        >
+                          <Pin className="h-4 w-4" />
                         </Button>
                         {isOwn && (
                           <>
