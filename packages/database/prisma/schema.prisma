@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  displayName   String
+  passwordHash  String
+  avatarUrl     String?
+  status        String    @default("online")
+  statusMessage String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  ownedWorkspaces    Workspace[]         @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
+  channelMemberships ChannelMember[]
+  messages           Message[]
+  reactions          Reaction[]
+  createdChannels    Channel[]           @relation("ChannelCreator")
+  conversations      ConversationMember[]
+  directMessages     DirectMessage[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  iconUrl   String?
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members       WorkspaceMember[]
+  channels      Channel[]
+  conversations Conversation[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String   @default("member")
+  joinedAt    DateTime @default(now())
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  isPrivate   Boolean  @default(false)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("ChannelCreator", fields: [createdById], references: [id])
+  members   ChannelMember[]
+  messages  Message[]
+
+  @@unique([workspaceId, name])
+  @@map("channels")
+}
+
+model ChannelMember {
+  id        String   @id @default(cuid())
+  userId    String
+  channelId String
+  joinedAt  DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+  @@map("channel_members")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  content     String
+  channelId   String
+  userId      String
+  parentId    String?
+  isEdited    Boolean  @default(false)
+  isPinned    Boolean  @default(false)
+  pinnedAt    DateTime?
+  pinnedById  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  channel   Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Message?   @relation("ThreadReplies", fields: [parentId], references: [id])
+  replies   Message[]  @relation("ThreadReplies")
+  reactions Reaction[]
+  attachments Attachment[]
+
+  @@index([channelId, createdAt])
+  @@map("messages")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("reactions")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  type      String
+  url       String
+  name      String
+  size      Int?
+  mimeType  String?
+  messageId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// Direct Messages
+model Conversation {
+  id          String   @id @default(cuid())
+  workspaceId String
+  isGroup     Boolean  @default(false)
+  name        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   ConversationMember[]
+  messages  DirectMessage[]
+
+  @@map("conversations")
+}
+
+model ConversationMember {
+  id             String   @id @default(cuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime @default(now())
+  lastReadAt     DateTime @default(now())
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@map("conversation_members")
+}
+
+model DirectMessage {
+  id             String   @id @default(cuid())
+  content        String
+  conversationId String
+  userId         String
+  isEdited       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("direct_messages")
+}
