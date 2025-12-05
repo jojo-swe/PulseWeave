@@ -280,7 +280,7 @@ export function CommandPalette({
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Palette */}
-      <div className="relative w-full max-w-xl overflow-hidden rounded-xl border bg-popover shadow-2xl">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-xl border-none glass-card shadow-2xl animate-in scale-in">
         {/* Search Input */}
         <div className="flex items-center gap-3 border-b px-4 py-3">
           <Search className="h-5 w-5 text-muted-foreground" />

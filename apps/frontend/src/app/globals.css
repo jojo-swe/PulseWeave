@@ -33,30 +33,45 @@
   }
 
   /* Dark mode */
+  /* Dark mode - PulseWeave Midnight Theme */
   .dark {
-    --background: 222 28% 14%;
-    --foreground: 210 38% 96%;
-    --card: 223 26% 16%;
-    --card-foreground: 210 38% 96%;
-    --popover: 223 26% 16%;
-    --popover-foreground: 210 38% 96%;
-    --primary: 262 83% 58%;
+    /* Main Background: Deep Midnight Blue */
+    --background: 230 35% 7%;
+    --foreground: 210 40% 98%;
+
+    /* Cards: Slightly lighter blue with transparency potential */
+    --card: 232 30% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 232 30% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Electric Violet/Blue Pulse */
+    --primary: 250 100% 65%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 220 18% 26%;
-    --secondary-foreground: 210 38% 96%;
-    --muted: 220 18% 26%;
-    --muted-foreground: 215 16% 70%;
-    --accent: 225 18% 30%;
-    --accent-foreground: 210 38% 96%;
-    --destructive: 0 55% 40%;
+
+    /* Secondary: Muted Blue-Grey */
+    --secondary: 225 20% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 225 20% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Accent: Glowing Blue effect */
+    --accent: 250 60% 20%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
-    --border: 225 18% 28%;
-    --input: 225 18% 28%;
-    --ring: 262 83% 58%;
-    /* Dark mode sidebar */
-    --sidebar: 225 18% 22%;
-    --sidebar-foreground: 210 38% 96%;
-    --sidebar-accent: 262 55% 45%;
+
+    --border: 230 25% 18%;
+    --input: 230 25% 18%;
+    --ring: 250 100% 65%;
+
+    /* Sidebar: Glass-like dark pane */
+    --sidebar: 232 35% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-accent: 250 50% 15%;
   }
 }
 
@@ -66,13 +81,19 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Rich Cosmic Mesh Background */
+    background-image: url('/assets/app-background.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -80,12 +101,13 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Message animations */
@@ -112,8 +134,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
@@ -128,8 +154,13 @@
 }
 
 @keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .message-enter {
@@ -146,6 +177,64 @@
 
 .scale-in {
   animation: scaleIn 0.15s ease-out;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.4));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08); /* More subtle border */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  /* Noise Texture Overlay */
+  position: relative;
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(30, 41, 59, 0.5));
+  backdrop-filter: blur(16px); /* Stronger blur */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden; /* Ensure noise doesn't spill */
+  color: white; /* Ensure text is readable */
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.glass-sidebar {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.8));
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+.glass-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
 }
 
 /* Prose overrides for markdown */
@@ -170,10 +259,23 @@
   background: hsl(var(--muted));
 }
 
-/* Focus styles */
+@keyframes breathe {
+  0%, 100% {
+    box-shadow: 0 0 20px 2px rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px 4px rgba(99, 102, 241, 0.2);
+  }
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Focus styles - Glowing Aura */
 *:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5), 0 0 15px 2px rgba(139, 92, 246, 0.3);
 }
 
 /* Selection */
@@ -182,7 +284,10 @@
 }
 
 /* Smooth transitions */
-button, a, input, textarea {
+button,
+a,
+input,
+textarea {
   transition-property: color, background-color, border-color, box-shadow;
   transition-duration: 150ms;
   transition-timing-function: ease-out;

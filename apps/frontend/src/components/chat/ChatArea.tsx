@@ -154,11 +154,11 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden bg-gradient-to-br from-background/50 to-indigo-950/20 w-full h-full relative">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-background min-w-0">
+      <div className="flex-1 flex flex-col bg-transparent min-w-0 h-full">
         {/* Channel Header */}
-        <div className="h-14 flex items-center justify-between px-2 sm:px-4 border-b shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-white/5 shrink-0 z-10 glass-card bg-white/5">
           <div className="flex items-center gap-2">
             {/* Mobile menu button */}
             <Button

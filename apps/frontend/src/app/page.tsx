@@ -13,6 +13,8 @@ import { KeyboardShortcuts } from '@/components/chat/KeyboardShortcuts';
 import { CreateChannelModal } from '@/components/chat/CreateChannelModal';
 import { Portal } from '@/components/ui/portal';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { NavigationRail } from '@/components/chat/NavigationRail';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const router = useRouter();
@@ -340,33 +342,45 @@ export default function Home() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen overflow-hidden">
-        {/* Mobile sidebar overlay */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={toggleSidebar}
-          />
-        )}
-        
-        {/* Sidebar - hidden on mobile, slide in when open */}
-        <div className={`
-          fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
-          transform transition-transform duration-200 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
-          <Sidebar onToggle={toggleSidebar} onStartDM={handleStartDM} />
+      {/* Main Container - Unified Glass Layout */}
+      <div className="flex h-screen w-full p-4 lg:p-6 overflow-hidden max-w-[1920px] mx-auto bg-transparent relative">
+        {/* Master Glass Wrapper */}
+        <div className="flex h-full w-full glass rounded-3xl shadow-2xl border border-white/10 overflow-hidden relative z-10">
+          
+          {/* Mobile sidebar overlay */}
+          {sidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={toggleSidebar}
+            />
+          )}
+          
+          {/* Navigation Rail - Desktop only */}
+          <div className="hidden lg:flex shrink-0">
+            <NavigationRail />
+          </div>
+
+          {/* Sidebar Panel */}
+          <div className={cn(
+            "flex-col shrink-0 transition-all duration-300 ease-in-out lg:z-auto bg-background/20 lg:bg-transparent absolute inset-y-0 left-0 z-50",
+            sidebarOpen ? "translate-x-0 w-64 border-r border-white/5 shadow-2xl lg:shadow-none lg:static" : "-translate-x-full lg:translate-x-0 lg:w-64"
+          )}>
+            <Sidebar onToggle={toggleSidebar} onStartDM={handleStartDM} />
+          </div>
+          
+          {/* Chat Area */}
+          <div className="flex-1 min-w-0 flex flex-col h-full relative bg-gradient-to-br from-transparent to-indigo-950/20">
+            <ChatArea
+              onSendMessage={handleSendMessage}
+              onTyping={handleTyping}
+              onReaction={handleReaction}
+              onEditMessage={handleEditMessage}
+              onDeleteMessage={handleDeleteMessage}
+              onToggleSidebar={toggleSidebar}
+              onSendReply={handleSendReply}
+            />
+          </div>
         </div>
-        
-        <ChatArea
-          onSendMessage={handleSendMessage}
-          onTyping={handleTyping}
-          onReaction={handleReaction}
-          onEditMessage={handleEditMessage}
-          onDeleteMessage={handleDeleteMessage}
-          onToggleSidebar={toggleSidebar}
-          onSendReply={handleSendReply}
-        />
 
         {/* Command Palette */}
         {commandPaletteOpen && (

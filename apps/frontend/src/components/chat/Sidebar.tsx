@@ -86,7 +86,7 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
   };
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground">
+    <div className="flex h-full w-full flex-col text-sidebar-foreground border-r border-white/5 bg-black/10 backdrop-blur-md">
       {/* Workspace Header */}
       <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
         <button className="flex items-center gap-2 font-semibold hover:bg-sidebar-accent rounded px-2 py-1 transition-colors">
@@ -389,92 +389,7 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
         </div>
       </ScrollArea>
 
-      {/* User Footer */}
-      <div className="border-t border-white/10 p-3">
-        {/* User Info Row */}
-        <div className="flex items-center gap-3 w-full mb-2">
-          <button 
-            onClick={() => setShowProfile(true)}
-            className="relative shrink-0 hover:opacity-80 transition-opacity"
-            title="View profile"
-          >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user?.avatarUrl} />
-              <AvatarFallback className={cn(generateAvatarColor(user?.displayName || ''))}>
-                {getInitials(user?.displayName || 'U')}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-          <button
-            ref={statusButtonRef}
-            onClick={() => {
-              if (statusButtonRef.current) {
-                const rect = statusButtonRef.current.getBoundingClientRect();
-                setStatusPickerPosition({
-                  left: rect.left,
-                  bottom: window.innerHeight - rect.top + 8,
-                });
-              }
-              setShowStatusPicker(true);
-            }}
-            className="flex-1 min-w-0 text-left hover:bg-sidebar-accent rounded-lg px-2 py-1.5 transition-colors"
-            title="Change status"
-          >
-            <div className="flex items-center gap-2">
-              <PresenceIndicator 
-                status={userStatus === 'busy' ? 'dnd' : userStatus} 
-                size="sm" 
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{user?.displayName}</p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
-                  {userStatus === 'online' ? 'Active' : 
-                   userStatus === 'away' ? 'Away' : 
-                   userStatus === 'busy' ? 'Do Not Disturb' : 'Invisible'} · Click to change
-                </p>
-              </div>
-            </div>
-          </button>
-        </div>
 
-        {/* Action Buttons Row */}
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-              asChild
-              title="Admin Panel"
-            >
-              <Link href="/admin">
-                <Shield className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-              asChild
-              title="Settings"
-            >
-              <Link href="/settings">
-                <Settings className="h-4 w-4" />
-              </Link>
-            </Button>
-            <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent" />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hover:text-red-400"
-            onClick={logout}
-            title="Log out"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
       {/* Create Channel Modal */}
       {showCreateChannel && (

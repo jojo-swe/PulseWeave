@@ -43,7 +43,7 @@ export function CreateChannelModal({ onClose, onCreate }: CreateChannelModalProp
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70" onClick={onClose}>
       <div 
-        className="relative w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl mx-4"
+        className="relative w-full max-w-md rounded-xl glass-card p-6 shadow-2xl mx-4 animate-in scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
