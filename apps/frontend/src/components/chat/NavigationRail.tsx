@@ -1,24 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { cn, getInitials, generateAvatarColor } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, 
   Users, 
   Activity, 
-  Settings, 
   LogOut,
-  Bell 
+  Bell,
+  Settings,
+  Shield,
 } from 'lucide-react';
 import { UserProfileModal } from './UserProfileModal';
 import { Portal } from '@/components/ui/portal';
+import { StatusPicker } from './StatusPicker';
 
 interface NavigationRailProps {
-  activeTab?: 'chat' | 'activity' | 'teams';
-  onTabChange?: (tab: 'chat' | 'activity' | 'teams') => void;
+  activeTab?: 'chat' | 'activity' | 'friends';
+  onTabChange?: (tab: 'chat' | 'activity' | 'friends') => void;
   onOpenProfile?: () => void;
 }
 
@@ -27,12 +29,31 @@ export function NavigationRail({
   onTabChange,
   onOpenProfile 
 }: NavigationRailProps) {
-  const { user, logout } = useStore();
+  const router = useRouter();
+  const { user, logout, userStatus } = useStore();
   const [showProfile, setShowProfile] = useState(false);
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [statusPickerPosition, setStatusPickerPosition] = useState({ left: 0, bottom: 0 });
+  const statusRef = useRef<HTMLButtonElement>(null);
+  
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   const handleProfileClick = () => {
     setShowProfile(true);
     onOpenProfile?.();
+  };
+
+  const handleStatusClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (statusRef.current) {
+      const rect = statusRef.current.getBoundingClientRect();
+      setStatusPickerPosition({
+        left: rect.right + 8,
+        bottom: window.innerHeight - rect.bottom,
+      });
+    }
+    setShowStatusPicker(true);
   };
 
   return (
@@ -43,7 +64,7 @@ export function NavigationRail({
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex flex-1 flex-col items-center gap-4 w-full px-2">
+      <nav className="flex flex-1 flex-col items-center gap-2 w-full px-2">
         <NavButton 
           icon={<MessageSquare className="h-5 w-5" />} 
           label="Chat" 
@@ -58,10 +79,25 @@ export function NavigationRail({
         />
         <NavButton 
           icon={<Users className="h-5 w-5" />} 
-          label="Teams" 
-          isActive={activeTab === 'teams'} 
-          onClick={() => onTabChange?.('teams')}
+          label="Friends" 
+          isActive={activeTab === 'friends'} 
+          onClick={() => onTabChange?.('friends')}
         />
+        
+        <div className="w-8 h-px bg-white/10 my-2" />
+        
+        <NavButton 
+          icon={<Settings className="h-5 w-5" />} 
+          label="Settings" 
+          onClick={() => router.push('/settings')}
+        />
+        {isAdmin && (
+          <NavButton 
+            icon={<Shield className="h-5 w-5" />} 
+            label="Admin" 
+            onClick={() => router.push('/admin')}
+          />
+        )}
       </nav>
 
       {/* Bottom Actions */}
@@ -74,24 +110,57 @@ export function NavigationRail({
           <LogOut className="h-5 w-5" />
         </button>
 
-        <button 
-          onClick={handleProfileClick}
-          className="relative h-10 w-10 shrink-0 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
-        >
-          <Avatar className="h-full w-full border-2 border-white/10">
-            <AvatarImage src={user?.avatarUrl} />
-            <AvatarFallback className={cn('text-xs', generateAvatarColor(user?.displayName || ''))}>
-              {getInitials(user?.displayName || 'U')}
-            </AvatarFallback>
-          </Avatar>
-          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={handleProfileClick}
+            className="relative h-10 w-10 shrink-0 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full block"
+            title="View Profile"
+          >
+            <Avatar className="h-full w-full border-2 border-white/10">
+              <AvatarImage src={user?.avatarUrl} />
+              <AvatarFallback className={cn('text-xs', generateAvatarColor(user?.displayName || ''))}>
+                {getInitials(user?.displayName || 'U')}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+          
+          {/* Interactive Status Dot */}
+          <button
+            ref={statusRef}
+            onClick={handleStatusClick}
+            className={cn(
+              "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center transition-transform hover:scale-125 z-10",
+              userStatus === 'online' ? "bg-green-500" :
+              userStatus === 'away' ? "bg-yellow-500" :
+              userStatus === 'busy' ? "bg-red-500" : "bg-gray-500"
+            )}
+            title="Change Status"
+          >
+             {/* Small inner dot for 'busy' to make it look like DND icon if needed, or just color */}
+             {userStatus === 'busy' && <div className="w-1.5 h-0.5 bg-white rounded-full" />}
+          </button>
+        </div>
       </div>
 
       {/* User Profile Modal */}
       {showProfile && (
         <Portal>
           <UserProfileModal onClose={() => setShowProfile(false)} />
+        </Portal>
+      )}
+
+      {/* Status Picker */}
+      {showStatusPicker && (
+        <Portal>
+          <div 
+            className="fixed z-[100]"
+            style={{ 
+              left: statusPickerPosition.left, 
+              bottom: statusPickerPosition.bottom 
+            }}
+          >
+            <StatusPicker onClose={() => setShowStatusPicker(false)} />
+          </div>
         </Portal>
       )}
     </div>

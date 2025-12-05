@@ -8,6 +8,7 @@ interface User {
   displayName: string;
   avatarUrl?: string;
   status: string;
+  role?: 'user' | 'admin' | 'owner';
 }
 
 interface Workspace {
@@ -17,11 +18,29 @@ interface Workspace {
   iconUrl?: string;
 }
 
+interface ChannelCategory {
+  id: string;
+  name: string;
+  position: number;
+  isCollapsed: boolean;
+  channels: Channel[];
+}
+
 interface Channel {
   id: string;
   name: string;
   description?: string;
   isPrivate: boolean;
+  categoryId?: string;
+  position?: number;
+}
+
+interface ScheduledMessage {
+  id: string;
+  content: string;
+  channelId: string;
+  scheduledAt: string;
+  status: 'pending' | 'sent' | 'cancelled';
 }
 
 interface Message {
@@ -157,6 +176,20 @@ interface AppState {
   dmUnreadCounts: Record<string, number>;
   incrementDmUnread: (conversationId: string) => void;
   clearDmUnread: (conversationId: string) => void;
+
+  // Channel Categories
+  categories: ChannelCategory[];
+  setCategories: (categories: ChannelCategory[]) => void;
+  addCategory: (category: ChannelCategory) => void;
+  updateCategory: (id: string, data: Partial<ChannelCategory>) => void;
+  deleteCategory: (id: string) => void;
+  toggleCategoryCollapse: (id: string) => void;
+
+  // Scheduled Messages
+  scheduledMessages: ScheduledMessage[];
+  setScheduledMessages: (messages: ScheduledMessage[]) => void;
+  addScheduledMessage: (message: ScheduledMessage) => void;
+  removeScheduledMessage: (id: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -343,6 +376,38 @@ export const useStore = create<AppState>()(
           const { [conversationId]: _, ...rest } = state.dmUnreadCounts;
           return { dmUnreadCounts: rest };
         }),
+
+      // Channel Categories
+      categories: [],
+      setCategories: (categories) => set({ categories }),
+      addCategory: (category) =>
+        set((state) => ({ categories: [...state.categories, category] })),
+      updateCategory: (id, data) =>
+        set((state) => ({
+          categories: state.categories.map((c) =>
+            c.id === id ? { ...c, ...data } : c
+          ),
+        })),
+      deleteCategory: (id) =>
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== id),
+        })),
+      toggleCategoryCollapse: (id) =>
+        set((state) => ({
+          categories: state.categories.map((c) =>
+            c.id === id ? { ...c, isCollapsed: !c.isCollapsed } : c
+          ),
+        })),
+
+      // Scheduled Messages
+      scheduledMessages: [],
+      setScheduledMessages: (messages) => set({ scheduledMessages: messages }),
+      addScheduledMessage: (message) =>
+        set((state) => ({ scheduledMessages: [...state.scheduledMessages, message] })),
+      removeScheduledMessage: (id) =>
+        set((state) => ({
+          scheduledMessages: state.scheduledMessages.filter((m) => m.id !== id),
+        })),
     }),
     {
       name: 'pulseweave-storage',

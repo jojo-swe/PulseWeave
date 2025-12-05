@@ -150,19 +150,28 @@ export default function LoginPage() {
   const showLdapTab = authConfig?.ldap?.enabled;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-950 via-background to-background p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/10 p-4 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl" />
+      </div>
+      
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
-            <Zap className="h-8 w-8 text-primary-foreground" />
+          <div className="relative inline-block mb-4">
+            <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-xl animate-pulse" />
+            <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/30">
+              <Zap className="h-8 w-8 text-white" />
+            </div>
           </div>
-          <h1 className="text-3xl font-bold">Welcome back</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">Welcome back</h1>
           <p className="text-muted-foreground mt-2">Sign in to your PulseWeave account</p>
         </div>
 
         {/* Form */}
-        <div className="bg-card rounded-xl border shadow-lg p-6">
+        <div className="bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl p-6">
           {/* Auth Method Tabs */}
           {showLdapTab && !mfaChallenge && (
             <div className="flex mb-6 p-1 bg-muted rounded-lg">
@@ -394,12 +403,17 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Demo credentials */}
-        <div className="mt-6 p-4 rounded-lg bg-muted/50 text-center">
+        {/* Footer */}
+        <div className="mt-6 p-4 rounded-xl bg-card/50 backdrop-blur border border-border/30 text-center">
           <p className="text-sm text-muted-foreground">
             New here? Create an account to get started!
           </p>
         </div>
+        
+        {/* Branding */}
+        <p className="text-center text-xs text-muted-foreground/50 mt-6">
+          PulseWeave — Real-time team communication
+        </p>
       </div>
     </div>
   );

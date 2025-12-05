@@ -11,6 +11,8 @@ import { ChatArea } from '@/components/chat/ChatArea';
 import { CommandPalette } from '@/components/chat/CommandPalette';
 import { KeyboardShortcuts } from '@/components/chat/KeyboardShortcuts';
 import { CreateChannelModal } from '@/components/chat/CreateChannelModal';
+import { ActivityPanel } from '@/components/chat/ActivityPanel';
+import { FriendsPanel } from '@/components/chat/FriendsPanel';
 import { Portal } from '@/components/ui/portal';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NavigationRail } from '@/components/chat/NavigationRail';
@@ -48,6 +50,7 @@ export default function Home() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chat' | 'activity' | 'friends'>('chat');
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -357,7 +360,10 @@ export default function Home() {
           
           {/* Navigation Rail - Desktop only */}
           <div className="hidden lg:flex shrink-0">
-            <NavigationRail />
+            <NavigationRail 
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
           </div>
 
           {/* Sidebar Panel */}
@@ -365,7 +371,15 @@ export default function Home() {
             "flex-col shrink-0 transition-all duration-300 ease-in-out lg:z-auto bg-background/20 lg:bg-transparent absolute inset-y-0 left-0 z-50",
             sidebarOpen ? "translate-x-0 w-64 border-r border-white/5 shadow-2xl lg:shadow-none lg:static" : "-translate-x-full lg:translate-x-0 lg:w-64"
           )}>
-            <Sidebar onToggle={toggleSidebar} onStartDM={handleStartDM} />
+            {activeTab === 'chat' && (
+              <Sidebar onToggle={toggleSidebar} onStartDM={handleStartDM} />
+            )}
+            {activeTab === 'activity' && (
+              <ActivityPanel />
+            )}
+            {activeTab === 'friends' && (
+              <FriendsPanel onStartDM={handleStartDM} />
+            )}
           </div>
           
           {/* Chat Area */}

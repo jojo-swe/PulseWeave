@@ -165,6 +165,7 @@ model Workspace {
   owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   members       WorkspaceMember[]
   channels      Channel[]
+  categories    ChannelCategory[]
   conversations Conversation[]
 
   @@map("workspaces")
@@ -189,19 +190,39 @@ model WorkspaceMember {
   @@map("workspace_members")
 }
 
+model ChannelCategory {
+  id          String   @id @default(cuid())
+  name        String
+  workspaceId String
+  position    Int      @default(0)
+  isCollapsed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channels  Channel[]
+
+  @@unique([workspaceId, name])
+  @@map("channel_categories")
+}
+
 model Channel {
   id          String   @id @default(cuid())
   name        String
   description String?
   workspaceId String
+  categoryId  String?
   isPrivate   Boolean  @default(false)
+  position    Int      @default(0)
   createdById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy User            @relation("ChannelCreator", fields: [createdById], references: [id])
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  category  ChannelCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy User             @relation("ChannelCreator", fields: [createdById], references: [id])
   members   ChannelMember[]
   messages  Message[]
 
@@ -246,6 +267,22 @@ model Message {
 
   @@index([channelId, createdAt])
   @@map("messages")
+}
+
+model ScheduledMessage {
+  id          String   @id @default(cuid())
+  content     String
+  channelId   String
+  userId      String
+  scheduledAt DateTime
+  status      String   @default("pending") // pending, sent, cancelled
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([scheduledAt, status])
+  @@map("scheduled_messages")
 }
 
 model Reaction {

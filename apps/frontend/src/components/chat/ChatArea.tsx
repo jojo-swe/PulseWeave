@@ -139,15 +139,46 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
 
   if (!currentChannel) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Hash className="h-8 w-8 text-primary" />
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background to-primary/5">
+        <div className="text-center max-w-md px-6">
+          {/* Animated logo */}
+          <div className="relative mb-8">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+            <div className="relative w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+              <Zap className="h-10 w-10 text-white" />
+            </div>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Welcome to PulseWeave</h2>
-          <p className="text-muted-foreground">
-            Select a channel from the sidebar to start chatting
+          
+          <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            Welcome to PulseWeave
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Select a channel from the sidebar to start chatting, or use{' '}
+            <kbd className="px-2 py-0.5 rounded bg-muted text-xs font-mono">⌘K</kbd>{' '}
+            to search
           </p>
+          
+          {/* Quick tips */}
+          <div className="grid gap-3 text-left">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Hash className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Channels</p>
+                <p className="text-xs text-muted-foreground">Join public channels or create your own</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <MessageCircle className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Direct Messages</p>
+                <p className="text-xs text-muted-foreground">Chat privately with team members</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

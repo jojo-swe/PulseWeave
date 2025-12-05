@@ -92,12 +92,21 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-violet-950 via-background to-background">
+    <div className="min-h-screen flex bg-gradient-to-br from-background via-background to-primary/10 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl" />
+      </div>
+      
       {/* Left side - Features */}
-      <div className="hidden lg:flex lg:w-1/2 p-12 items-center justify-center">
+      <div className="hidden lg:flex lg:w-1/2 p-12 items-center justify-center relative z-10">
         <div className="max-w-md">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-8">
-            <Zap className="h-8 w-8 text-primary-foreground" />
+          <div className="relative inline-block mb-8">
+            <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-xl animate-pulse" />
+            <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/30">
+              <Zap className="h-8 w-8 text-white" />
+            </div>
           </div>
           <h1 className="text-4xl font-bold mb-4">
             Team communication,{' '}
@@ -121,15 +130,18 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md">
           <div className="text-center mb-8 lg:hidden">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
-              <Zap className="h-8 w-8 text-primary-foreground" />
+            <div className="relative inline-block mb-4">
+              <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-xl animate-pulse" />
+              <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/30">
+                <Zap className="h-8 w-8 text-white" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-card rounded-xl border shadow-lg p-6">
+          <div className="bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl p-6">
             <h2 className="text-2xl font-bold mb-2">Create your account</h2>
             <p className="text-muted-foreground mb-6">
               Get started with PulseWeave in seconds

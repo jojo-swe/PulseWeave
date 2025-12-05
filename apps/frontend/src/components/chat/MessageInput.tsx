@@ -22,7 +22,10 @@ import {
   Send,
   Mic,
   Quote,
+  Clock,
 } from 'lucide-react';
+import { ScheduleMessageModal } from './ScheduleMessageModal';
+import { Portal } from '@/components/ui/portal';
 
 interface MessageInputProps {
   onSend: (content: string) => void;
@@ -58,6 +61,7 @@ export function MessageInput({
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionIndex, setMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const mentionStartRef = useRef<number>(-1);
@@ -496,6 +500,16 @@ export function MessageInput({
             <Button
               variant="ghost"
               size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title="Schedule message"
+              onClick={() => setShowScheduleModal(true)}
+              disabled={!content.trim()}
+            >
+              <Clock className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
               title="Voice messages"
               disabled
@@ -530,6 +544,19 @@ export function MessageInput({
         <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd> to send,{' '}
         <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Shift + Enter</kbd> for new line
       </p>
+
+      {/* Schedule Message Modal */}
+      {showScheduleModal && currentChannel && (
+        <Portal>
+          <ScheduleMessageModal
+            channelId={currentChannel.id}
+            channelName={currentChannel.name}
+            initialContent={content}
+            onClose={() => setShowScheduleModal(false)}
+            onScheduled={() => setContent('')}
+          />
+        </Portal>
+      )}
     </div>
   );
 }

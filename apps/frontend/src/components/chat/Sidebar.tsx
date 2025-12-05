@@ -128,22 +128,22 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                           if (window.innerWidth < 1024 && onToggle) onToggle();
                         }}
                         className={cn(
-                          'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
+                          'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-all duration-200',
                           isActive
-                            ? 'bg-sidebar-accent text-white'
+                            ? 'bg-primary/20 text-white shadow-sm'
                             : unreadCount > 0
                             ? 'text-white font-semibold hover:bg-sidebar-accent/50'
-                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                         )}
                       >
                         {channel.isPrivate ? (
-                          <Lock className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                          <Lock className={cn('h-4 w-4 transition-colors', isActive ? 'text-primary' : unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
                         ) : (
-                          <Hash className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                          <Hash className={cn('h-4 w-4 transition-colors', isActive ? 'text-primary' : unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
                         )}
                         <span className="truncate flex-1 text-left">{channel.name}</span>
                         {unreadCount > 0 && !isActive && (
-                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-white animate-pulse">
                             {unreadCount > 99 ? '99+' : unreadCount}
                           </span>
                         )}
@@ -153,7 +153,7 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                           e.stopPropagation();
                           toggleStarChannel(channel.id);
                         }}
-                        className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-sidebar-accent transition-opacity"
+                        className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-sidebar-accent transition-all duration-200"
                         title="Unstar channel"
                       >
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -207,22 +207,22 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                         if (window.innerWidth < 1024 && onToggle) onToggle();
                       }}
                       className={cn(
-                        'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
+                        'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-all duration-200',
                         isActive
-                          ? 'bg-sidebar-accent text-white'
+                          ? 'bg-primary/20 text-white shadow-sm'
                           : unreadCount > 0
                           ? 'text-white font-semibold hover:bg-sidebar-accent/50'
-                          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                       )}
                     >
                       {channel.isPrivate ? (
-                        <Lock className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                        <Lock className={cn('h-4 w-4 transition-colors', isActive ? 'text-primary' : unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
                       ) : (
-                        <Hash className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                        <Hash className={cn('h-4 w-4 transition-colors', isActive ? 'text-primary' : unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
                       )}
                       <span className="truncate flex-1 text-left">{channel.name}</span>
                       {unreadCount > 0 && !isActive && (
-                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-white animate-pulse">
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
@@ -232,7 +232,7 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                         e.stopPropagation();
                         toggleStarChannel(channel.id);
                       }}
-                      className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-sidebar-accent transition-opacity"
+                      className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-sidebar-accent transition-all duration-200"
                       title="Star channel"
                     >
                       <Star className="h-3 w-3 text-sidebar-foreground/60 hover:text-yellow-400" />

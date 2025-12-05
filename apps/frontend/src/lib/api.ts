@@ -76,10 +76,30 @@ export const api = {
     }),
 
   users: {
+    getMe: (token: string) =>
+      fetchApi<any>('/api/users/me', { token }),
     update: (data: { displayName?: string; status?: string; avatarUrl?: string }, token: string) =>
       fetchApi<any>('/api/users/me', {
         method: 'PATCH',
         body: JSON.stringify(data),
+        token,
+      }),
+    updateProfile: (data: { displayName?: string; username?: string; status?: string; statusMessage?: string | null; avatarUrl?: string | null }, token: string) =>
+      fetchApi<any>('/api/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    changePassword: (currentPassword: string, newPassword: string, token: string) =>
+      fetchApi<{ success: boolean }>('/api/users/me/password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+        token,
+      }),
+    deleteAccount: (password: string, token: string) =>
+      fetchApi<{ success: boolean }>('/api/users/me', {
+        method: 'DELETE',
+        body: JSON.stringify({ password }),
         token,
       }),
     get: (userId: string, token: string) =>
@@ -264,5 +284,60 @@ export const api = {
         token,
       }),
     getUrl: (filename: string) => `${API_URL}/uploads/${filename}`,
+  },
+  categories: {
+    list: (workspaceId: string, token: string) =>
+      fetchApi<any[]>(`/api/categories/workspace/${workspaceId}`, { token }),
+    create: (data: { name: string; workspaceId: string }, token: string) =>
+      fetchApi<any>('/api/categories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    update: (id: string, data: { name?: string; position?: number; isCollapsed?: boolean }, token: string) =>
+      fetchApi<any>(`/api/categories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    delete: (id: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/categories/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    moveChannel: (categoryId: string, channelId: string, position: number, token: string) =>
+      fetchApi<any>(`/api/categories/${categoryId}/channels/${channelId}`, {
+        method: 'POST',
+        body: JSON.stringify({ position }),
+        token,
+      }),
+  },
+  scheduled: {
+    list: (token: string) =>
+      fetchApi<any[]>('/api/scheduled', { token }),
+    listByChannel: (channelId: string, token: string) =>
+      fetchApi<any[]>(`/api/scheduled/channel/${channelId}`, { token }),
+    create: (data: { content: string; channelId: string; scheduledAt: string }, token: string) =>
+      fetchApi<any>('/api/scheduled', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    update: (id: string, data: { content?: string; scheduledAt?: string }, token: string) =>
+      fetchApi<any>(`/api/scheduled/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    cancel: (id: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/scheduled/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    sendNow: (id: string, token: string) =>
+      fetchApi<any>(`/api/scheduled/${id}/send-now`, {
+        method: 'POST',
+        token,
+      }),
   },
 };

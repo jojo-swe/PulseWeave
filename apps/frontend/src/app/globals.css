@@ -32,46 +32,45 @@
     --sidebar-accent: 262 50% 40%;
   }
 
-  /* Dark mode */
-  /* Dark mode - PulseWeave Midnight Theme */
+  /* Dark mode - PulseWeave Refined Theme */
   .dark {
-    /* Main Background: Deep Midnight Blue */
-    --background: 230 35% 7%;
-    --foreground: 210 40% 98%;
+    /* Main Background: Rich dark with subtle blue undertone */
+    --background: 224 30% 11%;
+    --foreground: 210 40% 96%;
 
-    /* Cards: Slightly lighter blue with transparency potential */
-    --card: 232 30% 12%;
-    --card-foreground: 210 40% 98%;
+    /* Cards: Elevated surfaces */
+    --card: 224 28% 14%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 232 30% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 224 28% 14%;
+    --popover-foreground: 210 40% 96%;
 
-    /* Primary: Electric Violet/Blue Pulse */
-    --primary: 250 100% 65%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Vibrant violet */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Muted Blue-Grey */
-    --secondary: 225 20% 18%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary: Subtle elevated surface */
+    --secondary: 224 24% 18%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 225 20% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 224 24% 18%;
+    --muted-foreground: 215 16% 60%;
 
-    /* Accent: Glowing Blue effect */
-    --accent: 250 60% 20%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent: Soft violet glow */
+    --accent: 262 40% 22%;
+    --accent-foreground: 210 40% 96%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 230 25% 18%;
-    --input: 230 25% 18%;
-    --ring: 250 100% 65%;
+    --border: 224 20% 20%;
+    --input: 224 24% 18%;
+    --ring: 262 83% 58%;
 
-    /* Sidebar: Glass-like dark pane */
-    --sidebar: 232 35% 9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-accent: 250 50% 15%;
+    /* Sidebar: Darker glass pane */
+    --sidebar: 224 32% 10%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-accent: 262 40% 20%;
   }
 }
 

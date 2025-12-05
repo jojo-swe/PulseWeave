@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { prisma } from '@pulseweave/database';
 import { authRouter } from './routes/auth';
 import { userRouter } from './routes/user';
 import { workspaceRouter } from './routes/workspace';
@@ -15,6 +16,8 @@ import uploadRouter from './routes/upload';
 import { mfaRouter } from './routes/mfa';
 import { adminRouter } from './routes/admin';
 import { securityRouter } from './routes/security';
+import categoryRouter from './routes/category';
+import scheduledRouter from './routes/scheduled';
 import { initializeRbac } from './services/rbac';
 import path from 'path';
 import { setupSocketHandlers } from './socket';
@@ -39,6 +42,10 @@ import {
   speedLimiter,
   requestAuditMiddleware,
 } from './middleware/advanced-security';
+import { errorHandler, notFoundHandler } from './middleware/error-handler';
+import { requestLogger } from './middleware/request-logger';
+import { setupGracefulShutdown, checkDatabaseHealth } from './utils/graceful-shutdown';
+import { logger } from './utils/logger';
 
 // Validate environment on startup
 try {
@@ -85,7 +92,10 @@ const io = new Server(httpServer, {
 // Trust proxy for rate limiting behind reverse proxy
 app.set('trust proxy', 1);
 
-// Request audit logging (first, to log all requests)
+// Request logging (first, to log all requests)
+app.use(requestLogger);
+
+// Request audit logging for security
 app.use(requestAuditMiddleware);
 
 // IP blocking check (block malicious IPs early)
@@ -144,9 +154,20 @@ app.use(speedLimiter);
 // Apply general rate limiting to all routes
 app.use(generalLimiter);
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check with database status
+app.get('/health', async (req, res) => {
+  const dbHealthy = await checkDatabaseHealth();
+  const status = dbHealthy ? 'ok' : 'degraded';
+  const statusCode = dbHealthy ? 200 : 503;
+  
+  res.status(statusCode).json({ 
+    status, 
+    timestamp: new Date().toISOString(),
+    services: {
+      database: dbHealthy ? 'healthy' : 'unhealthy',
+      websocket: 'healthy',
+    },
+  });
 });
 
 // Make io available to routes
@@ -163,9 +184,17 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/mfa', mfaRouter);
 app.use('/api/admin', authenticateToken, adminRouter);
 app.use('/api/security', authenticateToken, securityRouter);
+app.use('/api/categories', authenticateToken, categoryRouter);
+app.use('/api/scheduled', authenticateToken, scheduledRouter);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// 404 handler for undefined routes
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // Socket.io setup
 setupSocketHandlers(io);
@@ -173,31 +202,50 @@ setupSocketHandlers(io);
 const PORT = process.env.PORT || 3001;
 const protocol = sslOptions ? 'https' : 'http';
 
-httpServer.listen(PORT, async () => {
-  console.log(`🚀 PulseWeave API running on ${protocol}://localhost:${PORT}`);
-  console.log(`📡 WebSocket server ready`);
-  
-  if (sslOptions) {
-    console.log(`🔒 SSL/TLS enabled with ${sslConfig.minVersion || 'TLSv1.2'}+`);
-  } else if (process.env.NODE_ENV === 'production') {
-    console.warn('⚠️  SSL is not enabled! Set SSL_ENABLED=true in production');
-  }
-  
-  // Log security status
-  console.log('🛡️  Security features enabled:');
-  console.log('   - Rate limiting');
-  console.log('   - IP blocking');
-  console.log('   - Request auditing');
-  console.log('   - HSTS headers');
-  console.log('   - XSS protection');
-  console.log('   - CSRF protection ready');
-  
-  // Initialize RBAC system
+// Verify database connection before starting
+async function startServer(): Promise<void> {
   try {
-    await initializeRbac();
+    // Test database connection
+    logger.info('Connecting to database...');
+    await prisma.$connect();
+    logger.info('Database connected successfully');
+
+    // Start HTTP server
+    httpServer.listen(PORT, async () => {
+      logger.info(`🚀 PulseWeave API running on ${protocol}://localhost:${PORT}`);
+      logger.info('📡 WebSocket server ready');
+      
+      if (sslOptions) {
+        logger.info(`🔒 SSL/TLS enabled with ${sslConfig.minVersion || 'TLSv1.2'}+`);
+      } else if (process.env.NODE_ENV === 'production') {
+        logger.warn('⚠️  SSL is not enabled! Set SSL_ENABLED=true in production');
+      }
+      
+      // Log security status
+      logger.info('🛡️  Security features enabled:');
+      console.log('   - Rate limiting');
+      console.log('   - IP blocking');
+      console.log('   - Request auditing');
+      console.log('   - HSTS headers');
+      console.log('   - XSS protection');
+      console.log('   - CSRF protection ready');
+      
+      // Initialize RBAC system
+      try {
+        await initializeRbac();
+      } catch (error) {
+        logger.error('Failed to initialize RBAC', { error: String(error) });
+      }
+
+      // Setup graceful shutdown
+      setupGracefulShutdown(httpServer, io);
+    });
   } catch (error) {
-    console.error('Failed to initialize RBAC:', error);
+    logger.error('Failed to start server', { error: String(error) });
+    process.exit(1);
   }
-});
+}
+
+startServer();
 
 export { io };
