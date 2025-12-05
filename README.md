@@ -2,7 +2,7 @@
 
 A modern, real-time team communication platform built as a Slack alternative. Features a beautiful dark UI, real-time messaging, emoji reactions, and more.
 
-![PulseWeave](https://via.placeholder.com/800x400?text=PulseWeave+Screenshot)
+![PulseWeave](./apps/frontend/public/assets/hero-mockup.png)
 
 ## Features
 
