@@ -80,6 +80,26 @@ export function setupSocketHandlers(io: Server) {
       socket.leave(`channel:${channelId}`);
     });
 
+    // Join DM room
+    socket.on('dm:join', async (conversationId: string) => {
+      // Verify user is member of conversation
+      const membership = await prisma.conversationMember.findUnique({
+        where: {
+          userId_conversationId: { userId, conversationId },
+        },
+      });
+
+      if (membership) {
+        socket.join(`dm:${conversationId}`);
+        console.log(`User ${userId} joined DM ${conversationId}`);
+      }
+    });
+
+    // Leave DM room
+    socket.on('dm:leave', (conversationId: string) => {
+      socket.leave(`dm:${conversationId}`);
+    });
+
     // Handle new message
     socket.on('message:send', async (data: { channelId: string; content: string; parentId?: string }) => {
       try {

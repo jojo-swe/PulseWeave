@@ -25,14 +25,16 @@ import {
   MessageCircle,
   Star,
   Shield,
+  Users,
 } from 'lucide-react';
 
 interface SidebarProps {
   onCreateChannel?: () => void;
   onToggle?: () => void;
+  onStartDM?: (userId: string) => void;
 }
 
-export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
+export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
@@ -55,6 +57,11 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
     starredChannels,
     toggleStarChannel,
     userStatus,
+    conversations,
+    currentConversation,
+    setCurrentConversation,
+    dmUnreadCounts,
+    clearDmUnread,
   } = useStore();
 
   // Separate starred and regular channels
@@ -240,6 +247,78 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
           <div className="mb-4">
             <div className="flex items-center justify-between px-2 py-1">
               <span className="text-xs font-semibold uppercase tracking-wider opacity-60">
+                Direct Messages
+              </span>
+            </div>
+            <div className="mt-1 space-y-0.5">
+              {conversations.length === 0 && (
+                <div className="px-2 py-2 text-center text-sidebar-foreground/50 text-xs">
+                  Click a member below to start a DM
+                </div>
+              )}
+              {conversations.map((conv) => {
+                const otherMembers = conv.members.filter((m) => m.id !== user?.id);
+                const displayName = conv.isGroup
+                  ? conv.name || otherMembers.map((m) => m.displayName).join(', ')
+                  : otherMembers[0]?.displayName || 'Unknown';
+                const avatarMember = otherMembers[0];
+                const unreadCount = dmUnreadCounts[conv.id] || 0;
+                const isActive = currentConversation?.id === conv.id;
+
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => {
+                      setCurrentConversation(conv);
+                      if (unreadCount > 0) clearDmUnread(conv.id);
+                      if (window.innerWidth < 1024 && onToggle) onToggle();
+                    }}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
+                      isActive
+                        ? 'bg-sidebar-accent text-white'
+                        : unreadCount > 0
+                        ? 'text-white font-semibold hover:bg-sidebar-accent/50'
+                        : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                    )}
+                  >
+                    <div className="relative">
+                      {conv.isGroup ? (
+                        <div className="h-6 w-6 rounded-full bg-sidebar-accent flex items-center justify-center">
+                          <Users className="h-3 w-3" />
+                        </div>
+                      ) : (
+                        <>
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={avatarMember?.avatarUrl} />
+                            <AvatarFallback className={cn('text-xs', generateAvatarColor(displayName))}>
+                              {getInitials(displayName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <PresenceIndicator
+                            status={(avatarMember?.status as 'online' | 'away' | 'dnd' | 'offline') || 'offline'}
+                            size="sm"
+                            className="absolute -bottom-0.5 -right-0.5"
+                          />
+                        </>
+                      )}
+                    </div>
+                    <span className="truncate flex-1 text-left">{displayName}</span>
+                    {unreadCount > 0 && !isActive && (
+                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Team Members Section */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="text-xs font-semibold uppercase tracking-wider opacity-60">
                 Team Members
               </span>
             </div>
@@ -253,7 +332,14 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
               {onlineMembers.map(({ user: member }) => (
                 <button
                   key={member.id}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent/50 transition-colors"
+                  onClick={() => member.id !== user?.id && onStartDM?.(member.id)}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
+                    member.id === user?.id
+                      ? 'text-sidebar-foreground/80 cursor-default'
+                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                  )}
+                  title={member.id === user?.id ? undefined : `Message ${member.displayName}`}
                 >
                   <div className="relative">
                     <Avatar className="h-6 w-6">
@@ -278,7 +364,9 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
               {offlineMembers.map(({ user: member }) => (
                 <button
                   key={member.id}
+                  onClick={() => member.id !== user?.id && onStartDM?.(member.id)}
                   className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent/50 transition-colors"
+                  title={`Message ${member.displayName}`}
                 >
                   <div className="relative">
                     <Avatar className="h-6 w-6 opacity-50">

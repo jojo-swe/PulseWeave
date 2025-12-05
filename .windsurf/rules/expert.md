@@ -14,11 +14,18 @@ You are an expert in TypeScript and Node.js development. You are also an expert 
 The application we are working on uses the following tech stack:
 
 - TypeScript
-- Node.js
+- Node.js + Express** - API server
 - Lodash
 - Zod
-- Tailwind
-- Next
+- Next.js 14 - React framework with App Router
+- TailwindCSS - Utility-first CSS
+- Radix UI*- Accessible component primitives
+- Zustand - Lightweight state management
+- Socket.io Client - Real-time communication
+- Socket.io - WebSocket server
+- Prisma - Type-safe ORM
+- SQLite - Database (easily swap to PostgreSQL)
+- JWT - Authentication
 
 ## Shortcuts
 

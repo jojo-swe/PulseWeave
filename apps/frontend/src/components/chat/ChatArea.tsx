@@ -13,7 +13,9 @@ import { PinnedMessagesPanel } from './PinnedMessagesPanel';
 import { Portal } from '@/components/ui/portal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap } from 'lucide-react';
+import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap, MessageCircle } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getInitials, generateAvatarColor } from '@/lib/utils';
 
 interface ChatAreaProps {
   onSendMessage: (content: string) => void;
@@ -30,12 +32,110 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [pinnedOpen, setPinnedOpen] = useState(false);
-  const { currentChannel, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList, starredChannels, toggleStarChannel } = useStore();
+  const { currentChannel, currentConversation, directMessages, user, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList, starredChannels, toggleStarChannel } = useStore();
 
   // Get typing users for current channel
   const channelTypingUsers = Array.from(typingUsers.entries())
     .filter(([key]) => key.startsWith(`${currentChannel?.id}:`))
     .map(([, value]) => value.username);
+
+  // Get DM conversation display info
+  const dmOtherMembers = currentConversation?.members.filter((m) => m.id !== user?.id) || [];
+  const dmDisplayName = currentConversation?.isGroup
+    ? currentConversation.name || dmOtherMembers.map((m) => m.displayName).join(', ')
+    : dmOtherMembers[0]?.displayName || 'Unknown';
+  const dmAvatarMember = dmOtherMembers[0];
+
+  // Show DM conversation view
+  if (currentConversation) {
+    return (
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col bg-background min-w-0">
+          {/* DM Header */}
+          <div className="h-14 flex items-center justify-between px-2 sm:px-4 border-b shrink-0">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 lg:hidden"
+                onClick={onToggleSidebar}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              {currentConversation.isGroup ? (
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+              ) : (
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={dmAvatarMember?.avatarUrl} />
+                  <AvatarFallback className={cn('text-xs', generateAvatarColor(dmDisplayName))}>
+                    {getInitials(dmDisplayName)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <div>
+                <h1 className="font-semibold">{dmDisplayName}</h1>
+                {!currentConversation.isGroup && dmAvatarMember?.status && (
+                  <p className="text-xs text-muted-foreground capitalize">{dmAvatarMember.status}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* DM Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {directMessages.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MessageCircle className="h-8 w-8 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold mb-2">Start the conversation</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Send a message to {dmDisplayName}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              directMessages.map((message) => (
+                <div key={message.id} className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={message.user.avatarUrl} />
+                    <AvatarFallback className={cn('text-xs', generateAvatarColor(message.user.displayName))}>
+                      {getInitials(message.user.displayName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-sm">{message.user.displayName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-sm break-words">{message.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Message Input */}
+          <MessageInput onSend={onSendMessage} onTyping={onTyping} placeholder={`Message ${dmDisplayName}`} />
+        </div>
+      </div>
+    );
+  }
 
   if (!currentChannel) {
     return (

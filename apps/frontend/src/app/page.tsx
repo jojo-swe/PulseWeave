@@ -10,6 +10,7 @@ import { Sidebar } from '@/components/chat/Sidebar';
 import { ChatArea } from '@/components/chat/ChatArea';
 import { CommandPalette } from '@/components/chat/CommandPalette';
 import { KeyboardShortcuts } from '@/components/chat/KeyboardShortcuts';
+import { CreateChannelModal } from '@/components/chat/CreateChannelModal';
 import { Portal } from '@/components/ui/portal';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -31,12 +32,20 @@ export default function Home() {
     clearUserTyping,
     sidebarOpen,
     toggleSidebar,
+    // DM state
+    currentConversation,
+    setConversations,
+    addConversation,
+    setCurrentConversation,
+    setDirectMessages,
+    addDirectMessage,
   } = useStore();
 
   const [loading, setLoading] = useState(true);
   const [hydrated, setHydrated] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [createChannelOpen, setCreateChannelOpen] = useState(false);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -119,6 +128,26 @@ export default function Home() {
             }
           });
 
+          // Listen for DM messages
+          socket.on('dm:message', (message: any) => {
+            const state = useStore.getState();
+            if (state.currentConversation?.id === message.conversationId) {
+              addDirectMessage(message);
+            }
+            // Handle messages from other users
+            if (message.userId !== state.user?.id) {
+              if (message.conversationId !== state.currentConversation?.id) {
+                state.incrementDmUnread(message.conversationId);
+              }
+              playNotificationSound();
+              notifyNewMessage(
+                message.user.displayName,
+                'Direct Message',
+                message.content
+              );
+            }
+          });
+
           socket.on('user:status', ({ userId, status }: { userId: string; status: string }) => {
             updateMemberStatus(userId, status);
           });
@@ -160,7 +189,59 @@ export default function Home() {
     loadMessages();
   }, [currentChannel, token, setMessages]);
 
+  // Load DM messages when conversation changes
+  useEffect(() => {
+    if (!token || !currentConversation) return;
+
+    const loadDmMessages = async () => {
+      try {
+        const { messages } = await api.dm.getMessages(currentConversation.id, token);
+        setDirectMessages(messages);
+        // Join DM room for real-time updates
+        const socket = getSocket();
+        if (socket) {
+          socket.emit('dm:join', currentConversation.id);
+        }
+        // Clear unread when viewing conversation
+        useStore.getState().clearDmUnread(currentConversation.id);
+      } catch (error) {
+        console.error('Failed to load DM messages:', error);
+      }
+    };
+
+    loadDmMessages();
+  }, [currentConversation, token, setDirectMessages]);
+
+  // Load conversations on workspace load
+  useEffect(() => {
+    if (!token || !currentWorkspace) return;
+
+    const loadConversations = async () => {
+      try {
+        const conversations = await api.dm.list(currentWorkspace.id, token);
+        setConversations(conversations);
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+      }
+    };
+
+    loadConversations();
+  }, [currentWorkspace, token, setConversations]);
+
   const handleSendMessage = async (content: string) => {
+    // Handle DM messages
+    if (currentConversation) {
+      if (!token) return;
+      try {
+        const message = await api.dm.sendMessage(currentConversation.id, content, token);
+        addDirectMessage(message);
+      } catch (error) {
+        console.error('Failed to send DM:', error);
+      }
+      return;
+    }
+
+    // Handle channel messages
     if (!token || !currentChannel) return;
 
     try {
@@ -171,6 +252,20 @@ export default function Home() {
       addMessage(message);
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const handleStartDM = async (userId: string) => {
+    if (!token || !currentWorkspace) return;
+
+    try {
+      const conversation = await api.dm.start(currentWorkspace.id, userId, token);
+      // Add to conversations if not already there
+      addConversation(conversation);
+      // Switch to this conversation
+      setCurrentConversation(conversation);
+    } catch (error) {
+      console.error('Failed to start DM:', error);
     }
   };
 
@@ -260,7 +355,7 @@ export default function Home() {
           transform transition-transform duration-200 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
-          <Sidebar onToggle={toggleSidebar} />
+          <Sidebar onToggle={toggleSidebar} onStartDM={handleStartDM} />
         </div>
         
         <ChatArea
@@ -282,6 +377,15 @@ export default function Home() {
                 setCommandPaletteOpen(false);
                 setShortcutsOpen(true);
               }}
+              onStartDM={handleStartDM}
+              onCreateChannel={() => {
+                setCommandPaletteOpen(false);
+                setCreateChannelOpen(true);
+              }}
+              onOpenSettings={() => {
+                setCommandPaletteOpen(false);
+                router.push('/settings');
+              }}
               onLogout={() => {
                 useStore.getState().logout();
                 router.push('/login');
@@ -294,6 +398,26 @@ export default function Home() {
         {shortcutsOpen && (
           <Portal>
             <KeyboardShortcuts onClose={() => setShortcutsOpen(false)} />
+          </Portal>
+        )}
+
+        {/* Create Channel Modal */}
+        {createChannelOpen && (
+          <Portal>
+            <CreateChannelModal
+              onClose={() => setCreateChannelOpen(false)}
+              onCreate={async (name, description, isPrivate) => {
+                if (!token || !currentWorkspace) return;
+                const channel = await api.channels.create({
+                  workspaceId: currentWorkspace.id,
+                  name,
+                  description: description || undefined,
+                  isPrivate,
+                }, token);
+                useStore.getState().addChannel(channel);
+                useStore.getState().setCurrentChannel(channel);
+              }}
+            />
           </Portal>
         )}
       </div>

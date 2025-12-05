@@ -52,6 +52,14 @@ export function leaveChannel(channelId: string): void {
   socket?.emit('channel:leave', channelId);
 }
 
+export function joinDM(conversationId: string): void {
+  socket?.emit('dm:join', conversationId);
+}
+
+export function leaveDM(conversationId: string): void {
+  socket?.emit('dm:leave', conversationId);
+}
+
 export function sendMessage(channelId: string, content: string, parentId?: string): void {
   socket?.emit('message:send', { channelId, content, parentId });
 }

@@ -496,8 +496,9 @@ export function MessageInput({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Voice message (coming soon)"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+              title="Voice messages"
+              disabled
             >
               <Mic className="h-4 w-4" />
             </Button>

@@ -46,6 +46,40 @@ interface Message {
   }>;
 }
 
+interface Conversation {
+  id: string;
+  isGroup: boolean;
+  name?: string;
+  members: Array<{
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl?: string;
+    status?: string;
+  }>;
+  lastMessage?: {
+    id: string;
+    content: string;
+    createdAt: string;
+    user: { id: string; displayName: string };
+  };
+  updatedAt: string;
+}
+
+interface DirectMessage {
+  id: string;
+  content: string;
+  conversationId: string;
+  userId: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl?: string;
+  };
+  createdAt: string;
+}
+
 interface AppState {
   // Auth
   token: string | null;
@@ -110,6 +144,19 @@ interface AppState {
   // User Status
   userStatus: 'online' | 'away' | 'busy' | 'offline';
   setUserStatus: (status: 'online' | 'away' | 'busy' | 'offline') => void;
+
+  // Direct Messages
+  conversations: Conversation[];
+  currentConversation: Conversation | null;
+  directMessages: DirectMessage[];
+  setConversations: (conversations: Conversation[]) => void;
+  addConversation: (conversation: Conversation) => void;
+  setCurrentConversation: (conversation: Conversation | null) => void;
+  setDirectMessages: (messages: DirectMessage[]) => void;
+  addDirectMessage: (message: DirectMessage) => void;
+  dmUnreadCounts: Record<string, number>;
+  incrementDmUnread: (conversationId: string) => void;
+  clearDmUnread: (conversationId: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -131,7 +178,7 @@ export const useStore = create<AppState>()(
       // Channels
       currentChannel: null,
       channels: [],
-      setCurrentChannel: (channel) => set({ currentChannel: channel, messages: [] }),
+      setCurrentChannel: (channel) => set({ currentChannel: channel, currentConversation: null, messages: [] }),
       setChannels: (channels) => set({ channels }),
       addChannel: (channel) => set((state) => ({ channels: [...state.channels, channel] })),
 
@@ -262,6 +309,40 @@ export const useStore = create<AppState>()(
       // User Status
       userStatus: 'online',
       setUserStatus: (status) => set({ userStatus: status }),
+
+      // Direct Messages
+      conversations: [],
+      currentConversation: null,
+      directMessages: [],
+      setConversations: (conversations) => set({ conversations }),
+      addConversation: (conversation) =>
+        set((state) => {
+          const exists = state.conversations.some((c) => c.id === conversation.id);
+          if (exists) return state;
+          return { conversations: [conversation, ...state.conversations] };
+        }),
+      setCurrentConversation: (conversation) =>
+        set({ currentConversation: conversation, currentChannel: null, directMessages: [] }),
+      setDirectMessages: (messages) => set({ directMessages: messages }),
+      addDirectMessage: (message) =>
+        set((state) => {
+          const exists = state.directMessages.some((m) => m.id === message.id);
+          if (exists) return state;
+          return { directMessages: [...state.directMessages, message] };
+        }),
+      dmUnreadCounts: {},
+      incrementDmUnread: (conversationId) =>
+        set((state) => ({
+          dmUnreadCounts: {
+            ...state.dmUnreadCounts,
+            [conversationId]: (state.dmUnreadCounts[conversationId] || 0) + 1,
+          },
+        })),
+      clearDmUnread: (conversationId) =>
+        set((state) => {
+          const { [conversationId]: _, ...rest } = state.dmUnreadCounts;
+          return { dmUnreadCounts: rest };
+        }),
     }),
     {
       name: 'pulseweave-storage',
