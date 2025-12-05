@@ -101,6 +101,15 @@ interface AppState {
   // Thread
   activeThread: Message | null;
   setActiveThread: (message: Message | null) => void;
+
+  // Starred Channels
+  starredChannels: Set<string>;
+  toggleStarChannel: (channelId: string) => void;
+  isChannelStarred: (channelId: string) => boolean;
+
+  // User Status
+  userStatus: 'online' | 'away' | 'busy' | 'offline';
+  setUserStatus: (status: 'online' | 'away' | 'busy' | 'offline') => void;
 }
 
 export const useStore = create<AppState>()(
@@ -235,6 +244,24 @@ export const useStore = create<AppState>()(
       // Thread
       activeThread: null,
       setActiveThread: (message) => set({ activeThread: message }),
+
+      // Starred Channels
+      starredChannels: new Set<string>(),
+      toggleStarChannel: (channelId) =>
+        set((state) => {
+          const newStarred = new Set(state.starredChannels);
+          if (newStarred.has(channelId)) {
+            newStarred.delete(channelId);
+          } else {
+            newStarred.add(channelId);
+          }
+          return { starredChannels: newStarred };
+        }),
+      isChannelStarred: (channelId) => get().starredChannels.has(channelId),
+
+      // User Status
+      userStatus: 'online',
+      setUserStatus: (status) => set({ userStatus: status }),
     }),
     {
       name: 'pulseweave-storage',
@@ -242,6 +269,13 @@ export const useStore = create<AppState>()(
         token: state.token,
         user: state.user,
         currentWorkspace: state.currentWorkspace,
+        starredChannels: Array.from(state.starredChannels),
+        userStatus: state.userStatus,
+      }),
+      merge: (persistedState: any, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        starredChannels: new Set(persistedState?.starredChannels || []),
       }),
     }
   )

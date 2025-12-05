@@ -8,6 +8,9 @@ import { connectSocket, joinWorkspace, joinChannel, getSocket, startTyping } fro
 import { requestNotificationPermission, notifyNewMessage, playNotificationSound } from '@/lib/notifications';
 import { Sidebar } from '@/components/chat/Sidebar';
 import { ChatArea } from '@/components/chat/ChatArea';
+import { CommandPalette } from '@/components/chat/CommandPalette';
+import { KeyboardShortcuts } from '@/components/chat/KeyboardShortcuts';
+import { Portal } from '@/components/ui/portal';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function Home() {
@@ -32,6 +35,27 @@ export default function Home() {
 
   const [loading, setLoading] = useState(true);
   const [hydrated, setHydrated] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+K or Cmd+K - Open command palette
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
+      }
+      // Ctrl+/ - Open keyboard shortcuts
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setShortcutsOpen(prev => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Wait for Zustand to hydrate from localStorage
   useEffect(() => {
@@ -248,6 +272,30 @@ export default function Home() {
           onToggleSidebar={toggleSidebar}
           onSendReply={handleSendReply}
         />
+
+        {/* Command Palette */}
+        {commandPaletteOpen && (
+          <Portal>
+            <CommandPalette
+              onClose={() => setCommandPaletteOpen(false)}
+              onOpenShortcuts={() => {
+                setCommandPaletteOpen(false);
+                setShortcutsOpen(true);
+              }}
+              onLogout={() => {
+                useStore.getState().logout();
+                router.push('/login');
+              }}
+            />
+          </Portal>
+        )}
+
+        {/* Keyboard Shortcuts */}
+        {shortcutsOpen && (
+          <Portal>
+            <KeyboardShortcuts onClose={() => setShortcutsOpen(false)} />
+          </Portal>
+        )}
       </div>
     </TooltipProvider>
   );

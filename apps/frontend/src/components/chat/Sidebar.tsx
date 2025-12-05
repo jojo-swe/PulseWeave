@@ -11,6 +11,7 @@ import { PresenceIndicator } from '@/components/ui/presence-indicator';
 import { CreateChannelModal } from './CreateChannelModal';
 import { UserProfileModal } from './UserProfileModal';
 import { WorkspaceSettingsModal } from './WorkspaceSettingsModal';
+import { StatusPicker } from './StatusPicker';
 import { Portal } from '@/components/ui/portal';
 import {
   Hash,
@@ -20,6 +21,7 @@ import {
   Settings,
   LogOut,
   MessageCircle,
+  Star,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,6 +33,7 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
   
   const {
     user,
@@ -44,7 +47,14 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
     logout,
     unreadCounts,
     clearUnread,
+    starredChannels,
+    toggleStarChannel,
+    userStatus,
   } = useStore();
+
+  // Separate starred and regular channels
+  const starredChannelsList = channels.filter(c => starredChannels.has(c.id));
+  const regularChannels = channels.filter(c => !starredChannels.has(c.id));
 
   const onlineMembers = members.filter((m) => m.user.status === 'online');
   const offlineMembers = members.filter((m) => m.user.status !== 'online');
@@ -83,6 +93,66 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
 
       <ScrollArea className="flex-1">
         <div className="p-2">
+          {/* Starred Channels Section */}
+          {starredChannelsList.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-xs font-semibold uppercase tracking-wider opacity-60 flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  Starred
+                </span>
+              </div>
+              <div className="mt-1 space-y-0.5">
+                {starredChannelsList.map((channel) => {
+                  const unreadCount = unreadCounts[channel.id] || 0;
+                  const isActive = currentChannel?.id === channel.id;
+                  
+                  return (
+                    <div key={channel.id} className="group relative flex items-center">
+                      <button
+                        onClick={() => {
+                          setCurrentChannel(channel);
+                          if (unreadCount > 0) clearUnread(channel.id);
+                          if (window.innerWidth < 1024 && onToggle) onToggle();
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
+                          isActive
+                            ? 'bg-sidebar-accent text-white'
+                            : unreadCount > 0
+                            ? 'text-white font-semibold hover:bg-sidebar-accent/50'
+                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                        )}
+                      >
+                        {channel.isPrivate ? (
+                          <Lock className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                        ) : (
+                          <Hash className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                        )}
+                        <span className="truncate flex-1 text-left">{channel.name}</span>
+                        {unreadCount > 0 && !isActive && (
+                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStarChannel(channel.id);
+                        }}
+                        className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-sidebar-accent transition-opacity"
+                        title="Unstar channel"
+                      >
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Channels Section */}
           <div className="mb-4">
             <div className="flex items-center justify-between px-2 py-1">
@@ -112,44 +182,50 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
                   </button>
                 </div>
               )}
-              {channels.map((channel) => {
+              {regularChannels.map((channel) => {
                 const unreadCount = unreadCounts[channel.id] || 0;
                 const isActive = currentChannel?.id === channel.id;
                 
                 return (
-                  <button
-                    key={channel.id}
-                    onClick={() => {
-                      setCurrentChannel(channel);
-                      if (unreadCount > 0) {
-                        clearUnread(channel.id);
-                      }
-                      // Close sidebar on mobile
-                      if (window.innerWidth < 1024 && onToggle) {
-                        onToggle();
-                      }
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
-                      isActive
-                        ? 'bg-sidebar-accent text-white'
-                        : unreadCount > 0
-                        ? 'text-white font-semibold hover:bg-sidebar-accent/50'
-                        : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
-                    )}
-                  >
-                    {channel.isPrivate ? (
-                      <Lock className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
-                    ) : (
-                      <Hash className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
-                    )}
-                    <span className="truncate flex-1 text-left">{channel.name}</span>
-                    {unreadCount > 0 && !isActive && (
-                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
+                  <div key={channel.id} className="group relative flex items-center">
+                    <button
+                      onClick={() => {
+                        setCurrentChannel(channel);
+                        if (unreadCount > 0) clearUnread(channel.id);
+                        if (window.innerWidth < 1024 && onToggle) onToggle();
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
+                        isActive
+                          ? 'bg-sidebar-accent text-white'
+                          : unreadCount > 0
+                          ? 'text-white font-semibold hover:bg-sidebar-accent/50'
+                          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                      )}
+                    >
+                      {channel.isPrivate ? (
+                        <Lock className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                      ) : (
+                        <Hash className={cn('h-4 w-4', unreadCount > 0 ? 'opacity-100' : 'opacity-60')} />
+                      )}
+                      <span className="truncate flex-1 text-left">{channel.name}</span>
+                      {unreadCount > 0 && !isActive && (
+                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStarChannel(channel.id);
+                      }}
+                      className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-sidebar-accent transition-opacity"
+                      title="Star channel"
+                    >
+                      <Star className="h-3 w-3 text-sidebar-foreground/60 hover:text-yellow-400" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -223,28 +299,48 @@ export function Sidebar({ onCreateChannel, onToggle }: SidebarProps) {
       {/* User Footer */}
       <div className="border-t border-white/10 p-2">
         <div className="flex items-center gap-2 rounded px-2 py-2">
-          <button 
-            onClick={() => setShowProfile(true)}
-            className="flex items-center gap-2 flex-1 min-w-0 hover:bg-sidebar-accent rounded px-1 py-1 -ml-1 transition-colors"
-          >
-            <div className="relative">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatarUrl} />
-                <AvatarFallback className={cn(generateAvatarColor(user?.displayName || ''))}>
-                  {getInitials(user?.displayName || 'U')}
-                </AvatarFallback>
-              </Avatar>
-              <PresenceIndicator 
-                status={(user?.status as 'online' | 'away' | 'dnd' | 'offline') || 'online'} 
-                size="sm" 
-                className="absolute -bottom-0.5 -right-0.5" 
-              />
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium truncate">{user?.displayName}</p>
-              <p className="text-xs opacity-60 truncate">@{user?.username}</p>
-            </div>
-          </button>
+          <div className="relative flex items-center gap-2 flex-1 min-w-0">
+            <button 
+              onClick={() => setShowProfile(true)}
+              className="flex items-center gap-2 flex-1 min-w-0 hover:bg-sidebar-accent rounded px-1 py-1 -ml-1 transition-colors"
+            >
+              <div className="relative">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.avatarUrl} />
+                  <AvatarFallback className={cn(generateAvatarColor(user?.displayName || ''))}>
+                    {getInitials(user?.displayName || 'U')}
+                  </AvatarFallback>
+                </Avatar>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowStatusPicker(true);
+                  }}
+                  className="absolute -bottom-0.5 -right-0.5 hover:scale-110 transition-transform"
+                  title="Change status"
+                >
+                  <PresenceIndicator 
+                    status={userStatus === 'busy' ? 'dnd' : userStatus} 
+                    size="sm" 
+                  />
+                </button>
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium truncate">{user?.displayName}</p>
+                <p className="text-xs opacity-60 truncate">
+                  {userStatus === 'online' ? 'Active' : 
+                   userStatus === 'away' ? 'Away' : 
+                   userStatus === 'busy' ? 'Do Not Disturb' : 'Invisible'}
+                </p>
+              </div>
+            </button>
+            {/* Status Picker */}
+            {showStatusPicker && (
+              <div className="absolute bottom-full left-0 mb-2">
+                <StatusPicker onClose={() => setShowStatusPicker(false)} />
+              </div>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="icon"

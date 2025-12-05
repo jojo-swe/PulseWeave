@@ -12,6 +12,7 @@ import { NotificationCenter } from './NotificationCenter';
 import { PinnedMessagesPanel } from './PinnedMessagesPanel';
 import { Portal } from '@/components/ui/portal';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap } from 'lucide-react';
 
 interface ChatAreaProps {
@@ -29,7 +30,7 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [pinnedOpen, setPinnedOpen] = useState(false);
-  const { currentChannel, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList } = useStore();
+  const { currentChannel, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList, starredChannels, toggleStarChannel } = useStore();
 
   // Get typing users for current channel
   const channelTypingUsers = Array.from(typingUsers.entries())
@@ -85,8 +86,17 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex">
-              <Star className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hidden sm:flex"
+              onClick={() => currentChannel && toggleStarChannel(currentChannel.id)}
+              title={starredChannels.has(currentChannel?.id || '') ? 'Unstar channel' : 'Star channel'}
+            >
+              <Star className={cn(
+                'h-4 w-4',
+                starredChannels.has(currentChannel?.id || '') && 'fill-yellow-400 text-yellow-400'
+              )} />
             </Button>
             <Button variant="ghost" size="sm" className="gap-1 hidden sm:flex">
               <Users className="h-4 w-4" />
