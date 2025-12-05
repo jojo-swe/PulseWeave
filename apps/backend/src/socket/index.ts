@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 import { JWT_SECRET } from '../middleware/auth';
 
 interface AuthenticatedSocket extends Socket {
@@ -30,6 +30,15 @@ export function setupSocketHandlers(io: Server) {
   io.on('connection', async (socket: AuthenticatedSocket) => {
     const userId = socket.userId!;
     console.log(`User connected: ${userId}`);
+
+    // Verify user exists before proceeding
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      console.warn(`Socket connection rejected: user ${userId} not found (stale token?)`);
+      socket.emit('error', { message: 'User not found. Please log in again.' });
+      socket.disconnect(true);
+      return;
+    }
 
     // Track user's socket connections
     if (!userSockets.has(userId)) {

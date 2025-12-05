@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '@chatterbox/database';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireAdmin, requireOwner, requirePermission } from '../middleware/rbac';
 import { assignRole, getUserPermissions, PERMISSIONS } from '../services/rbac';
@@ -421,6 +423,193 @@ router.post(
     } catch (error) {
       console.error('Unban user error:', error);
       res.status(500).json({ error: 'Failed to unban user' });
+    }
+  }
+);
+
+const createUserSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3).max(30),
+  displayName: z.string().min(1).max(50),
+  password: z.string().min(8),
+  roleName: z.enum(['admin', 'moderator', 'member', 'guest']).default('member'),
+});
+
+/**
+ * Create a new user and add to workspace.
+ */
+router.post(
+  '/workspaces/:workspaceId/users',
+  authenticateToken,
+  requirePermission(PERMISSIONS.workspace.manageMembers),
+  async (req: AuthRequest, res) => {
+    try {
+      const { workspaceId } = req.params;
+      const data = createUserSchema.parse(req.body);
+
+      // Check if user already exists
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [{ email: data.email }, { username: data.username }],
+        },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email or username already exists' });
+      }
+
+      // Create user
+      const passwordHash = await bcrypt.hash(data.password, 12);
+      const user = await prisma.user.create({
+        data: {
+          email: data.email,
+          username: data.username,
+          displayName: data.displayName,
+          passwordHash,
+        },
+      });
+
+      // Add to workspace
+      await prisma.workspaceMember.create({
+        data: {
+          userId: user.id,
+          workspaceId,
+          roleName: data.roleName,
+          invitedBy: req.userId,
+        },
+      });
+
+      // Log the action
+      await prisma.auditLog.create({
+        data: {
+          userId: req.userId,
+          action: 'USER_CREATED',
+          resource: 'user',
+          resourceId: user.id,
+          details: JSON.stringify({ workspaceId, email: data.email, roleName: data.roleName }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
+
+      res.status(201).json({ success: true, user: { id: user.id, email: user.email, username: user.username } });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Create user error:', error);
+      res.status(500).json({ error: 'Failed to create user' });
+    }
+  }
+);
+
+/**
+ * Reset a user's password.
+ */
+router.post(
+  '/workspaces/:workspaceId/users/:userId/reset-password',
+  authenticateToken,
+  requirePermission(PERMISSIONS.user.ban), // Reuse ban permission for password reset
+  async (req: AuthRequest, res) => {
+    try {
+      const { workspaceId, userId } = req.params;
+      const { newPassword } = z.object({ newPassword: z.string().min(8) }).parse(req.body);
+
+      // Check user exists in workspace
+      const member = await prisma.workspaceMember.findUnique({
+        where: { userId_workspaceId: { userId, workspaceId } },
+      });
+
+      if (!member) {
+        return res.status(404).json({ error: 'User not found in workspace' });
+      }
+
+      // Can't reset owner's password unless you're also owner
+      if (member.roleName === 'owner') {
+        const currentMember = await prisma.workspaceMember.findUnique({
+          where: { userId_workspaceId: { userId: req.userId!, workspaceId } },
+        });
+        if (currentMember?.roleName !== 'owner') {
+          return res.status(403).json({ error: 'Cannot reset owner password' });
+        }
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+      });
+
+      // Log the action
+      await prisma.auditLog.create({
+        data: {
+          userId: req.userId,
+          action: 'PASSWORD_RESET',
+          resource: 'user',
+          resourceId: userId,
+          details: JSON.stringify({ workspaceId, resetBy: req.userId }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
+
+      res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Reset password error:', error);
+      res.status(500).json({ error: 'Failed to reset password' });
+    }
+  }
+);
+
+/**
+ * Delete a user completely.
+ */
+router.delete(
+  '/users/:userId',
+  authenticateToken,
+  requireAdmin,
+  async (req: AuthRequest, res: any) => {
+    try {
+      const { userId } = req.params;
+
+      if (userId === req.userId) {
+        return res.status(400).json({ error: 'Cannot delete yourself' });
+      }
+
+      // Check if user is an owner of any workspace
+      const ownerMemberships = await prisma.workspaceMember.findMany({
+        where: { userId, roleName: 'owner' },
+      });
+
+      if (ownerMemberships.length > 0) {
+        return res.status(400).json({ error: 'Cannot delete user who owns workspaces. Transfer ownership first.' });
+      }
+
+      // Delete user (cascades to memberships, messages, etc.)
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+
+      // Log the action
+      await prisma.auditLog.create({
+        data: {
+          userId: req.userId,
+          action: 'USER_DELETED',
+          resource: 'user',
+          resourceId: userId,
+          details: JSON.stringify({ deletedBy: req.userId }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
+
+      res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ error: 'Failed to delete user' });
     }
   }
 );

@@ -7,14 +7,20 @@ import { useStore } from '@/store';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Zap, Loader2, Building2, User } from 'lucide-react';
+import { Zap, Loader2, Building2, User, ShieldCheck, KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type AuthMethod = 'local' | 'ldap';
+type MfaMethod = 'totp' | 'backup';
 
 interface AuthConfig {
   ldap: { enabled: boolean };
   localAuth: boolean;
+}
+
+interface MfaChallenge {
+  mfaToken: string;
+  userId: string;
 }
 
 export default function LoginPage() {
@@ -30,6 +36,11 @@ export default function LoginPage() {
   // LDAP auth state
   const [ldapUsername, setLdapUsername] = useState('');
   const [ldapPassword, setLdapPassword] = useState('');
+  
+  // MFA state
+  const [mfaChallenge, setMfaChallenge] = useState<MfaChallenge | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaMethod, setMfaMethod] = useState<MfaMethod>('totp');
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,14 +58,63 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { user, token, workspace } = await api.auth.login({ email, password });
-      setAuth(token, user);
-      if (workspace) {
-        setCurrentWorkspace(workspace);
+      const response = await api.post<{
+        user?: any;
+        token?: string;
+        workspace?: any;
+        mfaRequired?: boolean;
+        mfaToken?: string;
+        userId?: string;
+      }>('/auth/login', { email, password });
+
+      if (response.mfaRequired && response.mfaToken) {
+        // MFA required - show MFA form
+        setMfaChallenge({
+          mfaToken: response.mfaToken,
+          userId: response.userId!,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // No MFA - complete login
+      setAuth(response.token!, response.user);
+      if (response.workspace) {
+        setCurrentWorkspace(response.workspace);
       }
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaChallenge) return;
+    
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.post<{
+        user: any;
+        token: string;
+        workspace: any;
+      }>('/auth/mfa/verify', {
+        mfaToken: mfaChallenge.mfaToken,
+        code: mfaCode,
+        type: mfaMethod,
+      });
+
+      setAuth(response.token, response.user);
+      if (response.workspace) {
+        setCurrentWorkspace(response.workspace);
+      }
+      router.push('/');
+    } catch (err: any) {
+      setError(err.message || 'Invalid verification code');
     } finally {
       setLoading(false);
     }
@@ -104,7 +164,7 @@ export default function LoginPage() {
         {/* Form */}
         <div className="bg-card rounded-xl border shadow-lg p-6">
           {/* Auth Method Tabs */}
-          {showLdapTab && (
+          {showLdapTab && !mfaChallenge && (
             <div className="flex mb-6 p-1 bg-muted rounded-lg">
               <button
                 type="button"
@@ -141,82 +201,65 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Local Auth Form */}
-          {authMethod === 'local' && (
-            <form onSubmit={handleLocalSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
+          {/* MFA Challenge Form */}
+          {mfaChallenge ? (
+            <form onSubmit={handleMfaSubmit} className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
+                  <ShieldCheck className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-lg font-semibold">Two-Factor Authentication</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Enter the code from your authenticator app
+                </p>
+              </div>
+
+              {/* MFA Method Toggle */}
+              <div className="flex p-1 bg-muted rounded-lg mb-4">
+                <button
+                  type="button"
+                  onClick={() => setMfaMethod('totp')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors',
+                    mfaMethod === 'totp'
+                      ? 'bg-background shadow text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Authenticator
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMfaMethod('backup')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors',
+                    mfaMethod === 'backup'
+                      ? 'bg-background shadow text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Backup Code
+                </button>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
+                <label htmlFor="mfa-code" className="text-sm font-medium">
+                  {mfaMethod === 'totp' ? '6-digit code' : 'Backup code'}
                 </label>
                 <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign in'
-                )}
-              </Button>
-            </form>
-          )}
-
-          {/* LDAP Auth Form */}
-          {authMethod === 'ldap' && (
-            <form onSubmit={handleLdapSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="ldap-username" className="text-sm font-medium">
-                  Username
-                </label>
-                <Input
-                  id="ldap-username"
+                  id="mfa-code"
                   type="text"
-                  placeholder="Your directory username"
-                  value={ldapUsername}
-                  onChange={(e) => setLdapUsername(e.target.value)}
+                  inputMode="numeric"
+                  pattern={mfaMethod === 'totp' ? '[0-9]*' : undefined}
+                  placeholder={mfaMethod === 'totp' ? '000000' : 'XXXX-XXXX'}
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
                   required
-                  autoComplete="username"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="ldap-password" className="text-sm font-medium">
-                  Password
-                </label>
-                <Input
-                  id="ldap-password"
-                  type="password"
-                  placeholder="Your directory password"
-                  value={ldapPassword}
-                  onChange={(e) => setLdapPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  className="text-center text-lg tracking-widest"
                 />
               </div>
 
@@ -224,25 +267,131 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
+                    Verifying...
                   </>
                 ) : (
-                  'Sign in with LDAP'
+                  'Verify'
                 )}
               </Button>
 
-              <p className="text-xs text-muted-foreground text-center">
-                Use your corporate directory credentials
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setMfaChallenge(null);
+                  setMfaCode('');
+                  setError('');
+                }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to login
+              </button>
             </form>
-          )}
+          ) : (
+            <>
+              {/* Local Auth Form */}
+              {authMethod === 'local' && (
+                <form onSubmit={handleLocalSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
 
-          <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">Don&apos;t have an account? </span>
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Sign up
-            </Link>
-          </div>
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      'Sign in'
+                    )}
+                  </Button>
+                </form>
+              )}
+
+              {/* LDAP Auth Form */}
+              {authMethod === 'ldap' && (
+                <form onSubmit={handleLdapSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="ldap-username" className="text-sm font-medium">
+                      Username
+                    </label>
+                    <Input
+                      id="ldap-username"
+                      type="text"
+                      placeholder="Your directory username"
+                      value={ldapUsername}
+                      onChange={(e) => setLdapUsername(e.target.value)}
+                      required
+                      autoComplete="username"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="ldap-password" className="text-sm font-medium">
+                      Password
+                    </label>
+                    <Input
+                      id="ldap-password"
+                      type="password"
+                      placeholder="Your directory password"
+                      value={ldapPassword}
+                      onChange={(e) => setLdapPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      'Sign in with LDAP'
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    Use your corporate directory credentials
+                  </p>
+                </form>
+              )}
+
+              <div className="mt-6 text-center text-sm">
+                <span className="text-muted-foreground">Don&apos;t have an account? </span>
+                <Link href="/register" className="text-primary hover:underline font-medium">
+                  Sign up
+                </Link>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Demo credentials */}

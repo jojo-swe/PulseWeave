@@ -2,7 +2,7 @@ import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -21,6 +21,15 @@ import type {
  * App configuration for TOTP.
  */
 const APP_NAME = 'PulseWeave';
+
+/**
+ * Configure TOTP authenticator with time window for clock drift tolerance.
+ * Window of 1 means codes from 30 seconds before/after are also valid.
+ */
+authenticator.options = {
+  window: 1, // Allow 1 step before/after (±30 seconds)
+  step: 30,  // 30-second time step (standard)
+};
 
 /**
  * WebAuthn configuration.

@@ -5,7 +5,7 @@ import crypto from 'crypto';
 /**
  * JWT configuration with secure defaults.
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'chatterbox-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'pulseweave-secret-key-change-in-production';
 const JWT_ISSUER = 'pulseweave';
 const JWT_AUDIENCE = 'pulseweave-api';
 const JWT_ACCESS_EXPIRY = '1d'; // Shorter expiry for access tokens
@@ -86,7 +86,7 @@ export function generateToken(userId: string, expiresIn?: string): string {
     }, 
     JWT_SECRET, 
     { 
-      expiresIn: expiresIn || JWT_ACCESS_EXPIRY,
+      expiresIn: (expiresIn || JWT_ACCESS_EXPIRY) as jwt.SignOptions['expiresIn'],
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
     }

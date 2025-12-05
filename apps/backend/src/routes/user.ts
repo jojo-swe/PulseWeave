@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 import { AuthRequest } from '../middleware/auth';
 
 const router = Router();

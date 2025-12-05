@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 import { slowDown } from 'express-slow-down';
 import hpp from 'hpp';
 

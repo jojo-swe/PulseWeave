@@ -1,5 +1,5 @@
 import { Client, SearchOptions } from 'ldapts';
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 
 /**
  * LDAP configuration from environment variables.

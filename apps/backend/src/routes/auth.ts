@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { prisma } from '@chatterbox/database';
-import { generateToken, generateRefreshToken, verifyRefreshToken, revokeToken, authenticateToken, AuthRequest } from '../middleware/auth';
+import { prisma } from '@pulseweave/database';
+import { verifyTotpToken, verifyBackupCode } from '../services/mfa';
+import { generateToken, generateRefreshToken, verifyRefreshToken, revokeToken, authenticateToken, AuthRequest, JWT_SECRET } from '../middleware/auth';
 import { logSecurityEvent } from '../middleware/security';
 import { 
   isLdapEnabled, 
@@ -128,6 +130,19 @@ router.post('/register', async (req, res) => {
 
     logSecurityEvent('USER_REGISTERED', { userId: user.id, email: data.email });
 
+    // Create audit log entry
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'USER_REGISTERED',
+        resource: 'user',
+        resourceId: user.id,
+        details: JSON.stringify({ email: data.email, workspaceId: workspace.id }),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
     res.status(201).json({
       user,
       token,
@@ -165,6 +180,18 @@ router.post('/login', async (req, res) => {
       // Record IP-based failed attempt
       recordFailedAttempt(clientIp);
       logSecurityEvent('LOGIN_FAILED', { email: data.email, reason: 'user_not_found', ip: clientIp });
+      
+      // Create audit log for failed login
+      await prisma.auditLog.create({
+        data: {
+          action: 'LOGIN_FAILED',
+          resource: 'session',
+          details: JSON.stringify({ email: data.email, reason: 'user_not_found' }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
+      
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -196,6 +223,19 @@ router.post('/login', async (req, res) => {
       const lockResult = await recordFailedLogin(user.id);
       
       logSecurityEvent('LOGIN_FAILED', { userId: user.id, reason: 'invalid_password', ip: clientIp });
+      
+      // Create audit log for failed login
+      await prisma.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'LOGIN_FAILED',
+          resource: 'session',
+          resourceId: user.id,
+          details: JSON.stringify({ reason: 'invalid_password' }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
       
       if (lockResult.locked) {
         logSecurityAudit('ACCOUNT_LOCKED', {
@@ -246,6 +286,19 @@ router.post('/login', async (req, res) => {
 
     logSecurityEvent('LOGIN_SUCCESS', { userId: user.id, ip: clientIp });
 
+    // Create audit log entry
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN_SUCCESS',
+        resource: 'session',
+        resourceId: user.id,
+        details: JSON.stringify({ ip: clientIp }),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
     res.json({
       user: {
         id: user.id,
@@ -265,6 +318,111 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: error.errors });
     }
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// MFA verification for login
+
+const mfaVerifySchema = z.object({
+  mfaToken: z.string(),
+  code: z.string().min(6).max(12), // 6 for TOTP, up to 12 for backup codes
+  type: z.enum(['totp', 'backup']).default('totp'),
+});
+
+router.post('/mfa/verify', async (req, res) => {
+  try {
+    const { mfaToken, code, type } = mfaVerifySchema.parse(req.body);
+    const clientIp = getClientIp(req);
+
+    // Verify the MFA token
+    let userId: string;
+    try {
+      const decoded = jwt.verify(mfaToken, JWT_SECRET) as { userId: string };
+      userId = decoded.userId;
+    } catch (err) {
+      console.error('MFA token verification failed:', err);
+      return res.status(401).json({ error: 'Invalid or expired MFA token' });
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        workspaceMemberships: {
+          include: { workspace: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Verify the code
+    let isValid = false;
+    if (type === 'totp') {
+      if (!user.mfaSecret) {
+        return res.status(400).json({ error: 'TOTP is not enabled for this account' });
+      }
+      isValid = verifyTotpToken(code, user.mfaSecret);
+    } else if (type === 'backup') {
+      isValid = await verifyBackupCode(userId, code);
+    }
+
+    if (!isValid) {
+      logSecurityEvent('MFA_FAILED', { userId, type, ip: clientIp });
+      return res.status(401).json({ error: 'Invalid verification code' });
+    }
+
+    // MFA verified - complete login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        status: 'online',
+        lastLoginAt: new Date(),
+        lastLoginIp: clientIp,
+      },
+    });
+
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    logSecurityEvent('LOGIN_SUCCESS', { userId: user.id, ip: clientIp, mfaUsed: true });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN_SUCCESS',
+        resource: 'session',
+        resourceId: user.id,
+        details: JSON.stringify({ mfaType: type }),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        status: 'online',
+        mfaEnabled: user.mfaEnabled,
+      },
+      token,
+      refreshToken,
+      workspace: user.workspaceMemberships[0]?.workspace || null,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('MFA verify error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

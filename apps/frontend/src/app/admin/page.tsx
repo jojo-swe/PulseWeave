@@ -31,7 +31,11 @@ import {
   AlertTriangle,
   ShieldCheck,
   ShieldAlert,
+  UserPlus,
+  KeyRound,
+  Trash2,
 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 type AdminTab = 'users' | 'roles' | 'audit' | 'security';
 
@@ -140,6 +144,20 @@ export default function AdminPage() {
   const [actionMenuUser, setActionMenuUser] = useState<string | null>(null);
   const [roleChangeUser, setRoleChangeUser] = useState<string | null>(null);
 
+  // Add user modal state
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserUsername, setNewUserUsername] = useState('');
+  const [newUserDisplayName, setNewUserDisplayName] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'moderator' | 'member' | 'guest'>('member');
+  const [addingUser, setAddingUser] = useState(false);
+
+  // Password reset modal state
+  const [resetPasswordUser, setResetPasswordUser] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   // Security state
   const [securityStatus, setSecurityStatus] = useState<SecurityStatus | null>(null);
   const [lockedAccounts, setLockedAccounts] = useState<LockedAccount[]>([]);
@@ -246,6 +264,68 @@ export default function AdminPage() {
     }
   };
 
+  const handleAddUser = async () => {
+    if (!newUserEmail || !newUserUsername || !newUserDisplayName || !newUserPassword) {
+      setError('All fields are required');
+      return;
+    }
+    setAddingUser(true);
+    setError('');
+    try {
+      await api.post(`/admin/workspaces/${currentWorkspace?.id}/users`, {
+        email: newUserEmail,
+        username: newUserUsername,
+        displayName: newUserDisplayName,
+        password: newUserPassword,
+        roleName: newUserRole,
+      });
+      setShowAddUser(false);
+      setNewUserEmail('');
+      setNewUserUsername('');
+      setNewUserDisplayName('');
+      setNewUserPassword('');
+      setNewUserRole('member');
+      fetchData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to add user');
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser || !newPassword) return;
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    setResettingPassword(true);
+    setError('');
+    try {
+      await api.post(`/admin/workspaces/${currentWorkspace?.id}/users/${resetPasswordUser}/reset-password`, {
+        newPassword,
+      });
+      setResetPasswordUser(null);
+      setNewPassword('');
+      setActionMenuUser(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to PERMANENTLY DELETE this user? This cannot be undone.')) return;
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      setActionMenuUser(null);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete user');
+    }
+  };
+
   const filteredUsers = userSearch
     ? users.filter(
         (u) =>
@@ -341,14 +421,23 @@ export default function AdminPage() {
                         <h2 className="text-lg font-semibold">
                           Users ({totalUsers})
                         </h2>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            value={userSearch}
-                            onChange={(e) => setUserSearch(e.target.value)}
-                            placeholder="Search users..."
-                            className="pl-9 w-64"
-                          />
+                        <div className="flex items-center gap-3">
+                          <Button
+                            size="sm"
+                            onClick={() => setShowAddUser(true)}
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Add User
+                          </Button>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              value={userSearch}
+                              onChange={(e) => setUserSearch(e.target.value)}
+                              placeholder="Search users..."
+                              className="pl-9 w-64"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -452,11 +541,21 @@ export default function AdminPage() {
                                       <MoreVertical className="h-4 w-4" />
                                     </Button>
                                     {actionMenuUser === u.id && (
-                                      <div className="absolute right-0 top-full mt-1 z-10 bg-popover border rounded-lg shadow-lg py-1 min-w-[140px]">
+                                      <div className="absolute right-0 top-full mt-1 z-10 bg-popover border rounded-lg shadow-lg py-1 min-w-[160px]">
+                                        <button
+                                          onClick={() => {
+                                            setResetPasswordUser(u.id);
+                                            setActionMenuUser(null);
+                                          }}
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+                                        >
+                                          <KeyRound className="h-4 w-4" />
+                                          Reset Password
+                                        </button>
                                         {u.isActive ? (
                                           <button
                                             onClick={() => handleBanUser(u.id)}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-destructive"
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-orange-500"
                                           >
                                             <Ban className="h-4 w-4" />
                                             Ban User
@@ -472,10 +571,18 @@ export default function AdminPage() {
                                         )}
                                         <button
                                           onClick={() => handleRemoveUser(u.id)}
-                                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-destructive"
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-orange-500"
                                         >
                                           <UserX className="h-4 w-4" />
-                                          Remove
+                                          Remove from Workspace
+                                        </button>
+                                        <div className="border-t my-1" />
+                                        <button
+                                          onClick={() => handleDeleteUser(u.id)}
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          Delete Permanently
                                         </button>
                                       </div>
                                     )}
@@ -784,6 +891,121 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add New User</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={newUserUsername}
+                  onChange={(e) => setNewUserUsername(e.target.value)}
+                  placeholder="username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  value={newUserDisplayName}
+                  onChange={(e) => setNewUserDisplayName(e.target.value)}
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  placeholder="Minimum 8 characters"
+                />
+              </div>
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <select
+                  id="role"
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value as any)}
+                  className="w-full border rounded-md px-3 py-2 bg-background"
+                >
+                  <option value="member">Member</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                  <option value="guest">Guest</option>
+                </select>
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddUser(false);
+                    setError('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAddUser} disabled={addingUser}>
+                  {addingUser ? 'Adding...' : 'Add User'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetPasswordUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Reset Password</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimum 8 characters"
+                />
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setResetPasswordUser(null);
+                    setNewPassword('');
+                    setError('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleResetPassword} disabled={resettingPassword}>
+                  {resettingPassword ? 'Resetting...' : 'Reset Password'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

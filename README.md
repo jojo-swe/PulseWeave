@@ -42,22 +42,27 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 ### Installation
 
 1. **Clone and install dependencies:**
+
    ```bash
    cd PulseWeave
    pnpm install
    ```
 
 2. **Set up the database:**
+
    ```bash
-   # Copy the example env file
+   # Backend env
+   cp apps/backend/.env.example apps/backend/.env
+
+   # Database env (Prisma)
    cp packages/database/.env.example packages/database/.env
    
-   # Generate Prisma client and push schema
    pnpm db:generate
    pnpm db:push
    ```
 
 3. **Start the development servers:**
+
    ```bash
    pnpm dev
    ```
@@ -73,9 +78,21 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 3. A default workspace and #general channel will be created
 4. Start chatting!
 
+### How the first admin user is created
+
+- The **first account you register** automatically becomes **workspace owner** and gets the **owner/admin role** for the default workspace.
+- Owners can create additional workspaces, assign roles, and access the Admin Panel and Security Dashboard.
+- To invite more admins later, use the Admin Panel → Users tab and change their role to **admin** or **owner** (if allowed by your policy).
+
+## Troubleshooting
+
+- **P2025 / Record to update not found (sockets)**: This happens when the browser holds a stale JWT pointing to a deleted user (e.g., after wiping the DB). Fix by logging out/clearing storage and logging in again. The server also disconnects sockets when the user record is missing.
+- **Prisma client errors**: Ensure `packages/database/.env` matches your local DB path and run `pnpm db:push`.
+- **Next.js env issues**: Restart the frontend dev server after changing `.env.local`.
+
 ## Project Structure
 
-```
+```text
 PulseWeave/
 ├── apps/
 │   ├── backend/          # Express + Socket.io API
@@ -94,6 +111,8 @@ PulseWeave/
 │   └── types/            # Shared TypeScript types
 └── package.json          # Workspace root
 ```
+
+> SSL/TLS setup guide: see `docs/SSL.md`.
 
 ## Available Scripts
 

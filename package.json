@@ -1,5 +1,5 @@
 {
-  "name": "chatterbox",
+  "name": "pulseweave",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "db:studio": "pnpm --filter database studio"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
+    "concurrently": "^9.1.0",
     "typescript": "^5.3.3"
   }
 }

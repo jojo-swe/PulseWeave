@@ -149,12 +149,13 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin 
                 // Group reactions by emoji
                 const reactionGroups = message.reactions?.reduce(
                   (acc, r) => {
+                    if (!r.emoji) return acc; // Skip invalid reactions
                     if (!acc[r.emoji]) {
                       acc[r.emoji] = { count: 0, users: [], hasOwn: false };
                     }
                     acc[r.emoji].count++;
-                    acc[r.emoji].users.push(r.user.username);
-                    if (r.user.id === user?.id) {
+                    acc[r.emoji].users.push(r.user?.username || 'Unknown');
+                    if (r.user?.id === user?.id) {
                       acc[r.emoji].hasOwn = true;
                     }
                     return acc;
@@ -256,7 +257,7 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin 
                       )}
 
                       {/* Thread count */}
-                      {message._count?.replies && message._count.replies > 0 && (
+                      {message._count?.replies != null && message._count.replies > 0 && (
                         <button 
                           className="flex items-center gap-1 mt-1 text-xs text-primary hover:underline"
                           onClick={() => onOpenThread?.(message)}

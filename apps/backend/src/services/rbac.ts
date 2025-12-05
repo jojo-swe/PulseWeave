@@ -1,4 +1,4 @@
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 
 /**
  * Permission categories and their permissions.

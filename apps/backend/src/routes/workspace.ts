@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '@chatterbox/database';
+import { prisma } from '@pulseweave/database';
 import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -23,7 +23,7 @@ router.get('/', async (req: AuthRequest, res) => {
 
     const workspaces = memberships.map((m) => ({
       ...m.workspace,
-      role: m.role,
+      role: m.roleName,
       memberCount: m.workspace._count.members,
       channelCount: m.workspace._count.channels,
     }));
@@ -98,7 +98,7 @@ router.post('/', async (req: AuthRequest, res) => {
         members: {
           create: {
             userId: req.userId!,
-            role: 'owner',
+            roleName: 'owner',
           },
         },
         channels: {

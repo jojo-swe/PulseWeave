@@ -83,7 +83,7 @@ export function CommandPalette() {
     items.push({
       id: 'logout',
       label: 'Sign out',
-      description: 'Log out of Chatterbox',
+      description: 'Log out of PulseWeave',
       icon: <LogOut className="h-4 w-4" />,
       action: () => {
         logout();

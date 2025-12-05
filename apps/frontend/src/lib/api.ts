@@ -34,11 +34,20 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
 }
 
 /**
- * Gets the auth token from localStorage.
+ * Gets the auth token from Zustand persisted storage.
  */
 function getToken(): string {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem('token') || '';
+  try {
+    const stored = localStorage.getItem('pulseweave-storage');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed?.state?.token || '';
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return '';
 }
 
 export const api = {

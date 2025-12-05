@@ -44,7 +44,7 @@ export function notify({ title, body, icon, tag, onClick }: NotifyOptions): Noti
     const notification = new Notification(title, {
       body,
       icon: icon || '/icon.png',
-      tag: tag || 'chatterbox-message',
+      tag: tag || 'pulseweave-message',
       badge: '/icon.png',
       silent: false,
     });
