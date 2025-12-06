@@ -103,7 +103,7 @@ interface AppState {
   // Auth
   token: string | null;
   user: User | null;
-  setAuth: (token: string, user: User) => void;
+  setAuth: (token: string | null, user: User) => void;
   setUser: (user: User) => void;
   logout: () => void;
 

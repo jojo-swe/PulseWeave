@@ -78,7 +78,7 @@ export default function LoginPage() {
       }
 
       // No MFA - complete login
-      setAuth(response.token!, response.user);
+      setAuth(response.token || null, response.user);
       if (response.workspace) {
         setCurrentWorkspace(response.workspace);
       }
@@ -108,7 +108,7 @@ export default function LoginPage() {
         type: mfaMethod,
       });
 
-      setAuth(response.token, response.user);
+      setAuth(response.token || null, response.user);
       if (response.workspace) {
         setCurrentWorkspace(response.workspace);
       }
@@ -135,7 +135,7 @@ export default function LoginPage() {
         password: ldapPassword,
       });
       
-      setAuth(response.token, response.user);
+      setAuth(response.token || null, response.user);
       if (response.workspace) {
         setCurrentWorkspace(response.workspace);
       }

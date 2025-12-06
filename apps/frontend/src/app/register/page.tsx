@@ -67,7 +67,7 @@ export default function RegisterPage() {
         displayName: formData.displayName,
         password: formData.password,
       });
-      setAuth(token, user);
+      setAuth(token || null, user);
       if (workspace) {
         setCurrentWorkspace(workspace);
       }

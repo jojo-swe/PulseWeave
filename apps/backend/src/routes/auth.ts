@@ -143,13 +143,28 @@ router.post('/register', async (req, res) => {
       },
     });
 
+    // Set secure cookies
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(201).json({
       user: {
         ...user,
         role: 'owner', // New user is owner of their workspace
       },
-      token,
-      refreshToken,
+      // token, // Optional: keep returning it for non-browser clients? Let's keep it for now for compatibility
+      // refreshToken,
       workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug },
     });
   } catch (error) {
@@ -305,6 +320,21 @@ router.post('/login', async (req, res) => {
     // Get user's role from workspace membership
     const userRole = user.workspaceMemberships[0]?.roleName || 'member';
 
+    // Set secure cookies
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.json({
       user: {
         id: user.id,
@@ -316,8 +346,8 @@ router.post('/login', async (req, res) => {
         mfaEnabled: user.mfaEnabled,
         role: userRole,
       },
-      token,
-      refreshToken,
+      // token,
+      // refreshToken,
       workspace: user.workspaceMemberships[0]?.workspace || null,
     });
   } catch (error) {
@@ -463,9 +493,25 @@ router.post('/refresh', async (req, res) => {
       revokeToken(payload.jti);
     }
 
+    // Set secure cookies
+    res.cookie('token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.json({
-      token: newToken,
-      refreshToken: newRefreshToken,
+      success: true
+      // token: newToken,
+      // refreshToken: newRefreshToken,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -491,6 +537,10 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
       });
       logSecurityEvent('LOGOUT', { userId: req.userId });
     }
+
+    // Clear cookies
+    res.clearCookie('token');
+    res.clearCookie('refreshToken');
 
     res.json({ success: true });
   } catch (error) {
