@@ -37,7 +37,7 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 ### Prerequisites
 
 - Node.js 18+
-- pnpm (recommended) or npm
+- pnpm (recommended) or npm - (winget install -e --id pnpm.pnpm)
 
 ### Installation
 
