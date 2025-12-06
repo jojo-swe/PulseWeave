@@ -18,6 +18,10 @@ import { adminRouter } from './routes/admin';
 import { securityRouter } from './routes/security';
 import categoryRouter from './routes/category';
 import scheduledRouter from './routes/scheduled';
+import webhookRouter from './routes/webhook';
+import apiKeyRouter from './routes/apikey';
+import externalRouter from './routes/external';
+import integrationRouter from './routes/integration';
 import { initializeRbac } from './services/rbac';
 import path from 'path';
 import { setupSocketHandlers } from './socket';
@@ -186,6 +190,11 @@ app.use('/api/admin', authenticateToken, adminRouter);
 app.use('/api/security', authenticateToken, securityRouter);
 app.use('/api/categories', authenticateToken, categoryRouter);
 app.use('/api/scheduled', authenticateToken, scheduledRouter);
+app.use('/api/webhooks', authenticateToken, webhookRouter);
+app.use('/api/apikeys', authenticateToken, apiKeyRouter);
+app.use('/api/integrations', authenticateToken, integrationRouter);
+app.use('/api/external', externalRouter); // External API (uses API key auth)
+app.use('/api/hooks', webhookRouter); // Incoming webhooks (no auth - uses token)
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

@@ -25,6 +25,8 @@ import {
   Sun,
   Moon,
   Monitor,
+  Plug,
+  ChevronRight,
 } from 'lucide-react';
 
 type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance';
@@ -130,6 +132,20 @@ export default function SettingsPage() {
                   </li>
                 ))}
               </ul>
+
+              {/* Integrations Link */}
+              <div className="mt-6 pt-6 border-t">
+                <Link
+                  href="/settings/integrations"
+                  className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Plug className="h-4 w-4" />
+                    Integrations
+                  </div>
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
             </nav>
 
             {/* Content */}

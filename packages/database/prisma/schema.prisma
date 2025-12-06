@@ -45,6 +45,10 @@ model User {
   webauthnCredentials  WebAuthnCredential[]
   sessions             Session[]
   auditLogs            AuditLog[]
+  apiKeys              ApiKey[]
+  webhooks             Webhook[]
+  incomingWebhooks     IncomingWebhook[]
+  integrations         Integration[]
 
   @@map("users")
 }
@@ -162,11 +166,15 @@ model Workspace {
   updatedAt DateTime @updatedAt
 
   // Relations
-  owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
-  members       WorkspaceMember[]
-  channels      Channel[]
-  categories    ChannelCategory[]
-  conversations Conversation[]
+  owner            User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members          WorkspaceMember[]
+  channels         Channel[]
+  categories       ChannelCategory[]
+  conversations    Conversation[]
+  apiKeys          ApiKey[]
+  webhooks         Webhook[]
+  incomingWebhooks IncomingWebhook[]
+  integrations     Integration[]
 
   @@map("workspaces")
 }
@@ -220,11 +228,12 @@ model Channel {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  category  ChannelCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  createdBy User             @relation("ChannelCreator", fields: [createdById], references: [id])
-  members   ChannelMember[]
-  messages  Message[]
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  category         ChannelCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy        User             @relation("ChannelCreator", fields: [createdById], references: [id])
+  members          ChannelMember[]
+  messages         Message[]
+  incomingWebhooks IncomingWebhook[]
 
   @@unique([workspaceId, name])
   @@map("channels")
@@ -363,4 +372,126 @@ model DirectMessage {
 
   @@index([conversationId, createdAt])
   @@map("direct_messages")
+}
+
+// ============================================================================
+// External Integrations & Webhooks
+// ============================================================================
+
+/// API keys for external service authentication.
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  keyHash     String    // Hashed version for security
+  keyPrefix   String    // First 8 chars for identification
+  workspaceId String
+  userId      String    // Who created it
+  scopes      String    // JSON array: ["messages:read", "messages:write", "channels:read"]
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+/// Outgoing webhooks - notify external services of events.
+model Webhook {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  secret      String?  // For signing payloads (HMAC)
+  workspaceId String
+  userId      String   // Who created it
+  events      String   // JSON array: ["message.created", "user.joined", "channel.created"]
+  isActive    Boolean  @default(true)
+  retryCount  Int      @default(3)
+  timeoutMs   Int      @default(5000)
+  headers     String?  // JSON object for custom headers
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace  Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([workspaceId])
+  @@map("webhooks")
+}
+
+/// Incoming webhooks - allow external services to send data.
+model IncomingWebhook {
+  id          String    @id @default(cuid())
+  name        String
+  token       String    @unique // Unique token for the webhook URL
+  workspaceId String
+  channelId   String?   // Target channel for messages
+  userId      String    // Who created it
+  isActive    Boolean   @default(true)
+  allowedIps  String?   // JSON array for IP whitelist
+  lastUsedAt  DateTime?
+  usageCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel   Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([token])
+  @@map("incoming_webhooks")
+}
+
+/// Log of outgoing webhook deliveries.
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String
+  event        String
+  payload      String   // JSON payload
+  statusCode   Int?
+  response     String?
+  success      Boolean  @default(false)
+  error        String?
+  attemptCount Int      @default(1)
+  deliveredAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@map("webhook_deliveries")
+}
+
+/// Pre-built integrations (n8n, Zapier, Slack, etc.).
+model Integration {
+  id          String   @id @default(cuid())
+  type        String   // e.g., "n8n", "zapier", "slack", "discord", "custom"
+  name        String
+  config      String   // JSON configuration
+  workspaceId String
+  userId      String   // Who created it
+  isActive    Boolean  @default(true)
+  status      String   @default("pending") // pending, connected, error
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, type])
+  @@map("integrations")
 }

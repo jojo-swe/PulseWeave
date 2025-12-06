@@ -97,9 +97,9 @@ router.get('/:id/replies', asyncHandler(async (req: AuthRequest, res) => {
 
 // Create message schema
 const createMessageSchema = z.object({
-  channelId: z.string().uuid(),
+  channelId: z.string().min(1),
   content: z.string().min(1, 'Message cannot be empty').max(4000, 'Message too long'),
-  parentId: z.string().uuid().optional(),
+  parentId: z.string().min(1).optional(),
 });
 
 // Create message

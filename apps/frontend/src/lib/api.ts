@@ -340,4 +340,126 @@ export const api = {
         token,
       }),
   },
+
+  // Webhooks
+  webhooks: {
+    getEvents: (token: string) =>
+      fetchApi<Record<string, string>>('/api/webhooks/events', { token }),
+    list: (workspaceId: string, token: string) =>
+      fetchApi<any[]>(`/api/webhooks/workspace/${workspaceId}`, { token }),
+    create: (workspaceId: string, data: { name: string; url: string; events: string[]; secret?: string; headers?: Record<string, string> }, token: string) =>
+      fetchApi<any>(`/api/webhooks/workspace/${workspaceId}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    update: (id: string, data: { name?: string; url?: string; events?: string[]; isActive?: boolean }, token: string) =>
+      fetchApi<any>(`/api/webhooks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    delete: (id: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/webhooks/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    test: (id: string, token: string) =>
+      fetchApi<{ success: boolean; statusCode?: number; response?: string; error?: string }>(`/api/webhooks/${id}/test`, {
+        method: 'POST',
+        token,
+      }),
+    getDeliveries: (id: string, token: string, page = 1) =>
+      fetchApi<{ deliveries: any[]; pagination: any }>(`/api/webhooks/${id}/deliveries?page=${page}`, { token }),
+  },
+
+  // Incoming Webhooks
+  incomingWebhooks: {
+    list: (workspaceId: string, token: string) =>
+      fetchApi<any[]>(`/api/webhooks/incoming/workspace/${workspaceId}`, { token }),
+    create: (workspaceId: string, data: { name: string; channelId?: string; allowedIps?: string[] }, token: string) =>
+      fetchApi<any>(`/api/webhooks/incoming/workspace/${workspaceId}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    update: (id: string, data: { name?: string; channelId?: string; allowedIps?: string[]; isActive?: boolean }, token: string) =>
+      fetchApi<any>(`/api/webhooks/incoming/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    delete: (id: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/webhooks/incoming/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    regenerate: (id: string, token: string) =>
+      fetchApi<any>(`/api/webhooks/incoming/${id}/regenerate`, {
+        method: 'POST',
+        token,
+      }),
+  },
+
+  // API Keys
+  apiKeys: {
+    getScopes: (token: string) =>
+      fetchApi<Record<string, string>>('/api/apikeys/scopes', { token }),
+    list: (workspaceId: string, token: string) =>
+      fetchApi<any[]>(`/api/apikeys/workspace/${workspaceId}`, { token }),
+    create: (workspaceId: string, data: { name: string; scopes: string[]; expiresAt?: string }, token: string) =>
+      fetchApi<any>(`/api/apikeys/workspace/${workspaceId}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    update: (id: string, data: { name?: string; scopes?: string[]; isActive?: boolean; expiresAt?: string | null }, token: string) =>
+      fetchApi<any>(`/api/apikeys/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    delete: (id: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/apikeys/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    regenerate: (id: string, token: string) =>
+      fetchApi<any>(`/api/apikeys/${id}/regenerate`, {
+        method: 'POST',
+        token,
+      }),
+  },
+
+  // Integrations
+  integrations: {
+    getTypes: (token: string) =>
+      fetchApi<Record<string, any>>('/api/integrations/types', { token }),
+    list: (workspaceId: string, token: string) =>
+      fetchApi<any[]>(`/api/integrations/workspace/${workspaceId}`, { token }),
+    get: (id: string, token: string) =>
+      fetchApi<any>(`/api/integrations/${id}`, { token }),
+    create: (workspaceId: string, data: { type: string; name: string; config: Record<string, any> }, token: string) =>
+      fetchApi<any>(`/api/integrations/workspace/${workspaceId}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    update: (id: string, data: { name?: string; config?: Record<string, any>; isActive?: boolean }, token: string) =>
+      fetchApi<any>(`/api/integrations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token,
+      }),
+    delete: (id: string, token: string) =>
+      fetchApi<{ success: boolean }>(`/api/integrations/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    test: (id: string, token: string) =>
+      fetchApi<{ success: boolean; statusCode?: number; response?: string; error?: string }>(`/api/integrations/${id}/test`, {
+        method: 'POST',
+        token,
+      }),
+  },
 };
