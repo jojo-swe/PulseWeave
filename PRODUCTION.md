@@ -20,25 +20,70 @@ Required environment variables:
 
 ```env
 NODE_ENV=production
-DATABASE_URL=postgresql://user:password@host:5432/pulseweave
 JWT_SECRET=<generated-64-char-secret>
 COOKIE_SECRET=<generated-32-char-secret>
 CORS_ORIGINS=https://your-domain.com
 SSL_ENABLED=true
 USE_DB_SESSIONS=true
+
+# Database (choose one)
+DATABASE_URL="file:./data/pulseweave.db"  # SQLite (small teams)
+# DATABASE_URL="postgresql://user:password@host:5432/pulseweave"  # PostgreSQL (scaling)
 ```
 
 ### 2. Database Setup
 
-**Recommended: PostgreSQL** (SQLite is for development only)
+PulseWeave supports both SQLite and PostgreSQL. Choose based on your scale:
+
+| Database | Best For | Concurrent Users | Horizontal Scaling |
+|----------|----------|------------------|-------------------|
+| **SQLite** | Small teams, single server | Up to ~100 | ❌ No |
+| **PostgreSQL** | Large teams, high availability | 100+ | ✅ Yes |
+
+#### Option A: SQLite (Default - Simple Deployment)
+
+SQLite requires no external database server and works well for small to medium deployments.
 
 ```bash
-# Update DATABASE_URL in .env
-DATABASE_URL="postgresql://user:password@localhost:5432/pulseweave?schema=public"
+# Create data directory with proper permissions
+mkdir -p ./data
+chmod 700 ./data
+
+# Set DATABASE_URL in packages/database/.env
+DATABASE_URL="file:./data/pulseweave.db"
 
 # Run migrations
 pnpm db:push
 ```
+
+**SQLite Hardening:**
+- Store the database file outside the web root
+- Set restrictive file permissions (`chmod 600 pulseweave.db`)
+- Enable WAL mode for better concurrency (automatic with Prisma)
+- Configure regular backups (see Backup Strategy section)
+
+#### Option B: PostgreSQL (Recommended for Scaling)
+
+For teams larger than ~100 users or when you need horizontal scaling.
+
+```bash
+# 1. Update packages/database/prisma/schema.prisma
+#    Change: provider = "sqlite"
+#    To:     provider = "postgresql"
+
+# 2. Set DATABASE_URL in packages/database/.env
+DATABASE_URL="postgresql://user:password@localhost:5432/pulseweave?schema=public"
+
+# 3. Regenerate client and push schema
+pnpm db:generate
+pnpm db:push
+```
+
+**PostgreSQL Hardening:**
+- Use strong, unique passwords
+- Enable SSL connections (`?sslmode=require`)
+- Restrict network access to the database
+- Use connection pooling for high traffic
 
 ### 3. SSL/TLS Configuration
 
@@ -94,8 +139,35 @@ EXPOSE 3001
 CMD ["node", "dist/index.js"]
 ```
 
+#### Docker Compose with SQLite (Simple)
+
+For small teams, SQLite with a persistent volume is the simplest option:
+
 ```yaml
-# docker-compose.yml
+# docker-compose.sqlite.yml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/data/pulseweave.db
+    volumes:
+      - app_data:/data
+    restart: unless-stopped
+
+volumes:
+  app_data:
+```
+
+#### Docker Compose with PostgreSQL (Scaling)
+
+For larger teams or when you need horizontal scaling:
+
+```yaml
+# docker-compose.postgresql.yml
 version: '3.8'
 services:
   app:
@@ -107,7 +179,6 @@ services:
       - DATABASE_URL=postgresql://postgres:password@db:5432/pulseweave
     depends_on:
       - db
-      - redis
     restart: unless-stopped
 
   db:
@@ -116,9 +187,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=pulseweave
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=password  # Change this!
     restart: unless-stopped
 
+  # Optional: Redis for session storage and Socket.io scaling
   redis:
     image: redis:7-alpine
     volumes:
@@ -235,23 +307,61 @@ Configure log aggregation (ELK, Loki, CloudWatch).
 
 ## Security Audit Checklist
 
+### Required for All Deployments
+
 - [ ] JWT_SECRET is unique and 64+ characters
 - [ ] COOKIE_SECRET is unique and 32+ characters
 - [ ] SSL/TLS is enabled with valid certificates
-- [ ] Database uses PostgreSQL (not SQLite)
-- [ ] Database credentials are not default
+- [ ] NODE_ENV=production is set
 - [ ] Rate limiting is configured
 - [ ] CORS origins are restricted to your domain
 - [ ] File upload limits are set
-- [ ] Session storage uses database (not memory)
 - [ ] All default passwords are changed
 - [ ] Audit logging is enabled
 - [ ] Health checks are monitored
 - [ ] Backups are configured
 
+### Database-Specific
+
+**SQLite:**
+
+- [ ] Database file is outside web root
+- [ ] File permissions are restrictive (600)
+- [ ] Regular file backups are scheduled
+- [ ] WAL mode is enabled (automatic)
+
+**PostgreSQL:**
+
+- [ ] Database credentials are not default
+- [ ] SSL connections are enabled
+- [ ] Network access is restricted
+- [ ] Connection pooling is configured
+
+### For Scaling (100+ Users)
+
+- [ ] Using PostgreSQL instead of SQLite
+- [ ] Session storage uses database (USE_DB_SESSIONS=true)
+- [ ] Redis adapter configured for Socket.io (if multiple instances)
+- [ ] Load balancer supports WebSocket
+
 ## Backup Strategy
 
 ### Database Backups
+
+#### SQLite Backups
+
+```bash
+# Simple file copy (while app is stopped or using WAL mode)
+cp ./data/pulseweave.db /backups/pulseweave-$(date +%Y%m%d).db
+
+# Using sqlite3 backup command (safe while running)
+sqlite3 ./data/pulseweave.db ".backup '/backups/pulseweave-$(date +%Y%m%d).db'"
+
+# Automated daily backups (cron)
+0 2 * * * sqlite3 /app/data/pulseweave.db ".backup '/backups/pulseweave-$(date +\%Y\%m\%d).db'"
+```
+
+#### PostgreSQL Backups
 
 ```bash
 # PostgreSQL backup
@@ -270,12 +380,24 @@ aws s3 sync ./uploads s3://your-bucket/uploads --delete
 
 ## Scaling Considerations
 
+### When to Scale
+
+| Symptom | Solution |
+|---------|----------|
+| Slow writes, database locks | Switch from SQLite to PostgreSQL |
+| High memory usage | Add more instances, use Redis for sessions |
+| WebSocket disconnects | Add Redis adapter for Socket.io |
+| File storage limits | Move to S3/MinIO |
+
 ### Horizontal Scaling
 
-1. Use Redis for session storage
-2. Use PostgreSQL for database
-3. Use S3/MinIO for file storage
-4. Use load balancer with sticky sessions for WebSocket
+When you need multiple server instances:
+
+1. **Switch to PostgreSQL** - SQLite doesn't support concurrent writes from multiple processes
+2. **Use Redis for sessions** - Set `USE_DB_SESSIONS=true` or use Redis
+3. **Use S3/MinIO for file storage** - Shared file system across instances
+4. **Configure Socket.io Redis adapter** - Required for WebSocket across instances
+5. **Use load balancer with sticky sessions** - For WebSocket connections
 
 ### WebSocket Scaling
 
@@ -295,10 +417,19 @@ io.adapter(createAdapter(pubClient, subClient));
 
 ### Common Issues
 
-**Database connection errors:**
+**SQLite database errors:**
+
+- Check file path is correct and accessible
+- Verify write permissions on database file and directory
+- Check disk space is available
+- If "database is locked", ensure only one process is writing
+
+**PostgreSQL connection errors:**
+
 - Check DATABASE_URL format
 - Verify network connectivity
 - Check PostgreSQL is running
+- Verify credentials and database exists
 
 **WebSocket connection issues:**
 - Verify CORS origins include your domain

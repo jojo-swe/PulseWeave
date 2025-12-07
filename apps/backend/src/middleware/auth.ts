@@ -100,15 +100,16 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
  * Generates a secure access token.
  * @param userId - The user ID to encode
  * @param expiresIn - Optional custom expiry (e.g., '5m', '1h', '7d')
- * @returns JWT access token
+ * @param jti - Optional JWT ID (if not provided, one will be generated)
+ * @returns Object containing the JWT token and the jti used
  */
-export function generateToken(userId: string, expiresIn?: string): string {
-  const jti = crypto.randomUUID(); // Unique token ID for revocation
+export function generateToken(userId: string, expiresIn?: string, jti?: string): { token: string; jti: string } {
+  const tokenJti = jti || crypto.randomUUID(); // Unique token ID for revocation
   
-  return jwt.sign(
+  const token = jwt.sign(
     { 
       userId,
-      jti,
+      jti: tokenJti,
       type: 'access',
     }, 
     JWT_SECRET, 
@@ -118,20 +119,23 @@ export function generateToken(userId: string, expiresIn?: string): string {
       audience: JWT_AUDIENCE,
     }
   );
+
+  return { token, jti: tokenJti };
 }
 
 /**
  * Generates a refresh token with longer expiry.
  * @param userId - The user ID to encode
- * @returns JWT refresh token
+ * @param jti - Optional JWT ID
+ * @returns Object containing the JWT token and the jti used
  */
-export function generateRefreshToken(userId: string): string {
-  const jti = crypto.randomUUID();
+export function generateRefreshToken(userId: string, jti?: string): { token: string; jti: string } {
+  const tokenJti = jti || crypto.randomUUID();
   
-  return jwt.sign(
+  const token = jwt.sign(
     { 
       userId,
-      jti,
+      jti: tokenJti,
       type: 'refresh',
     }, 
     JWT_SECRET, 
@@ -141,6 +145,8 @@ export function generateRefreshToken(userId: string): string {
       audience: JWT_AUDIENCE,
     }
   );
+
+  return { token, jti: tokenJti };
 }
 
 /**

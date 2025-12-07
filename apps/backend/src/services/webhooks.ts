@@ -178,8 +178,11 @@ async function deliverWebhook(
   let success = false;
   let attemptCount = 0;
 
-  // Retry loop
-  for (let attempt = 0; attempt < webhook.retryCount; attempt++) {
+  // Total attempts = 1 initial + retryCount retries
+  const maxAttempts = 1 + webhook.retryCount;
+
+  // Retry loop: 1 initial attempt + retryCount retries
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     attemptCount = attempt + 1;
 
     try {
@@ -209,12 +212,13 @@ async function deliverWebhook(
       lastError = new Error(`HTTP ${res.status}: ${response?.slice(0, 200)}`);
     } catch (error: any) {
       lastError = error;
-      // Exponential backoff
-      if (attempt < webhook.retryCount - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt) * 1000)
-        );
-      }
+    }
+
+    // Exponential backoff before retry (not after last attempt)
+    if (attempt < maxAttempts - 1) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+      );
     }
   }
 

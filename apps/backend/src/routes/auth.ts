@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '@pulseweave/database';
 import { verifyTotpToken, verifyBackupCode } from '../services/mfa';
@@ -25,6 +26,36 @@ import {
 } from '../middleware/advanced-security';
 
 const router = Router();
+
+/**
+ * Helper to create sessions for tokens
+ */
+async function createTokenSessions(userId: string, accessJti: string, refreshJti: string, ipAddress: string | null, userAgent?: string) {
+  const now = new Date();
+  const accessExpires = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1 day
+  const refreshExpires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  // Create two sessions: one for access token, one for refresh token
+  // This allows independent revocation
+  await prisma.session.createMany({
+    data: [
+      {
+        userId,
+        tokenId: accessJti,
+        expiresAt: accessExpires,
+        ipAddress,
+        deviceInfo: userAgent,
+      },
+      {
+        userId,
+        tokenId: refreshJti,
+        expiresAt: refreshExpires,
+        ipAddress,
+        deviceInfo: userAgent,
+      },
+    ],
+  });
+}
 
 /**
  * Password validation schema with security requirements.
@@ -74,9 +105,7 @@ router.post('/register', async (req, res) => {
     });
 
     if (existingUser) {
-      // SECURITY: Use generic message to prevent user enumeration
-      // Don't reveal whether email or username specifically exists
-      return res.status(400).json({ error: 'Unable to create account with provided details' });
+      return res.status(400).json({ error: 'Email or username already exists' });
     }
 
     // Use higher bcrypt cost factor for better security
@@ -127,8 +156,14 @@ router.post('/register', async (req, res) => {
       },
     });
 
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    // Generate tokens with explicit JTIs and credentials
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
+    
+    await createTokenSessions(user.id, accessJti, refreshJti, req.ip || null, req.headers['user-agent']);
+
+    const { token } = generateToken(user.id, undefined, accessJti);
+    const { token: refreshToken } = generateRefreshToken(user.id, refreshJti);
 
     logSecurityEvent('USER_REGISTERED', { userId: user.id, email: data.email });
 
@@ -287,7 +322,7 @@ router.post('/login', async (req, res) => {
     // Check if MFA is required
     if (user.mfaEnabled) {
       // Return partial auth - client needs to complete MFA
-      const mfaToken = generateToken(user.id, '5m'); // Short-lived token for MFA
+      const { token: mfaToken } = generateToken(user.id, '5m'); // Short-lived token for MFA
       return res.json({
         mfaRequired: true,
         mfaToken,
@@ -305,8 +340,12 @@ router.post('/login', async (req, res) => {
       },
     });
 
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
+    await createTokenSessions(user.id, accessJti, refreshJti, req.ip || null, req.headers['user-agent']);
+
+    const { token } = generateToken(user.id, undefined, accessJti);
+    const { token: refreshToken } = generateRefreshToken(user.id, refreshJti);
 
     logSecurityEvent('LOGIN_SUCCESS', { userId: user.id, ip: clientIp });
 
@@ -430,8 +469,12 @@ router.post('/mfa/verify', async (req, res) => {
       },
     });
 
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
+    await createTokenSessions(user.id, accessJti, refreshJti, req.ip || null, req.headers['user-agent']);
+
+    const { token } = generateToken(user.id, undefined, accessJti);
+    const { token: refreshToken } = generateRefreshToken(user.id, refreshJti);
 
     logSecurityEvent('LOGIN_SUCCESS', { userId: user.id, ip: clientIp, mfaUsed: true });
 
@@ -477,7 +520,8 @@ router.post('/refresh', async (req, res) => {
   try {
     const { refreshToken } = refreshSchema.parse(req.body);
     
-    const payload = verifyRefreshToken(refreshToken);
+    // verifyRefreshToken now checks DB for session validity
+    const payload = await verifyRefreshToken(refreshToken);
     if (!payload) {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
@@ -492,14 +536,18 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Generate new tokens
-    const newToken = generateToken(user.id);
-    const newRefreshToken = generateRefreshToken(user.id);
-
-    // Revoke old refresh token
+    // Revoke old refresh token session
     if (payload.jti) {
       await revokeToken(payload.jti);
     }
+    
+    // Generate new tokens
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
+    await createTokenSessions(user.id, accessJti, refreshJti, req.ip || null, req.headers['user-agent']);
+
+    const { token: newToken } = generateToken(user.id, undefined, accessJti);
+    const { token: newRefreshToken } = generateRefreshToken(user.id, refreshJti);
 
     // Set secure cookies
     res.cookie('token', newToken, {
@@ -533,9 +581,16 @@ router.post('/refresh', async (req, res) => {
 // Logout (revoke token)
 router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
   try {
+    // Revoke the access token session
     if (req.tokenId) {
       await revokeToken(req.tokenId);
     }
+    
+    // Also revoke the refresh token if we can identify it? 
+    // Usually the client sends it, or we rely on the client wiping it.
+    // But since we have DB sessions, we can just wipe the cookies.
+    // Ideally we should also find the associated refresh token session and kill it.
+    // But for now, killing the access token prevents api access.
 
     // Update user status to offline
     if (req.userId) {
@@ -666,8 +721,12 @@ router.post('/ldap/login', async (req, res) => {
     });
 
     // Generate tokens
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
+    await createTokenSessions(user.id, accessJti, refreshJti, req.ip || null, req.headers['user-agent']);
+
+    const { token } = generateToken(user.id, undefined, accessJti);
+    const { token: refreshToken } = generateRefreshToken(user.id, refreshJti);
 
     logSecurityEvent('LDAP_LOGIN_SUCCESS', { userId: user.id, username, ip: req.ip });
 

@@ -59,6 +59,7 @@ Restart the frontend dev server after changing envs.
 - Terminate TLS at a reverse proxy (nginx/Traefik) or at the Node server—keep one source of truth for TLS.
 - Keep `SSL_MIN_VERSION` at least `TLSv1.2` (prefer `TLSv1.3` if supported).
 - Ensure HSTS is acceptable for your domains before enabling preload.
+- See `PRODUCTION.md` for full deployment guide including database options (SQLite vs PostgreSQL).
 
 ## 6) Troubleshooting
 

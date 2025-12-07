@@ -307,7 +307,7 @@ router.delete('/:id/reactions/:emoji', asyncHandler(async (req: AuthRequest, res
   });
 
   if (!message) {
-      throw Errors.notFound('Message');
+    throw Errors.notFound('Message');
   }
 
   // Check channel access
@@ -403,19 +403,19 @@ router.delete('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
 
   // Check channel access
   if (existing.channel.isPrivate) {
-      const membership = await prisma.channelMember.findUnique({
-        where: {
-          userId_channelId: {
-            userId: req.userId!,
-            channelId: existing.channelId,
-          },
+    const membership = await prisma.channelMember.findUnique({
+      where: {
+        userId_channelId: {
+          userId: req.userId!,
+          channelId: existing.channelId,
         },
-      });
-  
-      if (!membership) {
-        throw Errors.forbidden('You do not have access to this channel');
-      }
+      },
+    });
+
+    if (!membership) {
+      throw Errors.forbidden('You do not have access to this channel');
     }
+  }
 
   const message = await prisma.message.update({
     where: { id: req.params.id },

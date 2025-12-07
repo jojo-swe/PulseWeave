@@ -1,354 +1,634 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PulseWeave - Team Communication Reimagined</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: '#6366f1',
-                        secondary: '#8b5cf6',
-                        dark: '#0f172a',
-                    },
-                    animation: {
-                        'blob': 'blob 7s infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-20px)' },
-                        }
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              primary: "#6366f1",
+              secondary: "#8b5cf6",
+              dark: "#0f172a",
+            },
+            animation: {
+              blob: "blob 7s infinite",
+              float: "float 6s ease-in-out infinite",
+            },
+            keyframes: {
+              blob: {
+                "0%": { transform: "translate(0px, 0px) scale(1)" },
+                "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                "100%": { transform: "translate(0px, 0px) scale(1)" },
+              },
+              float: {
+                "0%, 100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-20px)" },
+              },
+            },
+          },
+        },
+      };
     </script>
     <style>
-        body {
-            background-color: #020617;
-            color: #fff;
-            overflow-x: hidden;
-            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      body {
+        background-color: #020617;
+        color: #fff;
+        overflow-x: hidden;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      }
+      .glass:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+      }
+      .text-gradient {
+        background: linear-gradient(
+          135deg,
+          #818cf8 0%,
+          #c084fc 50%,
+          #f472b6 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 40px rgba(192, 132, 252, 0.3);
+      }
+      .blob-glow {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(99, 102, 241, 0.15) 0%,
+          rgba(0, 0, 0, 0) 70%
+        );
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: -1;
+      }
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
-        .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-        .glass:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            transform: translateY(-2px);
-        }
-        .text-gradient {
-            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 40px rgba(192, 132, 252, 0.3);
-        }
-        .blob-glow {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: -1;
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .animate-fade-in-up {
-            animation: fadeInUp 0.8s ease-out forwards;
-        }
-        .delay-100 { animation-delay: 100ms; }
-        .delay-200 { animation-delay: 200ms; }
-        .delay-300 { animation-delay: 300ms; }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.8s ease-out forwards;
+      }
+      .delay-100 {
+        animation-delay: 100ms;
+      }
+      .delay-200 {
+        animation-delay: 200ms;
+      }
+      .delay-300 {
+        animation-delay: 300ms;
+      }
     </style>
-</head>
-<body class="antialiased selection:bg-primary selection:text-white">
-
+  </head>
+  <body class="antialiased selection:bg-primary selection:text-white">
     <!-- Background Effects -->
     <div class="fixed inset-0 pointer-events-none z-[-1]">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-        <div class="absolute top-0 right-1/4 w-96 h-96 bg-secondary/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-600/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+      <div
+        class="absolute top-0 left-1/4 w-96 h-96 bg-primary/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"
+      ></div>
+      <div
+        class="absolute top-0 right-1/4 w-96 h-96 bg-secondary/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"
+      ></div>
+      <div
+        class="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-600/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"
+      ></div>
     </div>
 
     <!-- Navigation -->
-    <nav class="fixed w-full z-50 glass border-none border-b border-white/5 bg-black/20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <span class="font-bold text-xl tracking-tight">PulseWeave</span>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="#features" class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium">Features</a>
-                        <a href="#security" class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium">Security</a>
-                        <a href="#pricing" class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium">Pricing</a>
-                    </div>
-                </div>
-                <div>
-                    <a href="https://app.yourdomain.com/login" class="bg-white text-black hover:bg-gray-100 px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-white/20">
-                        Launch App
-                    </a>
-                </div>
+    <nav
+      class="fixed w-full z-50 glass border-none border-b border-white/5 bg-black/20"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-2">
+            <div
+              class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+            >
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
             </div>
+            <span class="font-bold text-xl tracking-tight">PulseWeave</span>
+          </div>
+          <div class="hidden md:block">
+            <div class="ml-10 flex items-baseline space-x-8">
+              <a
+                href="#features"
+                class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium"
+                >Features</a
+              >
+              <a
+                href="#security"
+                class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium"
+                >Security</a
+              >
+              <a
+                href="#pricing"
+                class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium"
+                >Pricing</a
+              >
+            </div>
+          </div>
+          <div>
+            <a
+              href="https://app.yourdomain.com/login"
+              class="bg-white text-black hover:bg-gray-100 px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-white/20"
+            >
+              Launch App
+            </a>
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- Hero Section -->
-    <main class="pt-32 pb-20 sm:pt-40 sm:pb-24 lg:pb-32 overflow-hidden relative">
-        <div class="blob-glow top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60"></div>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="text-center max-w-4xl mx-auto mb-16">
-                <h1 class="animate-fade-in-up opacity-0">
-                    <span class="block text-sm font-bold uppercase tracking-widest text-primary mb-4">Real-time Collaboration</span>
-                    <span class="block text-5xl tracking-tight font-black sm:text-7xl xl:text-8xl leading-[1.1] mb-6">
-                        <span class="block text-white">Sync at the</span>
-                        <span class="block text-gradient">Speed of Thought</span>
-                    </span>
-                </h1>
-                <p class="mt-6 text-xl text-gray-400 sm:text-2xl leading-relaxed max-w-2xl mx-auto animate-fade-in-up opacity-0 delay-100">
-                    Escape the chaos of email threads. PulseWeave brings your team's communication into a single, fluid interface designed for the modern era.
-                </p>
-                <div class="mt-10 flex flex-col sm:flex-row gap-5 justify-center animate-fade-in-up opacity-0 delay-200">
-                    <a href="https://app.yourdomain.com/register" class="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-primary hover:bg-primary/90 md:px-12 shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_50px_-10px_rgba(99,102,241,0.7)] transition-all hover:scale-105 duration-300">
-                        Get Started Free
-                    </a>
-                    <a href="#demo" class="inline-flex items-center justify-center px-8 py-4 border border-white/10 text-lg font-bold rounded-full text-white glass hover:bg-white/10 md:px-12 transition-all hover:border-white/20">
-                        View Live Demo
-                    </a>
-                </div>
-                <div class="mt-8 flex items-center justify-center gap-4 text-sm text-gray-500 animate-fade-in-up opacity-0 delay-300">
-                    <div class="flex -space-x-2">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 border-2 border-black"></div>
-                        <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-black"></div>
-                        <div class="w-8 h-8 rounded-full bg-gray-500 border-2 border-black"></div>
-                    </div>
-                    <p>Trusted by <span class="text-white font-semibold">10,000+</span> teams</p>
-                </div>
-            </div>
-
-            <!-- Centered Massive Mockup -->
-            <div class="relative w-full max-w-6xl mx-auto animate-fade-in-up opacity-0 delay-300">
-                <!-- Glow effect -->
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-gradient-to-t from-primary/10 via-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
-                
-                <div class="relative rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-md border border-white/10 overflow-hidden transform hover:scale-[1.01] transition-transform duration-700 group">
-                    <!-- Browser chrome -->
-                    <div class="h-10 bg-black/40 border-b border-white/5 flex items-center px-4 gap-2">
-                        <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-                        <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                        <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
-                        <div class="ml-4 px-3 py-1 bg-white/5 rounded-md text-xs text-gray-500 flex items-center gap-2 w-full max-w-sm">
-                            <span class="text-gray-600">🔒</span> pulseweave.com/app
-                        </div>
-                    </div>
-                    <img src="hero-mockup.png" alt="PulseWeave Interface" class="relative block w-full shadow-2xl rounded-b-2xl">
-                    
-                    <!-- Overlay gradient -->
-                    <div class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#020617] via-[#020617]/50 to-transparent pointer-events-none"></div>
-                </div>
-            </div>
+    <main
+      class="pt-32 pb-20 sm:pt-40 sm:pb-24 lg:pb-32 overflow-hidden relative"
+    >
+      <div
+        class="blob-glow top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60"
+      ></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center max-w-4xl mx-auto mb-16">
+          <h1 class="animate-fade-in-up opacity-0">
+            <span
+              class="block text-sm font-bold uppercase tracking-widest text-primary mb-4"
+              >Real-time Collaboration</span
+            >
+            <span
+              class="block text-5xl tracking-tight font-black sm:text-7xl xl:text-8xl leading-[1.1] mb-6"
+            >
+              <span class="block text-white">Sync at the</span>
+              <span class="block text-gradient">Speed of Thought</span>
+            </span>
+          </h1>
+          <p
+            class="mt-6 text-xl text-gray-400 sm:text-2xl leading-relaxed max-w-2xl mx-auto animate-fade-in-up opacity-0 delay-100"
+          >
+            Escape the chaos of email threads. PulseWeave brings your team's
+            communication into a single, fluid interface designed for the modern
+            era.
+          </p>
+          <div
+            class="mt-10 flex flex-col sm:flex-row gap-5 justify-center animate-fade-in-up opacity-0 delay-200"
+          >
+            <a
+              href="https://app.yourdomain.com/register"
+              class="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-primary hover:bg-primary/90 md:px-12 shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_50px_-10px_rgba(99,102,241,0.7)] transition-all hover:scale-105 duration-300"
+            >
+              Get Started Free
+            </a>
+            <a
+              href="#demo"
+              class="inline-flex items-center justify-center px-8 py-4 border border-white/10 text-lg font-bold rounded-full text-white glass hover:bg-white/10 md:px-12 transition-all hover:border-white/20"
+            >
+          </div>
         </div>
+
+        <!-- Centered Massive Mockup -->
+        <div
+          class="relative w-full max-w-6xl mx-auto animate-fade-in-up opacity-0 delay-300"
+        >
+          <!-- Glow effect -->
+          <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-gradient-to-t from-primary/10 via-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse"
+          ></div>
+
+          <div
+            class="relative rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-md border border-white/10 overflow-hidden transform hover:scale-[1.01] transition-transform duration-700 group"
+          >
+            <!-- Browser chrome -->
+            <div
+              class="h-10 bg-black/40 border-b border-white/5 flex items-center px-4 gap-2"
+            >
+              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+              <div
+                class="ml-4 px-3 py-1 bg-white/5 rounded-md text-xs text-gray-500 flex items-center gap-2 w-full max-w-sm"
+              >
+                <span class="text-gray-600">🔒</span> pulseweave.com/app
+              </div>
+            </div>
+            <img
+              src="hero-mockup.png"
+              alt="PulseWeave Interface"
+              class="relative block w-full shadow-2xl rounded-b-2xl"
+            />
+
+            <!-- Overlay gradient -->
+            <div
+              class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#020617] via-[#020617]/50 to-transparent pointer-events-none"
+            ></div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Features -->
     <section id="features" class="py-24 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-20 animate-fade-in-up opacity-0 delay-300">
-                <h2 class="text-sm text-primary font-bold tracking-widest uppercase mb-3">Features</h2>
-                <p class="mt-2 text-4xl leading-tight font-black tracking-tight text-white sm:text-5xl">
-                    Everything you need to <span class="text-gradient">Move Fast</span>
-                </p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 group animate-fade-in-up opacity-0 delay-100">
-                    <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-indigo-500/20 group-hover:border-indigo-500/50">
-                        <svg class="w-7 h-7 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-3 text-white group-hover:text-indigo-300 transition-colors">Real-time Chat</h3>
-                    <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Instant messaging with rich text, emojis, and file sharing. Never miss a beat with live typing indicators and read receipts.</p>
-                </div>
-                <!-- Feature 2 -->
-                <div class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 group animate-fade-in-up opacity-0 delay-200">
-                    <div class="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-purple-500/20 group-hover:border-purple-500/50">
-                        <svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-3 text-white group-hover:text-purple-300 transition-colors">Team Channels</h3>
-                    <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Organize discussions by topic, project, or department. Keep conversations focused and easily retrievable for everyone.</p>
-                </div>
-                <!-- Feature 3 -->
-                <div class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 group animate-fade-in-up opacity-0 delay-300">
-                    <div class="w-14 h-14 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-pink-500/20 group-hover:border-pink-500/50">
-                        <svg class="w-7 h-7 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-3 text-white group-hover:text-pink-300 transition-colors">Enterprise Security</h3>
-                    <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Built with role-based access control, HttpOnly cookies, and strict validation. Your data is always safe and secure.</p>
-                </div>
-            </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20 animate-fade-in-up opacity-0 delay-300">
+          <h2
+            class="text-sm text-primary font-bold tracking-widest uppercase mb-3"
+          >
+            Features
+          </h2>
+          <p
+            class="mt-2 text-4xl leading-tight font-black tracking-tight text-white sm:text-5xl"
+          >
+            Everything you need to <span class="text-gradient">Move Fast</span>
+          </p>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <!-- Feature 1 -->
+          <div
+            class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 group animate-fade-in-up opacity-0 delay-100"
+          >
+            <div
+              class="w-20 h-20 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-indigo-500/20 group-hover:border-indigo-500/50"
+            >
+              <img
+                src="feature-chat.png"
+                alt="Real-time Chat"
+                class="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+              />
+            </div>
+            <h3
+              class="text-2xl font-bold mb-3 text-white group-hover:text-indigo-300 transition-colors"
+            >
+              Real-time Chat
+            </h3>
+            <p
+              class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors"
+            >
+              Instant messaging with rich text, emojis, and file sharing. Never
+              miss a beat with live typing indicators and read receipts.
+            </p>
+          </div>
+          <!-- Feature 2 -->
+          <div
+            class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 group animate-fade-in-up opacity-0 delay-200"
+          >
+            <div
+              class="w-20 h-20 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-purple-500/20 group-hover:border-purple-500/50"
+            >
+              <img
+                src="feature-channels.png"
+                alt="Team Channels"
+                class="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]"
+              />
+            </div>
+            <h3
+              class="text-2xl font-bold mb-3 text-white group-hover:text-purple-300 transition-colors"
+            >
+              Team Channels
+            </h3>
+            <p
+              class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors"
+            >
+              Organize discussions by topic, project, or department. Keep
+              conversations focused and easily retrievable for everyone.
+            </p>
+          </div>
+          <!-- Feature 3 -->
+          <div
+            class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 group animate-fade-in-up opacity-0 delay-300"
+          >
+            <div
+              class="w-20 h-20 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-pink-500/20 group-hover:border-pink-500/50"
+            >
+              <img
+                src="feature-security.png"
+                alt="Enterprise Security"
+                class="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]"
+              />
+            </div>
+            <h3
+              class="text-2xl font-bold mb-3 text-white group-hover:text-pink-300 transition-colors"
+            >
+              Enterprise Security
+            </h3>
+            <p
+              class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors"
+            >
+              Built with role-based access control, HttpOnly cookies, and strict
+              validation. Your data is always safe and secure.
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
-
-
 
     <!-- Pricing -->
     <section id="pricing" class="py-24 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16 animate-fade-in-up opacity-0 delay-200">
-                <h2 class="text-sm text-primary font-bold tracking-widest uppercase mb-3">Pricing</h2>
-                <h3 class="text-3xl md:text-5xl font-black text-white mb-6">Simple, Transparent <span class="text-gradient">Pricing</span></h3>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <!-- Starter -->
-                <div class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 flex flex-col">
-                    <div class="mb-4">
-                        <span class="px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider text-gray-300">Starter</span>
-                    </div>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold text-white">$0</span>
-                        <span class="text-gray-400">/month</span>
-                    </div>
-                    <ul class="space-y-4 mb-8 flex-1">
-                        <li class="flex items-center gap-3 text-gray-300">
-                            <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Up to 10 users
-                        </li>
-                        <li class="flex items-center gap-3 text-gray-300">
-                            <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Unlimited history
-                        </li>
-                    </ul>
-                    <a href="#" class="w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 text-center font-semibold transition-colors">Start Free</a>
-                </div>
-
-                <!-- Pro -->
-                <div class="glass p-8 rounded-3xl bg-gradient-to-b from-white/10 to-transparent border-primary/50 relative transform md:-translate-y-4 hover:scale-105 transition-all duration-300 flex flex-col shadow-2xl shadow-primary/20">
-                    <div class="absolute top-0 right-0 p-4">
-                        <span class="text-primary animate-pulse">✨</span>
-                    </div>
-                    <div class="mb-4">
-                        <span class="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-bold uppercase tracking-wider">Pro</span>
-                    </div>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold text-white">$12</span>
-                        <span class="text-gray-400">/user/mo</span>
-                    </div>
-                    <ul class="space-y-4 mb-8 flex-1">
-                        <li class="flex items-center gap-3 text-white font-medium">
-                            <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Unlimited users
-                        </li>
-                        <li class="flex items-center gap-3 text-white font-medium">
-                            <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Guest access
-                        </li>
-                        <li class="flex items-center gap-3 text-white font-medium">
-                            <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Admin controls
-                        </li>
-                    </ul>
-                    <a href="#" class="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-center font-bold shadow-lg shadow-primary/30 transition-all">Get Started</a>
-                </div>
-
-                <!-- Enterprise -->
-                <div class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 flex flex-col">
-                    <div class="mb-4">
-                        <span class="px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider text-gray-300">Enterprise</span>
-                    </div>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold text-white">Custom</span>
-                    </div>
-                    <ul class="space-y-4 mb-8 flex-1">
-                        <li class="flex items-center gap-3 text-gray-300">
-                            <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            SAML / SSO
-                        </li>
-                        <li class="flex items-center gap-3 text-gray-300">
-                            <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Audit logs
-                        </li>
-                        <li class="flex items-center gap-3 text-gray-300">
-                            <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            24/7 Support
-                        </li>
-                    </ul>
-                    <a href="#" class="w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 text-center font-semibold transition-colors">Contact Sales</a>
-                </div>
-            </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 animate-fade-in-up opacity-0 delay-200">
+          <h2
+            class="text-sm text-primary font-bold tracking-widest uppercase mb-3"
+          >
+            Pricing
+          </h2>
+          <h3 class="text-3xl md:text-5xl font-black text-white mb-6">
+            Simple, Transparent <span class="text-gradient">Pricing</span>
+          </h3>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <!-- Starter -->
+          <div
+            class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 flex flex-col"
+          >
+            <div class="mb-4">
+              <span
+                class="px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider text-gray-300"
+                >Starter</span
+              >
+            </div>
+            <div class="mb-6">
+              <span class="text-4xl font-bold text-white">$0</span>
+              <span class="text-gray-400">/month</span>
+            </div>
+            <ul class="space-y-4 mb-8 flex-1">
+              <li class="flex items-center gap-3 text-gray-300">
+                <svg
+                  class="w-5 h-5 text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Up to 10 users
+              </li>
+              <li class="flex items-center gap-3 text-gray-300">
+                <svg
+                  class="w-5 h-5 text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Unlimited history
+              </li>
+            </ul>
+            <a
+              href="#"
+              class="w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 text-center font-semibold transition-colors"
+              >Start Free</a
+            >
+          </div>
+
+          <!-- Pro -->
+          <div
+            class="glass p-8 rounded-3xl bg-gradient-to-b from-white/10 to-transparent border-primary/50 relative transform md:-translate-y-4 hover:scale-105 transition-all duration-300 flex flex-col shadow-2xl shadow-primary/20"
+          >
+            <div class="absolute top-0 right-0 p-4">
+              <span class="text-primary animate-pulse">✨</span>
+            </div>
+            <div class="mb-4">
+              <span
+                class="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-bold uppercase tracking-wider"
+                >Pro</span
+              >
+            </div>
+            <div class="mb-6">
+              <span class="text-4xl font-bold text-white">$12</span>
+              <span class="text-gray-400">/user/mo</span>
+            </div>
+            <ul class="space-y-4 mb-8 flex-1">
+              <li class="flex items-center gap-3 text-white font-medium">
+                <svg
+                  class="w-5 h-5 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Unlimited users
+              </li>
+              <li class="flex items-center gap-3 text-white font-medium">
+                <svg
+                  class="w-5 h-5 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Guest access
+              </li>
+              <li class="flex items-center gap-3 text-white font-medium">
+                <svg
+                  class="w-5 h-5 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Admin controls
+              </li>
+            </ul>
+            <a
+              href="#"
+              class="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-center font-bold shadow-lg shadow-primary/30 transition-all"
+              >Get Started</a
+            >
+          </div>
+
+          <!-- Enterprise -->
+          <div
+            class="glass p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 flex flex-col"
+          >
+            <div class="mb-4">
+              <span
+                class="px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider text-gray-300"
+                >Enterprise</span
+              >
+            </div>
+            <div class="mb-6">
+              <span class="text-4xl font-bold text-white">Custom</span>
+            </div>
+            <ul class="space-y-4 mb-8 flex-1">
+              <li class="flex items-center gap-3 text-gray-300">
+                <svg
+                  class="w-5 h-5 text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                SAML / SSO
+              </li>
+              <li class="flex items-center gap-3 text-gray-300">
+                <svg
+                  class="w-5 h-5 text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Audit logs
+              </li>
+              <li class="flex items-center gap-3 text-gray-300">
+                <svg
+                  class="w-5 h-5 text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                24/7 Support
+              </li>
+            </ul>
+            <a
+              href="#"
+              class="w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 text-center font-semibold transition-colors"
+              >Contact Sales</a
+            >
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- CTA Section -->
     <section class="relative py-32 overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
-            <h2 class="text-4xl md:text-6xl font-black mb-8">Ready to <span class="text-gradient">Transform</span> Your Team?</h2>
-            <p class="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">Join thousands of forward-thinking companies building the future of work with PulseWeave.</p>
-            <div class="flex flex-col sm:flex-row justify-center gap-6">
-                <a href="https://app.yourdomain.com/register" class="inline-flex items-center justify-center px-10 py-5 border border-transparent text-xl font-bold rounded-full text-white bg-primary hover:bg-primary/90 shadow-[0_0_40px_-10px_rgba(99,102,241,0.6)] hover:shadow-[0_0_60px_-10px_rgba(99,102,241,0.8)] hover:scale-105 transition-all duration-300">
-                    Get Started Now
-                </a>
-            </div>
+      <div
+        class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"
+      ></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+        <h2 class="text-4xl md:text-6xl font-black mb-8">
+          Ready to <span class="text-gradient">Transform</span> Your Team?
+        </h2>
+        <p class="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+          Join thousands of forward-thinking companies building the future of
+          work with PulseWeave.
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center gap-6">
+          <a
+            href="https://app.yourdomain.com/register"
+            class="inline-flex items-center justify-center px-10 py-5 border border-transparent text-xl font-bold rounded-full text-white bg-primary hover:bg-primary/90 shadow-[0_0_40px_-10px_rgba(99,102,241,0.6)] hover:shadow-[0_0_60px_-10px_rgba(99,102,241,0.8)] hover:scale-105 transition-all duration-300"
+          >
+            Get Started Now
+          </a>
         </div>
+      </div>
     </section>
 
     <footer class="border-t border-white/5 py-12 mt-20 bg-black/40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center gap-2 mb-4 md:mb-0">
-                <div class="w-6 h-6 rounded bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
-                <span class="font-bold text-lg">PulseWeave</span>
-            </div>
-            <div class="text-sm text-gray-500">
-                &copy; 2024 PulseWeave Inc. All rights reserved.
-            </div>
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center"
+      >
+        <div class="flex items-center gap-2 mb-4 md:mb-0">
+          <div
+            class="w-6 h-6 rounded bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+          >
+            <svg
+              class="w-4 h-4 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <span class="font-bold text-lg">PulseWeave</span>
         </div>
+        <div class="text-sm text-gray-500">
+          &copy; 2024 PulseWeave Inc. All rights reserved.
+        </div>
+      </div>
     </footer>
-
-</body>
+  </body>
 </html>

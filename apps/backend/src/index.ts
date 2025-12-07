@@ -299,11 +299,12 @@ async function startServer(): Promise<void> {
       }
 
       // Track WebSocket connections for health metrics
-      io.on('connection', () => {
+      io.engine.on('connection', () => {
         updateWsConnectionCount(io.engine.clientsCount);
       });
-      io.on('disconnect', () => {
-        updateWsConnectionCount(io.engine.clientsCount);
+      io.engine.on('close', () => {
+        // Update after a small delay to allow clientsCount to update
+        setTimeout(() => updateWsConnectionCount(io.engine.clientsCount), 100);
       });
     });
   } catch (error) {

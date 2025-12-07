@@ -29,7 +29,7 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 - **Node.js + Express** - API server
 - **Socket.io** - WebSocket server
 - **Prisma** - Type-safe ORM
-- **SQLite** - Database (easily swap to PostgreSQL)
+- **SQLite / PostgreSQL** - Database (SQLite default, PostgreSQL for scaling)
 - **JWT** - Authentication
 
 ## Getting Started
@@ -181,9 +181,16 @@ LDAP_ADMIN_GROUP=cn=admins,ou=groups,dc=example,dc=com
 ```
 
 ### Database (`packages/database/.env`)
+
 ```env
+# SQLite (default - works great for small teams)
 DATABASE_URL="file:./dev.db"
+
+# PostgreSQL (for scaling 100+ users)
+# DATABASE_URL="postgresql://user:password@localhost:5432/pulseweave?schema=public"
 ```
+
+> **Scaling Note:** SQLite works well for teams up to ~100 users. For larger deployments or horizontal scaling, switch to PostgreSQL. See `packages/database/.env.example` for instructions.
 
 ### Frontend (`apps/frontend/.env.local`)
 ```env

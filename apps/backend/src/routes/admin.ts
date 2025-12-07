@@ -29,64 +29,67 @@ router.get(
       const limitNum = Math.min(parseInt(limit as string, 10), 100);
       const skip = (pageNum - 1) * limitNum;
 
+      // Build where clause with all filters at database level for scalability
       const where: any = { workspaceId };
 
       if (role) {
         where.roleName = role;
       }
 
-      const members = await prisma.workspaceMember.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              username: true,
-              displayName: true,
-              avatarUrl: true,
-              status: true,
-              mfaEnabled: true,
-              isActive: true,
-              isVerified: true,
-              lastLoginAt: true,
-              createdAt: true,
-            },
-          },
-          role: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-            },
-          },
-        },
-        skip,
-        take: limitNum,
-        orderBy: { joinedAt: 'desc' },
-      });
-
-      // Filter by search if provided
-      let filteredMembers = members;
+      // Add user-level filters directly in the query for better performance
+      const userWhere: any = {};
       if (search) {
         const searchLower = (search as string).toLowerCase();
-        filteredMembers = members.filter(
-          m =>
-            m.user.displayName.toLowerCase().includes(searchLower) ||
-            m.user.username.toLowerCase().includes(searchLower) ||
-            m.user.email.toLowerCase().includes(searchLower)
-        );
+        userWhere.OR = [
+          { displayName: { contains: searchLower } },
+          { username: { contains: searchLower } },
+          { email: { contains: searchLower } },
+        ];
       }
-
-      // Filter by status if provided
       if (status) {
-        filteredMembers = filteredMembers.filter(m => m.user.status === status);
+        userWhere.status = status;
       }
 
-      const total = await prisma.workspaceMember.count({ where });
+      if (Object.keys(userWhere).length > 0) {
+        where.user = userWhere;
+      }
+
+      const [members, total] = await Promise.all([
+        prisma.workspaceMember.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                username: true,
+                displayName: true,
+                avatarUrl: true,
+                status: true,
+                mfaEnabled: true,
+                isActive: true,
+                isVerified: true,
+                lastLoginAt: true,
+                createdAt: true,
+              },
+            },
+            role: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
+          },
+          skip,
+          take: limitNum,
+          orderBy: { joinedAt: 'desc' },
+        }),
+        prisma.workspaceMember.count({ where }),
+      ]);
 
       res.json({
-        users: filteredMembers.map(m => ({
+        users: members.map(m => ({
           ...m.user,
           membership: {
             id: m.id,

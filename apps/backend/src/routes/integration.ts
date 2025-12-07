@@ -4,38 +4,9 @@ import { prisma } from '@pulseweave/database';
 import { AuthRequest, authenticateToken } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
+import { hasAdminAccess } from '../utils/workspace-access';
 
 const router = Router();
-
-/**
- * Checks if a user has admin access to a workspace.
- * Admin access is granted if the user is the workspace owner OR has admin/owner role.
- */
-async function hasAdminAccess(userId: string, workspaceId: string): Promise<boolean> {
-  const [membership, workspace] = await Promise.all([
-    prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
-    }),
-    prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { ownerId: true },
-    }),
-  ]);
-
-  // Check if user is workspace owner
-  if (workspace?.ownerId === userId) {
-    return true;
-  }
-
-  // Check if user has admin or owner role
-  if (membership && ['admin', 'owner'].includes(membership.roleName)) {
-    return true;
-  }
-
-  return false;
-}
 
 /**
  * Available integration types with their configurations.
@@ -257,6 +228,9 @@ router.post(
     let status = 'connected';
     if (config.webhookUrl) {
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         const response = await fetch(config.webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -269,7 +243,10 @@ router.post(
               type: integration.type,
             },
           }),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeout);
         status = response.ok ? 'connected' : 'error';
       } catch (error) {
         status = 'error';
@@ -394,6 +371,9 @@ router.post(
     }
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
       const response = await fetch(config.webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -407,8 +387,10 @@ router.post(
           },
           message: 'Test message from PulseWeave',
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
       const responseText = await response.text().catch(() => '');
 
       // Update status
@@ -434,7 +416,7 @@ router.post(
 
       res.json({
         success: false,
-        error: error.message,
+        error: error.name === 'AbortError' ? 'Request timed out' : error.message,
       });
     }
   })

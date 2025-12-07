@@ -10,38 +10,9 @@ import {
   processIncomingWebhook,
 } from '../services/webhooks';
 import crypto from 'crypto';
+import { hasAdminAccess } from '../utils/workspace-access';
 
 const router = Router();
-
-/**
- * Checks if a user has admin access to a workspace.
- * Admin access is granted if the user is the workspace owner OR has admin/owner role.
- */
-async function hasAdminAccess(userId: string, workspaceId: string): Promise<boolean> {
-  const [membership, workspace] = await Promise.all([
-    prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
-    }),
-    prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { ownerId: true },
-    }),
-  ]);
-
-  // Check if user is workspace owner
-  if (workspace?.ownerId === userId) {
-    return true;
-  }
-
-  // Check if user has admin or owner role
-  if (membership && ['admin', 'owner'].includes(membership.roleName)) {
-    return true;
-  }
-
-  return false;
-}
 
 // ============================================================================
 // Outgoing Webhooks (notify external services)
