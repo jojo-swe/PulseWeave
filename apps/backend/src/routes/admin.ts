@@ -230,6 +230,7 @@ router.patch(
           action: 'ROLE_CHANGED',
           resource: 'user',
           resourceId: userId,
+          workspaceId, // Add workspace context
           details: JSON.stringify({ workspaceId, oldRole: member.roleName, newRole: roleName }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
@@ -299,6 +300,7 @@ router.delete(
           action: 'USER_REMOVED',
           resource: 'workspace',
           resourceId: workspaceId,
+          workspaceId,
           details: JSON.stringify({ removedUserId: userId }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
@@ -369,6 +371,7 @@ router.post(
           action: 'USER_BANNED',
           resource: 'user',
           resourceId: userId,
+          workspaceId,
           details: JSON.stringify({ workspaceId, reason, duration, lockedUntil }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
@@ -413,6 +416,7 @@ router.post(
           action: 'USER_UNBANNED',
           resource: 'user',
           resourceId: userId,
+          workspaceId,
           details: JSON.stringify({ workspaceId }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
@@ -486,6 +490,7 @@ router.post(
           action: 'USER_CREATED',
           resource: 'user',
           resourceId: user.id,
+          workspaceId,
           details: JSON.stringify({ workspaceId, email: data.email, roleName: data.roleName }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
@@ -547,6 +552,7 @@ router.post(
           action: 'PASSWORD_RESET',
           resource: 'user',
           resourceId: userId,
+          workspaceId,
           details: JSON.stringify({ workspaceId, resetBy: req.userId }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
@@ -711,8 +717,9 @@ router.get(
         }
       }
 
-      // Filter by workspace through details JSON
-      // Note: This is a simplified approach. For production, consider a proper workspaceId field.
+      // Filter by workspace
+      where.workspaceId = workspaceId;
+
       const logs = await prisma.auditLog.findMany({
         where,
         include: {

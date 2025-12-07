@@ -74,7 +74,9 @@ router.post('/register', async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Email or username already exists' });
+      // SECURITY: Use generic message to prevent user enumeration
+      // Don't reveal whether email or username specifically exists
+      return res.status(400).json({ error: 'Unable to create account with provided details' });
     }
 
     // Use higher bcrypt cost factor for better security
@@ -137,6 +139,7 @@ router.post('/register', async (req, res) => {
         action: 'USER_REGISTERED',
         resource: 'user',
         resourceId: user.id,
+        workspaceId: workspace.id,
         details: JSON.stringify({ email: data.email, workspaceId: workspace.id }),
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
@@ -204,12 +207,15 @@ router.post('/login', async (req, res) => {
         data: {
           action: 'LOGIN_FAILED',
           resource: 'session',
-          details: JSON.stringify({ email: data.email, reason: 'user_not_found' }),
+          details: JSON.stringify({ email: data.email, reason: 'invalid_credentials' }),
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
         },
       });
       
+      // Simulate bcrypt time to prevent timing attacks
+      await bcrypt.compare('dummy_password', '$2a$12$......................................................'); // dummy hash
+
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -311,6 +317,7 @@ router.post('/login', async (req, res) => {
         action: 'LOGIN_SUCCESS',
         resource: 'session',
         resourceId: user.id,
+        workspaceId: user.workspaceMemberships[0]?.workspaceId,
         details: JSON.stringify({ ip: clientIp }),
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
@@ -435,6 +442,7 @@ router.post('/mfa/verify', async (req, res) => {
         action: 'LOGIN_SUCCESS',
         resource: 'session',
         resourceId: user.id,
+        workspaceId: user.workspaceMemberships[0]?.workspaceId,
         details: JSON.stringify({ mfaType: type }),
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
@@ -490,7 +498,7 @@ router.post('/refresh', async (req, res) => {
 
     // Revoke old refresh token
     if (payload.jti) {
-      revokeToken(payload.jti);
+      await revokeToken(payload.jti);
     }
 
     // Set secure cookies
@@ -526,7 +534,7 @@ router.post('/refresh', async (req, res) => {
 router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
   try {
     if (req.tokenId) {
-      revokeToken(req.tokenId);
+      await revokeToken(req.tokenId);
     }
 
     // Update user status to offline

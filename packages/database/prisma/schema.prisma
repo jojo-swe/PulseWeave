@@ -54,6 +54,7 @@ model User {
   webhooks             Webhook[]
   incomingWebhooks     IncomingWebhook[]
   integrations         Integration[]
+  uploads              Attachment[]        @relation("UserUploads")
 
   @@map("users")
 }
@@ -111,6 +112,10 @@ model AuditLog {
 
   // Relations
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
 
   @@index([userId, createdAt])
   @@index([action, createdAt])
@@ -180,6 +185,7 @@ model Workspace {
   webhooks         Webhook[]
   incomingWebhooks IncomingWebhook[]
   integrations     Integration[]
+  auditLogs        AuditLog[]
 
   @@map("workspaces")
 }
@@ -322,17 +328,19 @@ model Reaction {
 }
 
 model Attachment {
-  id        String   @id @default(cuid())
-  type      String
-  url       String
-  name      String
-  size      Int?
-  mimeType  String?
-  messageId String
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  type         String
+  url          String
+  name         String
+  size         Int?
+  mimeType     String?
+  messageId    String?  // Optional - standalone uploads don't have a message
+  uploadedById String   // Track who uploaded the file for ownership verification
+  createdAt    DateTime @default(now())
 
   // Relations
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message    Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("UserUploads", fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@map("attachments")
 }

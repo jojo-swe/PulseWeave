@@ -10,7 +10,7 @@ interface AuthenticatedSocket extends Socket {
 const userSockets = new Map<string, Set<string>>();
 
 export function setupSocketHandlers(io: Server) {
-  // Authentication middleware
+  // Authentication middleware with full validation
   io.use(async (socket: AuthenticatedSocket, next) => {
     const token = socket.handshake.auth.token;
     
@@ -19,10 +19,28 @@ export function setupSocketHandlers(io: Server) {
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      // Verify token with issuer and audience (same as HTTP auth)
+      const decoded = jwt.verify(token, JWT_SECRET, {
+        issuer: 'pulseweave',
+        audience: 'pulseweave-api',
+      }) as { userId: string; jti?: string };
+      
+      // SECURITY: Check if session is revoked (same as HTTP auth)
+      if (decoded.jti) {
+        const session = await prisma.session.findUnique({
+          where: { tokenId: decoded.jti },
+        });
+        if (session && !session.isValid) {
+          return next(new Error('Token has been revoked'));
+        }
+      }
+      
       socket.userId = decoded.userId;
       next();
     } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        return next(new Error('Token expired'));
+      }
       next(new Error('Invalid token'));
     }
   });
@@ -69,8 +87,45 @@ export function setupSocketHandlers(io: Server) {
       }
     });
 
-    // Join channel room
+    // Join channel room (with authorization check)
     socket.on('channel:join', async (channelId: string) => {
+      // SECURITY: Verify user has access to this channel
+      const channel = await prisma.channel.findUnique({
+        where: { id: channelId },
+        include: { workspace: true },
+      });
+
+      if (!channel) {
+        socket.emit('error', { message: 'Channel not found' });
+        return;
+      }
+
+      // Check workspace membership first
+      const workspaceMembership = await prisma.workspaceMember.findUnique({
+        where: {
+          userId_workspaceId: { userId, workspaceId: channel.workspaceId },
+        },
+      });
+
+      if (!workspaceMembership) {
+        socket.emit('error', { message: 'Not a member of this workspace' });
+        return;
+      }
+
+      // For private channels, check channel membership
+      if (channel.isPrivate) {
+        const channelMembership = await prisma.channelMember.findUnique({
+          where: {
+            userId_channelId: { userId, channelId },
+          },
+        });
+
+        if (!channelMembership) {
+          socket.emit('error', { message: 'Not a member of this private channel' });
+          return;
+        }
+      }
+
       socket.join(`channel:${channelId}`);
       console.log(`User ${userId} joined channel ${channelId}`);
     });

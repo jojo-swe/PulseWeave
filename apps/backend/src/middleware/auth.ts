@@ -1,11 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { prisma } from '@pulseweave/database';
 
 /**
  * JWT configuration with secure defaults.
+ * SECURITY: In production, JWT_SECRET must be set and be at least 32 characters.
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'pulseweave-secret-key-change-in-production';
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET;
+  
+  // In production, require a proper secret
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret) {
+      throw new Error('CRITICAL: JWT_SECRET environment variable must be set in production');
+    }
+    if (secret.length < 32) {
+      throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters in production');
+    }
+    if (secret.includes('change-in-production') || secret.includes('default') || secret.includes('secret')) {
+      throw new Error('CRITICAL: JWT_SECRET appears to be a default value. Set a secure random secret.');
+    }
+  }
+  
+  // In development, allow fallback but warn
+  if (!secret) {
+    console.warn('⚠️  WARNING: JWT_SECRET not set. Using insecure default. DO NOT USE IN PRODUCTION!');
+    return 'pulseweave-dev-only-secret-do-not-use-in-production';
+  }
+  
+  return secret;
+})();
+
 const JWT_ISSUER = 'pulseweave';
 const JWT_AUDIENCE = 'pulseweave-api';
 const JWT_ACCESS_EXPIRY = '1d'; // Shorter expiry for access tokens
@@ -27,16 +53,10 @@ interface TokenPayload {
 }
 
 /**
- * In-memory token blacklist (use Redis in production).
- * Stores revoked token IDs.
- */
-const tokenBlacklist = new Set<string>();
-
-/**
  * Authenticates JWT token from Authorization header.
- * Validates token signature, expiry, and blacklist status.
+ * Validates token signature, expiry, and session status in database.
  */
-export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
   const token = (authHeader && authHeader.split(' ')[1]) || req.cookies?.token;
 
@@ -50,9 +70,15 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
       audience: JWT_AUDIENCE,
     }) as TokenPayload;
 
-    // Check if token is blacklisted (revoked)
-    if (decoded.jti && tokenBlacklist.has(decoded.jti)) {
-      return res.status(403).json({ error: 'Token has been revoked' });
+    // Check if session is valid in database
+    if (decoded.jti) {
+      const session = await prisma.session.findUnique({
+        where: { tokenId: decoded.jti },
+      });
+
+      if (!session || !session.isValid) {
+        return res.status(403).json({ error: 'Token has been revoked' });
+      }
     }
 
     req.userId = decoded.userId;
@@ -65,7 +91,8 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    return res.status(403).json({ error: 'Token verification failed' });
+    console.error('Auth middleware error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
@@ -117,22 +144,30 @@ export function generateRefreshToken(userId: string): string {
 }
 
 /**
- * Revokes a token by adding its ID to the blacklist.
+ * Revokes a token by marking the session as invalid in the database.
  * @param tokenId - The JWT ID (jti) to revoke
  */
-export function revokeToken(tokenId: string): void {
-  tokenBlacklist.add(tokenId);
+export async function revokeToken(tokenId: string): Promise<void> {
+  try {
+    await prisma.session.update({
+      where: { tokenId },
+      data: { isValid: false },
+    });
+  } catch (error) {
+    // Ignore error if session doesn't exist (already deleted or never stored)
+    console.warn(`Failed to revoke token ${tokenId}:`, error);
+  }
 }
 
 /**
  * Revokes all tokens for a user (logout from all devices).
- * In production, this should update a database/Redis.
  * @param userId - The user ID whose tokens to revoke
  */
-export function revokeAllUserTokens(userId: string): void {
-  // In production, store user's token version in DB
-  // and increment it to invalidate all existing tokens
-  console.log(`Revoking all tokens for user: ${userId}`);
+export async function revokeAllUserTokens(userId: string): Promise<void> {
+  await prisma.session.updateMany({
+    where: { userId, isValid: true },
+    data: { isValid: false },
+  });
 }
 
 /**
@@ -140,7 +175,7 @@ export function revokeAllUserTokens(userId: string): void {
  * @param token - The refresh token to verify
  * @returns Token payload or null if invalid
  */
-export function verifyRefreshToken(token: string): TokenPayload | null {
+export async function verifyRefreshToken(token: string): Promise<TokenPayload | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
       issuer: JWT_ISSUER,
@@ -151,8 +186,13 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
       return null;
     }
 
-    if (decoded.jti && tokenBlacklist.has(decoded.jti)) {
-      return null;
+    if (decoded.jti) {
+      const session = await prisma.session.findUnique({
+        where: { tokenId: decoded.jti },
+      });
+      if (!session || !session.isValid) {
+        return null;
+      }
     }
 
     return decoded;

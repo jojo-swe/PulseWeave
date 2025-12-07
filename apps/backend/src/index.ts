@@ -130,18 +130,41 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Cookie parser (for CSRF and sessions)
-app.use(cookieParser(process.env.COOKIE_SECRET || 'change-me-in-production'));
+// SECURITY: Cookie secret must be set in production
+const cookieSecret = (() => {
+  const secret = process.env.COOKIE_SECRET;
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    throw new Error('CRITICAL: COOKIE_SECRET must be set in production');
+  }
+  if (!secret) {
+    console.warn('⚠️  WARNING: COOKIE_SECRET not set. Using insecure default.');
+    return 'pulseweave-dev-cookie-secret';
+  }
+  return secret;
+})();
+app.use(cookieParser(cookieSecret));
 
 // CORS configuration
+// SECURITY: More restrictive in production
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
+    // In production, require explicit origin
+    if (process.env.NODE_ENV === 'production') {
+      if (!origin) {
+        // Block requests with no origin in production (except for same-origin)
+        return callback(null, false);
+      }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    }
+    
+    // In development, allow localhost on any port
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin) || 
         origin.startsWith('http://127.0.0.1:') || 
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('https://127.0.0.1:') ||
-        origin.startsWith('https://localhost:')) {
+        origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
     callback(new Error('Not allowed by CORS'));

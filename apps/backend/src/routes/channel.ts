@@ -8,15 +8,10 @@ const router = Router();
 // Get channel by ID
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
-    const channel = await prisma.channel.findFirst({
-      where: {
-        id: req.params.id,
-        OR: [
-          { isPrivate: false },
-          { members: { some: { userId: req.userId } } },
-        ],
-      },
+    const channel = await prisma.channel.findUnique({
+      where: { id: req.params.id },
       include: {
+        workspace: true,
         members: {
           include: {
             user: {
@@ -40,7 +35,39 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Channel not found' });
     }
 
-    res.json(channel);
+    // SECURITY: Verify user is a member of the workspace
+    const workspaceMembership = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: req.userId!,
+          workspaceId: channel.workspaceId,
+        },
+      },
+    });
+
+    if (!workspaceMembership) {
+      return res.status(403).json({ error: 'Not a member of this workspace' });
+    }
+
+    // SECURITY: For private channels, verify channel membership
+    if (channel.isPrivate) {
+      const channelMembership = await prisma.channelMember.findUnique({
+        where: {
+          userId_channelId: {
+            userId: req.userId!,
+            channelId: channel.id,
+          },
+        },
+      });
+
+      if (!channelMembership) {
+        return res.status(403).json({ error: 'Not a member of this private channel' });
+      }
+    }
+
+    // Remove workspace details from response (don't leak workspace info)
+    const { workspace, ...channelData } = channel;
+    res.json(channelData);
   } catch (error) {
     console.error('Get channel error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -179,6 +206,20 @@ router.post('/:id/join', async (req: AuthRequest, res) => {
 
     if (!channel) {
       return res.status(404).json({ error: 'Channel not found' });
+    }
+
+    // SECURITY: Verify user is a member of the workspace first
+    const workspaceMembership = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: req.userId!,
+          workspaceId: channel.workspaceId,
+        },
+      },
+    });
+
+    if (!workspaceMembership) {
+      return res.status(403).json({ error: 'Not a member of this workspace' });
     }
 
     if (channel.isPrivate) {

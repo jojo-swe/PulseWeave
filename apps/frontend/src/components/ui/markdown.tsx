@@ -36,23 +36,6 @@ function parseMarkdown(text: string): string {
   html = html.replace(/__([^_]+)__/g, '<strong class="font-semibold text-white">$1</strong>');
 
   // Italic *text* or _text_
-  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em class="italic">$1</em>');
-  html = html.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em class="italic">$1</em>');
-
-  // Strikethrough ~~text~~
-  html = html.replace(/~~([^~]+)~~/g, '<del class="line-through text-gray-500">$1</del>');
-
-  // Links [text](url)
-  html = html.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">$1</a>'
-  );
-
-  // Auto-link URLs
-  html = html.replace(
-    /(?<!["\(])(https?:\/\/[^\s<]+)/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">$1</a>'
-  );
 
   // Blockquote > text
   html = html.replace(
