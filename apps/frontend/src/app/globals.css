@@ -72,6 +72,88 @@
     --sidebar-foreground: 210 40% 96%;
     --sidebar-accent: 262 40% 20%;
   }
+
+  /* Corporate theme - Clean, professional, muted colors */
+  .corporate {
+    /* Main Background: Neutral warm gray */
+    --background: 220 14% 96%;
+    --foreground: 220 13% 18%;
+
+    /* Cards: White with subtle shadow */
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 18%;
+
+    /* Primary: Professional blue */
+    --primary: 217 91% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Light gray */
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 13% 25%;
+
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 13% 46%;
+
+    /* Accent: Subtle blue tint */
+    --accent: 217 30% 92%;
+    --accent-foreground: 220 13% 18%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 87%;
+    --input: 220 14% 92%;
+    --ring: 217 91% 40%;
+
+    /* Sidebar: Professional slate */
+    --sidebar: 220 15% 20%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-accent: 217 50% 30%;
+  }
+
+  /* Midnight theme - Deep blue-black, high contrast */
+  .midnight {
+    /* Main Background: Near black with blue tint */
+    --background: 230 25% 6%;
+    --foreground: 210 40% 98%;
+
+    /* Cards: Slightly elevated dark */
+    --card: 230 22% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 230 22% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Electric cyan */
+    --primary: 192 91% 50%;
+    --primary-foreground: 230 25% 6%;
+
+    /* Secondary: Dark elevated */
+    --secondary: 230 20% 14%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 230 20% 14%;
+    --muted-foreground: 215 16% 55%;
+
+    /* Accent: Cyan glow */
+    --accent: 192 40% 15%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 18% 16%;
+    --input: 230 20% 14%;
+    --ring: 192 91% 50%;
+
+    /* Sidebar: Deep midnight */
+    --sidebar: 230 28% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-accent: 192 40% 12%;
+  }
 }
 
 @layer base {
@@ -80,13 +162,24 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Rich Cosmic Mesh Background */
-    background-image: url('/assets/app-background.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
   }
+}
+
+/* Background image only for dark themes (class is on html element) */
+html.dark body,
+html.midnight body {
+  background-image: url('/assets/app-background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* Light themes use solid background */
+html.light body,
+html.corporate body {
+  background-image: none !important;
+  background-color: hsl(var(--background));
 }
 
 /* Custom scrollbar */

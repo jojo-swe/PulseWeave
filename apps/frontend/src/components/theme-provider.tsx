@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light' | 'system';
+export type Theme = 'dark' | 'light' | 'system' | 'corporate' | 'midnight';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ interface ThemeProviderProps {
 interface ThemeProviderState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: 'dark' | 'light';
+  resolvedTheme: 'dark' | 'light' | 'corporate' | 'midnight';
 }
 
 const initialState: ThemeProviderState = {
@@ -32,10 +32,9 @@ export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'pulseweave-theme',
-  ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light' | 'corporate' | 'midnight'>('dark');
   const [mounted, setMounted] = useState(false);
 
   // Load theme from localStorage on mount
@@ -52,9 +51,10 @@ export function ThemeProvider({
     if (!mounted) return;
 
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
+    // Remove all theme classes
+    root.classList.remove('light', 'dark', 'corporate', 'midnight');
 
-    let resolved: 'dark' | 'light' = 'dark';
+    let resolved: 'dark' | 'light' | 'corporate' | 'midnight' = 'dark';
 
     if (theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -102,7 +102,7 @@ export function ThemeProvider({
   }
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );

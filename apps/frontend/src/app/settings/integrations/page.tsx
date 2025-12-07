@@ -123,16 +123,24 @@ export default function IntegrationsPage() {
     if (!isHydrated) {
       return;
     }
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    if (!currentWorkspace?.id) {
-      // Workspace not loaded yet, wait for it
-      return;
-    }
-    loadData();
-  }, [isHydrated, token, currentWorkspace?.id, activeTab]);
+    // Check auth via API call instead of relying on token in store
+    // (token may be empty when using httpOnly cookies)
+    const checkAuthAndLoad = async () => {
+      try {
+        await api.get('/auth/me');
+        // If we get here, user is authenticated
+        if (!currentWorkspace?.id) {
+          // Workspace not loaded yet, wait for it
+          return;
+        }
+        loadData();
+      } catch (err: any) {
+        // Auth failed, redirect to login
+        router.push('/login');
+      }
+    };
+    checkAuthAndLoad();
+  }, [isHydrated, currentWorkspace?.id, activeTab]);
 
   const loadData = async () => {
     if (!currentWorkspace?.id) {

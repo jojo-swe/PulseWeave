@@ -66,10 +66,43 @@ export function SecuritySettings() {
   const fetchMfaStatus = async () => {
     try {
       setLoading(true);
-      const status = await api.get<MfaStatus>('/mfa/status');
+      setError('');
+      
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/mfa/status`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const status = await response.json();
       setMfaStatus(status);
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch MFA status');
+      console.error('MFA status error:', err);
+      // Set default MFA status on error so the page renders
+      setMfaStatus({
+        mfaEnabled: false,
+        totpEnabled: false,
+        webauthnEnabled: false,
+        webauthnCredentials: [],
+      });
+      
+      if (err.name === 'AbortError') {
+        setError('Request timed out. The server may be unavailable.');
+      } else {
+        setError(err.message || 'Failed to fetch MFA status. You can still configure MFA below.');
+      }
     } finally {
       setLoading(false);
     }

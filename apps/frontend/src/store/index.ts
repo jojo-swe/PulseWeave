@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface User {
   id: string;
   email: string;
@@ -200,7 +202,23 @@ export const useStore = create<AppState>()(
       user: null,
       setAuth: (token, user) => set({ token, user }),
       setUser: (user) => set({ user }),
-      logout: () => set({ token: null, user: null, currentWorkspace: null, currentChannel: null }),
+      logout: () => {
+        // Call backend to clear cookies and revoke token
+        const token = get().token;
+        fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).catch(() => {
+          // Ignore errors - we're logging out anyway
+        });
+        // Clear local state
+        set({ token: null, user: null, currentWorkspace: null, currentChannel: null });
+        // Redirect to login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      },
 
       // Workspace
       currentWorkspace: null,

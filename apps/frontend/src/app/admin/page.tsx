@@ -215,8 +215,8 @@ export default function AdminPage() {
         setTotalAuditLogs(response.pagination.total);
       } else if (activeTab === 'security') {
         const [statusResponse, lockedResponse] = await Promise.all([
-          api.get<SecurityStatus>('/security/status'),
-          api.get<LockedAccount[]>('/security/locked-accounts'),
+          api.get<SecurityStatus>(`/security/status?workspaceId=${currentWorkspace?.id}`),
+          api.get<LockedAccount[]>(`/security/locked-accounts?workspaceId=${currentWorkspace?.id}`),
         ]);
         setSecurityStatus(statusResponse);
         setLockedAccounts(lockedResponse);
@@ -768,7 +768,7 @@ export default function AdminPage() {
                   )}
 
                   {/* Security Tab */}
-                  {activeTab === 'security' && securityStatus && (
+                  {activeTab === 'security' && !loading && (securityStatus ? (
                     <div className="space-y-6">
                       <h2 className="text-lg font-semibold">Security Dashboard</h2>
                       
@@ -922,7 +922,24 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : (
+                    <div className="space-y-4">
+                      <h2 className="text-lg font-semibold">Security Dashboard</h2>
+                      <div className="p-8 text-center border rounded-lg bg-card">
+                        <ShieldAlert className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">
+                          {error || 'Unable to load security status. Please try again.'}
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => fetchData()}
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </>
               )}
             </main>

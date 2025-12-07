@@ -73,9 +73,15 @@ export function NavigationRail({
         />
         <NavButton 
           icon={<Bell className="h-5 w-5" />} 
-          label="Activity" 
+          label="Activity (Ctrl+Click for Settings)" 
           isActive={activeTab === 'activity'} 
-          onClick={() => onTabChange?.('activity')}
+          onClick={(e) => {
+            if (e?.ctrlKey || e?.metaKey) {
+              router.push('/settings?tab=notifications');
+            } else {
+              onTabChange?.('activity');
+            }
+          }}
         />
         <NavButton 
           icon={<Users className="h-5 w-5" />} 
@@ -171,7 +177,7 @@ interface NavButtonProps {
   icon: React.ReactNode;
   label: string;
   isActive?: boolean;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent) => void;
 }
 
 function NavButton({ icon, label, isActive, onClick }: NavButtonProps) {

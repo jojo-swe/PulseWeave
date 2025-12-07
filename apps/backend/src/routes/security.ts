@@ -22,7 +22,7 @@ const router = Router();
  * Get current security status and configuration.
  * Available to admins only.
  */
-router.get('/status', authenticateToken, requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
+router.get('/status', authenticateToken, requireAdmin((req) => req.query.workspaceId as string), asyncHandler(async (req: AuthRequest, res) => {
   try {
     const sslConfig = getSslConfig();
     
@@ -176,7 +176,7 @@ router.get('/check-ip/:ip', authenticateToken, async (req: AuthRequest, res) => 
  * Get locked accounts.
  * SECURITY: Requires admin privileges.
  */
-router.get('/locked-accounts', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
+router.get('/locked-accounts', authenticateToken, requireAdmin((req) => req.query.workspaceId as string), async (req: AuthRequest, res: any) => {
   try {
     const lockedAccounts = await prisma.user.findMany({
       where: {

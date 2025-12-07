@@ -463,4 +463,37 @@ export const api = {
         token,
       }),
   },
+  preferences: {
+    get: () =>
+      fetchApi<UserPreferences>('/api/preferences', { token: getToken() }),
+    update: (data: Partial<UserPreferences>) =>
+      fetchApi<UserPreferences>('/api/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        token: getToken(),
+      }),
+    reset: () =>
+      fetchApi<UserPreferences>('/api/preferences/reset', {
+        method: 'POST',
+        token: getToken(),
+      }),
+  },
 };
+
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  theme: 'dark' | 'light' | 'corporate' | 'midnight' | 'system';
+  desktopNotifications: boolean;
+  soundEnabled: boolean;
+  notificationPreview: boolean;
+  mentionNotifications: boolean;
+  dmNotifications: boolean;
+  channelNotifications: boolean;
+  threadReplies: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  idleTimeout: number;
+  awayTimeout: number;
+}

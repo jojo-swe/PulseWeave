@@ -201,8 +201,8 @@ router.post('/register', async (req, res) => {
         ...user,
         role: 'owner', // New user is owner of their workspace
       },
-      // token, // Optional: keep returning it for non-browser clients? Let's keep it for now for compatibility
-      // refreshToken,
+      token, // Return token for non-browser clients and localStorage fallback
+      refreshToken,
       workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug },
     });
   } catch (error) {
@@ -392,8 +392,8 @@ router.post('/login', async (req, res) => {
         mfaEnabled: user.mfaEnabled,
         role: userRole,
       },
-      // token,
-      // refreshToken,
+      token, // Return token for non-browser clients and localStorage fallback
+      refreshToken,
       workspace: user.workspaceMemberships[0]?.workspace || null,
     });
   } catch (error) {

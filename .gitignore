@@ -48,3 +48,5 @@ uploads/
 .vercel
 .idea
 .cache
+marketing/
+dev.db

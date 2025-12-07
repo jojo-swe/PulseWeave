@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/store';
-import { api } from '@/lib/api';
+import { api, UserPreferences } from '@/lib/api';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,11 @@ import {
   Monitor,
   Plug,
   ChevronRight,
+  Briefcase,
+  Sparkles,
+  Clock,
 } from 'lucide-react';
+import type { Theme } from '@/components/theme-provider';
 
 type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance';
 
@@ -36,9 +40,17 @@ type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance';
  */
 export default function SettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, token, setUser } = useStore();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  
+  // Get initial tab from URL query parameter
+  const tabFromUrl = searchParams.get('tab') as SettingsTab | null;
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    tabFromUrl && ['profile', 'security', 'notifications', 'appearance'].includes(tabFromUrl)
+      ? tabFromUrl
+      : 'profile'
+  );
 
   // Profile state
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -46,11 +58,75 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
-  // Notification state
+  // Preferences state
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
+  const [preferencesSaving, setPreferencesSaving] = useState(false);
   const [desktopNotifications, setDesktopNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [mentionNotifications, setMentionNotifications] = useState(true);
   const [dmNotifications, setDmNotifications] = useState(true);
+  const [channelNotifications, setChannelNotifications] = useState(true);
+  const [threadReplies, setThreadReplies] = useState(true);
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
+  const [quietHoursStart, setQuietHoursStart] = useState('22:00');
+  const [quietHoursEnd, setQuietHoursEnd] = useState('08:00');
+  const [notificationPreview, setNotificationPreview] = useState(true);
+  
+  // Status timeout state (in minutes)
+  const [idleTimeout, setIdleTimeout] = useState(5);
+  const [awayTimeout, setAwayTimeout] = useState(15);
+
+  // Load preferences from backend
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const prefs = await api.preferences.get();
+        setDesktopNotifications(prefs.desktopNotifications);
+        setSoundEnabled(prefs.soundEnabled);
+        setMentionNotifications(prefs.mentionNotifications);
+        setDmNotifications(prefs.dmNotifications);
+        setChannelNotifications(prefs.channelNotifications);
+        setThreadReplies(prefs.threadReplies);
+        setQuietHoursEnabled(prefs.quietHoursEnabled);
+        setQuietHoursStart(prefs.quietHoursStart);
+        setQuietHoursEnd(prefs.quietHoursEnd);
+        setNotificationPreview(prefs.notificationPreview);
+        setIdleTimeout(prefs.idleTimeout);
+        setAwayTimeout(prefs.awayTimeout);
+        // Apply theme from preferences
+        if (prefs.theme) {
+          setTheme(prefs.theme);
+        }
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+      } finally {
+        setPreferencesLoading(false);
+      }
+    };
+    loadPreferences();
+  }, [setTheme]);
+
+  // Save preferences to backend (debounced)
+  const savePreferences = async (updates: Partial<UserPreferences>) => {
+    setPreferencesSaving(true);
+    try {
+      await api.preferences.update(updates);
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+    } finally {
+      setPreferencesSaving(false);
+    }
+  };
+
+  // Wrapper functions to save on change
+  const updatePreference = <K extends keyof UserPreferences>(
+    key: K,
+    value: UserPreferences[K],
+    setter: (v: UserPreferences[K]) => void
+  ) => {
+    setter(value);
+    savePreferences({ [key]: value });
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -244,7 +320,7 @@ export default function SettingsPage() {
               {activeTab === 'security' && <SecuritySettings />}
 
               {activeTab === 'notifications' && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div>
                     <h2 className="text-lg font-semibold">Notification Settings</h2>
                     <p className="text-sm text-muted-foreground">
@@ -252,8 +328,10 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
+                  {/* General Notifications */}
                   <div className="space-y-4">
-                    {/* Desktop Notifications */}
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">General</h3>
+                    
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-0.5">
                         <Label className="text-base">Desktop Notifications</Label>
@@ -263,11 +341,10 @@ export default function SettingsPage() {
                       </div>
                       <Switch
                         checked={desktopNotifications}
-                        onCheckedChange={setDesktopNotifications}
+                        onCheckedChange={(v) => updatePreference('desktopNotifications', v, setDesktopNotifications)}
                       />
                     </div>
 
-                    {/* Sound */}
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-0.5">
                         <Label className="text-base">Notification Sound</Label>
@@ -277,36 +354,190 @@ export default function SettingsPage() {
                       </div>
                       <Switch
                         checked={soundEnabled}
-                        onCheckedChange={setSoundEnabled}
+                        onCheckedChange={(v) => updatePreference('soundEnabled', v, setSoundEnabled)}
                       />
                     </div>
 
-                    {/* Mentions */}
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-0.5">
-                        <Label className="text-base">Mention Notifications</Label>
+                        <Label className="text-base">Show Message Preview</Label>
                         <p className="text-sm text-muted-foreground">
-                          Get notified when someone mentions you
+                          Display message content in notifications
+                        </p>
+                      </div>
+                      <Switch
+                        checked={notificationPreview}
+                        onCheckedChange={(v) => updatePreference('notificationPreview', v, setNotificationPreview)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notification Filtering */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Message Filtering</h3>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label className="text-base">Mentions</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Get notified when someone mentions you (@you)
                         </p>
                       </div>
                       <Switch
                         checked={mentionNotifications}
-                        onCheckedChange={setMentionNotifications}
+                        onCheckedChange={(v) => updatePreference('mentionNotifications', v, setMentionNotifications)}
                       />
                     </div>
 
-                    {/* DMs */}
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-0.5">
-                        <Label className="text-base">Direct Message Notifications</Label>
+                        <Label className="text-base">Direct Messages</Label>
                         <p className="text-sm text-muted-foreground">
                           Get notified for new direct messages
                         </p>
                       </div>
                       <Switch
                         checked={dmNotifications}
-                        onCheckedChange={setDmNotifications}
+                        onCheckedChange={(v) => updatePreference('dmNotifications', v, setDmNotifications)}
                       />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label className="text-base">Channel Messages</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Get notified for all messages in channels you joined
+                        </p>
+                      </div>
+                      <Switch
+                        checked={channelNotifications}
+                        onCheckedChange={(v) => updatePreference('channelNotifications', v, setChannelNotifications)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label className="text-base">Thread Replies</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Get notified when someone replies to a thread you participated in
+                        </p>
+                      </div>
+                      <Switch
+                        checked={threadReplies}
+                        onCheckedChange={(v) => updatePreference('threadReplies', v, setThreadReplies)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quiet Hours */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Quiet Hours</h3>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label className="text-base">Enable Quiet Hours</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Mute all notifications during specified hours
+                        </p>
+                      </div>
+                      <Switch
+                        checked={quietHoursEnabled}
+                        onCheckedChange={(v) => updatePreference('quietHoursEnabled', v, setQuietHoursEnabled)}
+                      />
+                    </div>
+
+                    {quietHoursEnabled && (
+                      <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-sm">Start Time</Label>
+                          <Input
+                            type="time"
+                            value={quietHoursStart}
+                            onChange={(e) => {
+                              setQuietHoursStart(e.target.value);
+                              savePreferences({ quietHoursStart: e.target.value });
+                            }}
+                            className="max-w-[140px]"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-sm">End Time</Label>
+                          <Input
+                            type="time"
+                            value={quietHoursEnd}
+                            onChange={(e) => {
+                              setQuietHoursEnd(e.target.value);
+                              savePreferences({ quietHoursEnd: e.target.value });
+                            }}
+                            className="max-w-[140px]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status Timeouts */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Status Timeouts
+                    </h3>
+
+                    <div className="p-4 border rounded-lg space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-base">Idle Timeout</Label>
+                          <span className="text-sm text-muted-foreground">{idleTimeout} minutes</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Time before your status changes to Away when inactive
+                        </p>
+                        <input
+                          type="range"
+                          min="1"
+                          max="30"
+                          value={idleTimeout}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setIdleTimeout(val);
+                          }}
+                          onMouseUp={() => savePreferences({ idleTimeout })}
+                          onTouchEnd={() => savePreferences({ idleTimeout })}
+                          className="w-full accent-primary"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>1 min</span>
+                          <span>30 min</span>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-base">Away Timeout</Label>
+                          <span className="text-sm text-muted-foreground">{awayTimeout} minutes</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Time before your status changes to Offline when away
+                        </p>
+                        <input
+                          type="range"
+                          min="5"
+                          max="120"
+                          step="5"
+                          value={awayTimeout}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setAwayTimeout(val);
+                          }}
+                          onMouseUp={() => savePreferences({ awayTimeout })}
+                          onTouchEnd={() => savePreferences({ awayTimeout })}
+                          className="w-full accent-primary"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>5 min</span>
+                          <span>2 hours</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -324,50 +555,43 @@ export default function SettingsPage() {
                   {/* Theme Selection */}
                   <div className="space-y-3">
                     <Label className="text-base">Theme</Label>
-                    <div className="grid grid-cols-3 gap-3 max-w-md">
-                      <button
-                        onClick={() => setTheme('light')}
-                        className={cn(
-                          'flex flex-col items-center gap-2 p-4 border rounded-lg transition-colors',
-                          theme === 'light' ? 'border-primary bg-primary/5' : 'hover:bg-muted'
-                        )}
-                      >
-                        <Sun className="h-6 w-6" />
-                        <span className="text-sm font-medium">Light</span>
-                        {theme === 'light' && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setTheme('dark')}
-                        className={cn(
-                          'flex flex-col items-center gap-2 p-4 border rounded-lg transition-colors',
-                          theme === 'dark' ? 'border-primary bg-primary/5' : 'hover:bg-muted'
-                        )}
-                      >
-                        <Moon className="h-6 w-6" />
-                        <span className="text-sm font-medium">Dark</span>
-                        {theme === 'dark' && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setTheme('system')}
-                        className={cn(
-                          'flex flex-col items-center gap-2 p-4 border rounded-lg transition-colors',
-                          theme === 'system' ? 'border-primary bg-primary/5' : 'hover:bg-muted'
-                        )}
-                      >
-                        <Monitor className="h-6 w-6" />
-                        <span className="text-sm font-medium">System</span>
-                        {theme === 'system' && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </button>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                      <ThemeButton
+                        icon={<Sun className="h-5 w-5" />}
+                        label="Light"
+                        description="Clean & bright"
+                        isActive={theme === 'light'}
+                        onClick={() => { setTheme('light'); savePreferences({ theme: 'light' }); }}
+                      />
+                      <ThemeButton
+                        icon={<Moon className="h-5 w-5" />}
+                        label="Dark"
+                        description="Easy on the eyes"
+                        isActive={theme === 'dark'}
+                        onClick={() => { setTheme('dark'); savePreferences({ theme: 'dark' }); }}
+                      />
+                      <ThemeButton
+                        icon={<Briefcase className="h-5 w-5" />}
+                        label="Corporate"
+                        description="Professional blue"
+                        isActive={theme === 'corporate'}
+                        onClick={() => { setTheme('corporate'); savePreferences({ theme: 'corporate' }); }}
+                      />
+                      <ThemeButton
+                        icon={<Sparkles className="h-5 w-5" />}
+                        label="Midnight"
+                        description="Deep & vibrant"
+                        isActive={theme === 'midnight'}
+                        onClick={() => { setTheme('midnight'); savePreferences({ theme: 'midnight' }); }}
+                      />
+                      <ThemeButton
+                        icon={<Monitor className="h-5 w-5" />}
+                        label="System"
+                        description="Match OS setting"
+                        isActive={theme === 'system'}
+                        onClick={() => { setTheme('system'); savePreferences({ theme: 'system' }); }}
+                      />
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Choose your preferred color theme
-                    </p>
                   </div>
                 </div>
               )}
@@ -376,5 +600,37 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+interface ThemeButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function ThemeButton({ icon, label, description, isActive, onClick }: ThemeButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex flex-col items-center gap-2 p-4 border rounded-lg transition-all text-center',
+        isActive 
+          ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
+          : 'hover:bg-muted hover:border-muted-foreground/20'
+      )}
+    >
+      <div className={cn(
+        'p-2 rounded-full',
+        isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+      )}>
+        {icon}
+      </div>
+      <span className="text-sm font-medium">{label}</span>
+      <span className="text-xs text-muted-foreground">{description}</span>
+      {isActive && <Check className="h-4 w-4 text-primary" />}
+    </button>
   );
 }
