@@ -95,6 +95,12 @@ export default function IntegrationsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('webhooks');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Wait for Zustand to hydrate from localStorage
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // Data states
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
@@ -113,6 +119,10 @@ export default function IntegrationsPage() {
   const [testResult, setTestResult] = useState<{ id: string; success: boolean; message: string } | null>(null);
 
   useEffect(() => {
+    // Wait for Zustand to hydrate before checking auth
+    if (!isHydrated) {
+      return;
+    }
     if (!token) {
       router.push('/login');
       return;
@@ -122,7 +132,7 @@ export default function IntegrationsPage() {
       return;
     }
     loadData();
-  }, [token, currentWorkspace?.id, activeTab]);
+  }, [isHydrated, token, currentWorkspace?.id, activeTab]);
 
   const loadData = async () => {
     if (!currentWorkspace?.id) {
@@ -275,6 +285,15 @@ export default function IntegrationsPage() {
         return Clock;
     }
   };
+
+  // Show loading while waiting for hydration
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
