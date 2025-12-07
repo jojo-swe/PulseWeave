@@ -3,33 +3,47 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light mode (default) */
+  /* Light mode - Bright with purple accents */
   :root,
   .light {
+    /* Pure white background */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --foreground: 262 30% 15%;
+    
+    /* Cards: Slightly off-white for depth */
+    --card: 0 0% 99%;
+    --card-foreground: 262 30% 15%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 262 30% 15%;
+    
+    /* Primary: Vibrant purple */
     --primary: 262 83% 58%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary: Light purple tint */
+    --secondary: 262 30% 96%;
+    --secondary-foreground: 262 30% 20%;
+    
+    --muted: 262 20% 95%;
+    --muted-foreground: 262 15% 45%;
+    
+    /* Accent: Soft purple */
+    --accent: 262 40% 94%;
+    --accent-foreground: 262 30% 20%;
+    
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 262 20% 90%;
+    --input: 262 20% 95%;
     --ring: 262 83% 58%;
     --radius: 0.75rem;
-    /* Light mode sidebar - purple gradient */
-    --sidebar: 262 60% 30%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-accent: 262 50% 40%;
+    
+    /* Sidebar: Purple gradient */
+    --sidebar: 262 60% 35%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-accent: 262 50% 45%;
   }
 
   /* Dark mode - PulseWeave Refined Theme */
@@ -73,86 +87,86 @@
     --sidebar-accent: 262 40% 20%;
   }
 
-  /* Corporate theme - Clean, professional, muted colors */
+  /* Corporate theme - Clean, professional with muted purple */
   .corporate {
-    /* Main Background: Neutral warm gray */
-    --background: 220 14% 96%;
-    --foreground: 220 13% 18%;
+    /* Main Background: Light neutral gray */
+    --background: 260 10% 97%;
+    --foreground: 260 15% 15%;
 
     /* Cards: White with subtle shadow */
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 18%;
+    --card-foreground: 260 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
+    --popover-foreground: 260 15% 15%;
 
-    /* Primary: Professional blue */
-    --primary: 217 91% 40%;
+    /* Primary: Muted professional purple */
+    --primary: 262 50% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light gray */
-    --secondary: 220 14% 92%;
-    --secondary-foreground: 220 13% 25%;
+    /* Secondary: Light gray with purple tint */
+    --secondary: 260 15% 93%;
+    --secondary-foreground: 260 15% 25%;
 
-    --muted: 220 14% 92%;
-    --muted-foreground: 220 13% 46%;
+    --muted: 260 12% 92%;
+    --muted-foreground: 260 10% 45%;
 
-    /* Accent: Subtle blue tint */
-    --accent: 217 30% 92%;
-    --accent-foreground: 220 13% 18%;
+    /* Accent: Subtle purple tint */
+    --accent: 262 25% 92%;
+    --accent-foreground: 260 15% 18%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 87%;
-    --input: 220 14% 92%;
-    --ring: 217 91% 40%;
+    --border: 260 12% 88%;
+    --input: 260 12% 93%;
+    --ring: 262 50% 50%;
 
-    /* Sidebar: Professional slate */
-    --sidebar: 220 15% 20%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-accent: 217 50% 30%;
+    /* Sidebar: Professional dark purple-gray */
+    --sidebar: 262 20% 22%;
+    --sidebar-foreground: 260 10% 96%;
+    --sidebar-accent: 262 35% 35%;
   }
 
-  /* Midnight theme - Deep blue-black, high contrast */
+  /* Midnight theme - Deep purple-black, high contrast */
   .midnight {
-    /* Main Background: Near black with blue tint */
-    --background: 230 25% 6%;
-    --foreground: 210 40% 98%;
+    /* Main Background: Near black with purple tint */
+    --background: 262 30% 5%;
+    --foreground: 262 20% 95%;
 
     /* Cards: Slightly elevated dark */
-    --card: 230 22% 10%;
-    --card-foreground: 210 40% 98%;
+    --card: 262 25% 9%;
+    --card-foreground: 262 20% 95%;
 
-    --popover: 230 22% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 262 25% 9%;
+    --popover-foreground: 262 20% 95%;
 
-    /* Primary: Electric cyan */
-    --primary: 192 91% 50%;
-    --primary-foreground: 230 25% 6%;
+    /* Primary: Bright violet */
+    --primary: 270 90% 65%;
+    --primary-foreground: 0 0% 100%;
 
     /* Secondary: Dark elevated */
-    --secondary: 230 20% 14%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 262 22% 13%;
+    --secondary-foreground: 262 20% 92%;
 
-    --muted: 230 20% 14%;
-    --muted-foreground: 215 16% 55%;
+    --muted: 262 22% 13%;
+    --muted-foreground: 262 15% 55%;
 
-    /* Accent: Cyan glow */
-    --accent: 192 40% 15%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent: Purple glow */
+    --accent: 270 50% 18%;
+    --accent-foreground: 262 20% 95%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 18% 16%;
-    --input: 230 20% 14%;
-    --ring: 192 91% 50%;
+    --border: 262 20% 15%;
+    --input: 262 22% 13%;
+    --ring: 270 90% 65%;
 
-    /* Sidebar: Deep midnight */
-    --sidebar: 230 28% 5%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-accent: 192 40% 12%;
+    /* Sidebar: Deep midnight purple */
+    --sidebar: 262 35% 4%;
+    --sidebar-foreground: 262 20% 95%;
+    --sidebar-accent: 270 50% 15%;
   }
 }
 

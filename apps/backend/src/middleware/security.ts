@@ -8,7 +8,7 @@ import sanitizeHtml from 'sanitize-html';
  */
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 500, // Increased for development
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -20,7 +20,7 @@ export const generalLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  max: 30, // Increased for development
   message: { error: 'Too many authentication attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -33,7 +33,7 @@ export const authLimiter = rateLimit({
  */
 export const messageLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30,
+  max: 60, // Increased for development
   message: { error: 'Too many messages, please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -45,7 +45,7 @@ export const messageLimiter = rateLimit({
  */
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20,
+  max: 50, // Increased for development
   message: { error: 'Too many uploads, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
