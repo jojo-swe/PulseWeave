@@ -12,7 +12,7 @@ import {
 import crypto from 'crypto';
 import { hasAdminAccess } from '../utils/workspace-access';
 import { validateWebhookUrl } from '../utils/url-validator';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 const router = Router();
 
@@ -646,7 +646,7 @@ const incomingWebhookLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Use the webhook token as part of the key to allow per-webhook limits
-    return `${req.ip}-${req.params.token}`;
+    return `${(ipKeyGenerator as any)(req)}-${req.params.token}`;
   },
 });
 

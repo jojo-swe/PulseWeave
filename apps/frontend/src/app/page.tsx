@@ -176,8 +176,18 @@ export default function Home() {
         }
       } catch (error: any) {
         console.error('Failed to load data:', error);
-        // If auth failed (401/403), redirect to login
-        if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('token')) {
+        // If auth failed, redirect to login
+        // Check for common auth error messages from the backend
+        const errorMsg = error.message?.toLowerCase() || '';
+        if (
+          errorMsg.includes('401') ||
+          errorMsg.includes('403') ||
+          errorMsg.includes('token') ||
+          errorMsg.includes('access') ||
+          errorMsg.includes('revoked') ||
+          errorMsg.includes('unauthorized') ||
+          errorMsg.includes('authentication')
+        ) {
           router.push('/login');
           return;
         }
