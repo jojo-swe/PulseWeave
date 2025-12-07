@@ -100,11 +100,25 @@ const createMessageSchema = z.object({
   channelId: z.string().min(1),
   content: z.string().min(1, 'Message cannot be empty').max(4000, 'Message too long'),
   parentId: z.string().min(1).optional(),
-});
+  // E2E encryption fields (optional)
+  isEncrypted: z.boolean().optional().default(false),
+  encryptionKey: z.string().optional(), // Wrapped symmetric key
+  keyId: z.string().optional(), // Sender's key ID
+  iv: z.string().optional(), // Initialization vector
+}).refine(
+  (data) => {
+    // If encrypted, all encryption fields are required
+    if (data.isEncrypted) {
+      return data.encryptionKey && data.keyId && data.iv;
+    }
+    return true;
+  },
+  { message: 'Encrypted messages require encryptionKey, keyId, and iv' }
+);
 
 // Create message
 router.post('/', validate(createMessageSchema), asyncHandler(async (req: AuthRequest, res) => {
-  const { channelId, content, parentId } = req.body;
+  const { channelId, content, parentId, isEncrypted, encryptionKey, keyId, iv } = req.body;
 
   // Verify user has access to channel
   const channel = await prisma.channel.findFirst({
@@ -137,6 +151,11 @@ router.post('/', validate(createMessageSchema), asyncHandler(async (req: AuthReq
       channelId,
       userId: req.userId!,
       parentId,
+      // E2E encryption fields
+      isEncrypted: isEncrypted ?? false,
+      encryptionKey: isEncrypted ? encryptionKey : null,
+      keyId: isEncrypted ? keyId : null,
+      iv: isEncrypted ? iv : null,
     },
     include: {
       user: {

@@ -17,6 +17,11 @@ model User {
   status        String    @default("online")
   statusMessage String?
   
+  // E2E Encryption keys
+  publicKey     String?   // Base64 encoded ECDH public key for key exchange
+  publicKeyId   String?   // Key identifier for key rotation
+  keyUpdatedAt  DateTime? // When keys were last rotated
+  
   // MFA fields
   mfaEnabled    Boolean   @default(false)
   mfaSecret     String?   // TOTP secret (encrypted)
@@ -222,6 +227,7 @@ model Channel {
   workspaceId String
   categoryId  String?
   isPrivate   Boolean  @default(false)
+  isEncrypted Boolean  @default(false) // E2E encryption enabled for this channel
   position    Int      @default(0)
   createdById String
   createdAt   DateTime @default(now())
@@ -265,6 +271,12 @@ model Message {
   pinnedById  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  // E2E Encryption fields
+  isEncrypted   Boolean  @default(false)
+  encryptionKey String?  // Encrypted symmetric key (wrapped with recipient's public key)
+  keyId         String?  // Sender's public key ID used for encryption
+  iv            String?  // Initialization vector for AES-GCM
 
   // Relations
   channel   Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
@@ -365,6 +377,12 @@ model DirectMessage {
   isEdited       Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  
+  // E2E Encryption fields
+  isEncrypted   Boolean  @default(false)
+  encryptionKey String?  // Encrypted symmetric key (wrapped with recipient's public key)
+  keyId         String?  // Sender's public key ID used for encryption
+  iv            String?  // Initialization vector for AES-GCM
 
   // Relations
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

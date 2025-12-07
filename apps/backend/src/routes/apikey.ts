@@ -9,6 +9,36 @@ import { validate } from '../middleware/validate';
 const router = Router();
 
 /**
+ * Checks if a user has admin access to a workspace.
+ * Admin access is granted if the user is the workspace owner OR has admin/owner role.
+ */
+async function hasAdminAccess(userId: string, workspaceId: string): Promise<boolean> {
+  const [membership, workspace] = await Promise.all([
+    prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: { userId, workspaceId },
+      },
+    }),
+    prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { ownerId: true },
+    }),
+  ]);
+
+  // Check if user is workspace owner
+  if (workspace?.ownerId === userId) {
+    return true;
+  }
+
+  // Check if user has admin or owner role
+  if (membership && ['admin', 'owner'].includes(membership.roleName)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Available API key scopes.
  */
 export const API_SCOPES = {
@@ -172,14 +202,8 @@ router.get(
   asyncHandler(async (req: AuthRequest, res) => {
     const { workspaceId } = req.params;
 
-    // Verify admin access
-    const membership = await prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId: req.userId!, workspaceId },
-      },
-    });
-
-    if (!membership || !['admin', 'owner'].includes(membership.roleName)) {
+    // Verify admin access (workspace owner OR admin role)
+    if (!(await hasAdminAccess(req.userId!, workspaceId))) {
       throw Errors.forbidden('Admin access required');
     }
 
@@ -221,14 +245,8 @@ router.post(
     const { workspaceId } = req.params;
     const { name, scopes, expiresAt } = req.body;
 
-    // Verify admin access
-    const membership = await prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId: req.userId!, workspaceId },
-      },
-    });
-
-    if (!membership || !['admin', 'owner'].includes(membership.roleName)) {
+    // Verify admin access (workspace owner OR admin role)
+    if (!(await hasAdminAccess(req.userId!, workspaceId))) {
       throw Errors.forbidden('Admin access required');
     }
 
@@ -292,14 +310,8 @@ router.patch(
       throw Errors.notFound('API key');
     }
 
-    // Verify admin access
-    const membership = await prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId: req.userId!, workspaceId: apiKey.workspaceId },
-      },
-    });
-
-    if (!membership || !['admin', 'owner'].includes(membership.roleName)) {
+    // Verify admin access (workspace owner OR admin role)
+    if (!(await hasAdminAccess(req.userId!, apiKey.workspaceId))) {
       throw Errors.forbidden('Admin access required');
     }
 
@@ -359,14 +371,8 @@ router.delete(
       throw Errors.notFound('API key');
     }
 
-    // Verify admin access
-    const membership = await prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId: req.userId!, workspaceId: apiKey.workspaceId },
-      },
-    });
-
-    if (!membership || !['admin', 'owner'].includes(membership.roleName)) {
+    // Verify admin access (workspace owner OR admin role)
+    if (!(await hasAdminAccess(req.userId!, apiKey.workspaceId))) {
       throw Errors.forbidden('Admin access required');
     }
 
@@ -393,14 +399,8 @@ router.post(
       throw Errors.notFound('API key');
     }
 
-    // Verify admin access
-    const membership = await prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId: req.userId!, workspaceId: apiKey.workspaceId },
-      },
-    });
-
-    if (!membership || !['admin', 'owner'].includes(membership.roleName)) {
+    // Verify admin access (workspace owner OR admin role)
+    if (!(await hasAdminAccess(req.userId!, apiKey.workspaceId))) {
       throw Errors.forbidden('Admin access required');
     }
 

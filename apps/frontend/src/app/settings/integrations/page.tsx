@@ -117,11 +117,19 @@ export default function IntegrationsPage() {
       router.push('/login');
       return;
     }
+    if (!currentWorkspace?.id) {
+      // Workspace not loaded yet, wait for it
+      return;
+    }
     loadData();
   }, [token, currentWorkspace?.id, activeTab]);
 
   const loadData = async () => {
-    if (!currentWorkspace?.id) return;
+    if (!currentWorkspace?.id) {
+      setError('No workspace selected. Please select a workspace first.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError('');
 
@@ -152,7 +160,12 @@ export default function IntegrationsPage() {
         setIntegrationTypes(types);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load data');
+      const message = err.message || 'Failed to load data';
+      if (message.includes('Admin access required') || message.includes('forbidden')) {
+        setError('You need admin or owner permissions to access integrations settings.');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

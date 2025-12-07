@@ -12,6 +12,7 @@ import { workspaceRouter } from './routes/workspace';
 import { channelRouter } from './routes/channel';
 import { messageRouter } from './routes/message';
 import { dmRouter } from './routes/dm';
+import { encryptionRouter } from './routes/encryption';
 import uploadRouter from './routes/upload';
 import { mfaRouter } from './routes/mfa';
 import { adminRouter } from './routes/admin';
@@ -22,6 +23,7 @@ import webhookRouter from './routes/webhook';
 import apiKeyRouter from './routes/apikey';
 import externalRouter from './routes/external';
 import integrationRouter from './routes/integration';
+import paymentRouter from './routes/payments';
 import { initializeRbac } from './services/rbac';
 import path from 'path';
 import { setupSocketHandlers } from './socket';
@@ -201,6 +203,7 @@ app.use('/api/workspaces', authenticateToken, workspaceRouter);
 app.use('/api/channels', authenticateToken, channelRouter);
 app.use('/api/messages', authenticateToken, messageRouter);
 app.use('/api/dm', authenticateToken, dmRouter);
+app.use('/api/encryption', authenticateToken, encryptionRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/mfa', mfaRouter);
 app.use('/api/admin', authenticateToken, adminRouter);
@@ -212,6 +215,7 @@ app.use('/api/apikeys', authenticateToken, apiKeyRouter);
 app.use('/api/integrations', authenticateToken, integrationRouter);
 app.use('/api/external', externalRouter); // External API (uses API key auth)
 app.use('/api/hooks', webhookRouter); // Incoming webhooks (no auth - uses token)
+app.use('/api/payments', paymentRouter);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
