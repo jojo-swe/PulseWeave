@@ -267,4 +267,4 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ## License
 
-MIT
+GNU GPLv3
