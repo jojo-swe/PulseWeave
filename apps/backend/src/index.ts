@@ -277,13 +277,16 @@ async function startServer(): Promise<void> {
       }
       
       // Log security status
-      logger.info('🛡️  Security features enabled:');
-      console.log('   - Rate limiting');
-      console.log('   - IP blocking');
-      console.log('   - Request auditing');
-      console.log('   - HSTS headers');
-      console.log('   - XSS protection');
-      console.log('   - CSRF protection ready');
+      logger.info('🛡️  Security features enabled:', {
+        features: [
+          'Rate limiting',
+          'IP blocking', 
+          'Request auditing',
+          'HSTS headers',
+          'XSS protection',
+          'CSRF protection',
+        ],
+      });
       
       // Initialize RBAC system
       try {

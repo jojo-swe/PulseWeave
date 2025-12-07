@@ -121,23 +121,29 @@ IP_BLOCK_DURATION_MINUTES=30
 
 ### Option 1: Docker (Recommended)
 
-```dockerfile
-# Dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm build
+Use the included `Dockerfile` and `docker-compose.yml` for the easiest deployment:
 
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-EXPOSE 3001
-CMD ["node", "dist/index.js"]
+```bash
+# 1. Create .env file with production secrets
+cp apps/backend/.env.example .env
+
+# 2. Generate secure secrets
+export JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
+export COOKIE_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+
+# 3. Build and start
+pnpm docker:build
+pnpm docker:up
+
+# 4. View logs
+pnpm docker:logs
 ```
+
+The Docker setup includes:
+- Multi-stage build for optimized images
+- Non-root user for security
+- Health checks for container orchestration
+- Persistent volumes for data and uploads
 
 #### Docker Compose with SQLite (Simple)
 

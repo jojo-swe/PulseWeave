@@ -7,7 +7,9 @@
     "generate": "prisma generate",
     "push": "prisma db push",
     "studio": "prisma studio",
-    "migrate": "prisma migrate dev"
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1"

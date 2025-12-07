@@ -4,11 +4,11 @@ import sanitizeHtml from 'sanitize-html';
 
 /**
  * Rate limiter for general API requests.
- * Limits each IP to 100 requests per 15 minutes.
+ * Configurable via RATE_LIMIT_MAX_REQUESTS env var.
  */
 export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Increased for development
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || (process.env.NODE_ENV === 'production' ? '200' : '500')),
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -16,11 +16,11 @@ export const generalLimiter = rateLimit({
 
 /**
  * Stricter rate limiter for authentication endpoints.
- * Limits each IP to 5 login/register attempts per 15 minutes.
+ * Configurable via AUTH_RATE_LIMIT_MAX env var.
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // Increased for development
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? '10' : '30')),
   message: { error: 'Too many authentication attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -29,11 +29,11 @@ export const authLimiter = rateLimit({
 
 /**
  * Rate limiter for message sending.
- * Limits each IP to 30 messages per minute.
+ * Limits each IP to 30-60 messages per minute.
  */
 export const messageLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 60, // Increased for development
+  max: process.env.NODE_ENV === 'production' ? 30 : 60,
   message: { error: 'Too many messages, please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -41,11 +41,11 @@ export const messageLimiter = rateLimit({
 
 /**
  * Rate limiter for file uploads.
- * Limits each IP to 10 uploads per hour.
+ * Limits each IP to 20-50 uploads per hour.
  */
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // Increased for development
+  max: process.env.NODE_ENV === 'production' ? 20 : 50,
   message: { error: 'Too many uploads, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,

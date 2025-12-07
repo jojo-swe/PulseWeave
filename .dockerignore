@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+*.db
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Marketing/misc
+marketing
+
+# Prisma dev database
+packages/database/*.db
+packages/database/*.db-journal
+
+# Uploads (will be mounted as volume)
+uploads

@@ -1,0 +1,101 @@
+# =============================================================================
+# PulseWeave Docker Compose Configuration
+# =============================================================================
+# Usage:
+#   Development: docker compose up
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend API Server
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=file:/app/data/pulseweave.db
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - COOKIE_SECRET=${COOKIE_SECRET:?COOKIE_SECRET is required}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - USE_DB_SESSIONS=true
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      # SSL (optional - use reverse proxy in production)
+      - SSL_ENABLED=false
+    volumes:
+      # Persist database and uploads
+      - pulseweave-data:/app/data
+      - pulseweave-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - pulseweave-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend Next.js Server
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:3001}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pulseweave-network
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy (Production)
+  # ---------------------------------------------------------------------------
+  # Uncomment for production with SSL termination
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   restart: unless-stopped
+  #   networks:
+  #     - pulseweave-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  pulseweave-data:
+    driver: local
+  pulseweave-uploads:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  pulseweave-network:
+    driver: bridge
