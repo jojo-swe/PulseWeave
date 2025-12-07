@@ -166,15 +166,24 @@ export default function AdminPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    // Redirect non-admins away from admin page
-    if (user && !isAdmin) {
-      router.push('/');
-    }
-  }, [token, user, isAdmin, router]);
+    const checkAuth = async () => {
+      try {
+        const userData = await api.get<any>('/auth/me');
+        if (!userData) {
+          router.push('/login');
+        } else if (!user || user.role !== 'admin' && user.role !== 'owner') {
+          // If logged in but not admin, redirect to home
+          if (userData.role !== 'admin' && userData.role !== 'owner') {
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        router.push('/login');
+      }
+    };
+
+    checkAuth();
+  }, [user, router]);
 
   useEffect(() => {
     if (currentWorkspace?.id) {
@@ -362,8 +371,7 @@ export default function AdminPage() {
     guest: 'bg-gray-500/10 text-gray-500',
   };
 
-  // Show loading or redirect for non-admins
-  if (!token || !user) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

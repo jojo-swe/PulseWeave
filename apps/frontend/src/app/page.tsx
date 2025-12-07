@@ -83,20 +83,29 @@ export default function Home() {
 
   // Check auth and load initial data
   useEffect(() => {
-    // Wait for hydration before checking token
+    // Wait for hydration before checking auth
     if (!hydrated) return;
     
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    const loadData = async () => {
+    const checkAuthAndLoadData = async () => {
       try {
-        // Get workspaces
-        const workspaces = await api.workspaces.list(token);
+        // Verify session via /auth/me (uses cookies automatically with credentials: 'include')
+        const userData = await api.get<any>('/auth/me');
+        
+        // If we get here, user is authenticated
+        if (!userData) {
+          router.push('/login');
+          return;
+        }
+
+        // Update user in store if needed
+        if (!user || user.id !== userData.id) {
+          useStore.getState().setUser(userData);
+        }
+
+        // Load workspaces
+        const workspaces = await api.workspaces.list(token || '');
         if (workspaces.length > 0) {
-          const workspace = await api.workspaces.get(workspaces[0].id, token);
+          const workspace = await api.workspaces.get(workspaces[0].id, token || '');
           setCurrentWorkspace(workspace);
           setChannels(workspace.channels);
           setMembers(workspace.members);
@@ -106,8 +115,8 @@ export default function Home() {
             setCurrentChannel(workspace.channels[0]);
           }
 
-          // Connect socket
-          const socket = connectSocket(token);
+          // Connect socket (token will be sent via cookies)
+          const socket = connectSocket(token || '');
           joinWorkspace(workspace.id);
 
           // Socket event listeners
@@ -165,23 +174,28 @@ export default function Home() {
             clearUserTyping(channelId, userId);
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load data:', error);
+        // If auth failed (401/403), redirect to login
+        if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('token')) {
+          router.push('/login');
+          return;
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
-  }, [token, router, hydrated]);
+    checkAuthAndLoadData();
+  }, [router, hydrated]);
 
   // Load messages when channel changes
   useEffect(() => {
-    if (!token || !currentChannel) return;
+    if (!user || !currentChannel) return;
 
     const loadMessages = async () => {
       try {
-        const { messages } = await api.messages.list(currentChannel.id, token);
+        const { messages } = await api.messages.list(currentChannel.id, token || '');
         setMessages(messages);
         joinChannel(currentChannel.id);
         // Clear unread when viewing channel
@@ -192,15 +206,15 @@ export default function Home() {
     };
 
     loadMessages();
-  }, [currentChannel, token, setMessages]);
+  }, [currentChannel, user, setMessages]);
 
   // Load DM messages when conversation changes
   useEffect(() => {
-    if (!token || !currentConversation) return;
+    if (!user || !currentConversation) return;
 
     const loadDmMessages = async () => {
       try {
-        const { messages } = await api.dm.getMessages(currentConversation.id, token);
+        const { messages } = await api.dm.getMessages(currentConversation.id, token || '');
         setDirectMessages(messages);
         // Join DM room for real-time updates
         const socket = getSocket();
@@ -215,15 +229,15 @@ export default function Home() {
     };
 
     loadDmMessages();
-  }, [currentConversation, token, setDirectMessages]);
+  }, [currentConversation, user, setDirectMessages]);
 
   // Load conversations on workspace load
   useEffect(() => {
-    if (!token || !currentWorkspace) return;
+    if (!user || !currentWorkspace) return;
 
     const loadConversations = async () => {
       try {
-        const conversations = await api.dm.list(currentWorkspace.id, token);
+        const conversations = await api.dm.list(currentWorkspace.id, token || '');
         setConversations(conversations);
       } catch (error) {
         console.error('Failed to load conversations:', error);
@@ -231,7 +245,7 @@ export default function Home() {
     };
 
     loadConversations();
-  }, [currentWorkspace, token, setConversations]);
+  }, [currentWorkspace, user, setConversations]);
 
   const handleSendMessage = async (content: string) => {
     // Handle DM messages

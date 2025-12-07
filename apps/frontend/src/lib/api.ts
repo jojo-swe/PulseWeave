@@ -17,6 +17,7 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...fetchOptions,
       headers,
+      credentials: 'include', // Ensure cookies are sent with requests
     });
 
     if (!response.ok) {

@@ -50,6 +50,14 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
 import { setupGracefulShutdown, checkDatabaseHealth } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
+import { 
+  getHealthStatus, 
+  getLivenessStatus, 
+  getReadinessStatus, 
+  getMetrics,
+  startHealthLogging,
+  updateWsConnectionCount,
+} from './services/health';
 
 // Validate environment on startup
 try {
@@ -158,20 +166,29 @@ app.use(speedLimiter);
 // Apply general rate limiting to all routes
 app.use(generalLimiter);
 
-// Health check with database status
+// Health endpoints (Kubernetes-compatible)
+// Full health check with all services
 app.get('/health', async (req, res) => {
-  const dbHealthy = await checkDatabaseHealth();
-  const status = dbHealthy ? 'ok' : 'degraded';
-  const statusCode = dbHealthy ? 200 : 503;
-  
-  res.status(statusCode).json({ 
-    status, 
-    timestamp: new Date().toISOString(),
-    services: {
-      database: dbHealthy ? 'healthy' : 'unhealthy',
-      websocket: 'healthy',
-    },
-  });
+  const health = await getHealthStatus();
+  const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
+// Liveness probe - is the server running?
+app.get('/health/live', (req, res) => {
+  res.json(getLivenessStatus());
+});
+
+// Readiness probe - is the server ready to accept traffic?
+app.get('/health/ready', async (req, res) => {
+  const readiness = await getReadinessStatus();
+  res.status(readiness.ready ? 200 : 503).json(readiness);
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.send(getMetrics());
 });
 
 // Make io available to routes
@@ -248,6 +265,19 @@ async function startServer(): Promise<void> {
 
       // Setup graceful shutdown
       setupGracefulShutdown(httpServer, io);
+
+      // Start periodic health logging (every 5 minutes in production)
+      if (process.env.NODE_ENV === 'production') {
+        startHealthLogging(5 * 60 * 1000);
+      }
+
+      // Track WebSocket connections for health metrics
+      io.on('connection', () => {
+        updateWsConnectionCount(io.engine.clientsCount);
+      });
+      io.on('disconnect', () => {
+        updateWsConnectionCount(io.engine.clientsCount);
+      });
     });
   } catch (error) {
     logger.error('Failed to start server', { error: String(error) });

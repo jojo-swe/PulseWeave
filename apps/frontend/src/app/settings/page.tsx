@@ -53,10 +53,21 @@ export default function SettingsPage() {
   const [dmNotifications, setDmNotifications] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      router.push('/login');
-    }
-  }, [token, router]);
+    const checkAuth = async () => {
+      try {
+        const userData = await api.get<any>('/auth/me');
+        if (!userData) {
+          router.push('/login');
+        } else if (!user) {
+           setUser(userData);
+        }
+      } catch (error) {
+        router.push('/login');
+      }
+    };
+    
+    checkAuth();
+  }, [router, setUser, user]);
 
   useEffect(() => {
     if (user) {
@@ -66,11 +77,11 @@ export default function SettingsPage() {
   }, [user]);
 
   const handleSaveProfile = async () => {
-    if (!token) return;
+    // Token might be null in client state due to httpOnly cookies, but API client handles credentials
     setProfileSaving(true);
     setProfileSuccess(false);
     try {
-      const updated = await api.users.update({ displayName, avatarUrl: avatarUrl || undefined }, token);
+      const updated = await api.users.update({ displayName, avatarUrl: avatarUrl || undefined }, token || '');
       setUser({ ...user!, displayName, avatarUrl });
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 2000);

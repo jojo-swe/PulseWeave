@@ -6,14 +6,23 @@
     "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
+    "dev:desktop": "pnpm --filter desktop dev",
+    "dev:mobile": "pnpm --filter mobile start",
     "build": "pnpm --filter frontend build && pnpm --filter backend build",
+    "build:desktop": "pnpm --filter desktop build",
+    "build:desktop:win": "pnpm --filter desktop dist:win",
+    "build:desktop:mac": "pnpm --filter desktop dist:mac",
+    "build:desktop:linux": "pnpm --filter desktop dist:linux",
+    "build:desktop:all": "pnpm --filter desktop dist:all",
+    "build:mobile:ios": "pnpm --filter mobile build:ios",
+    "build:mobile:android": "pnpm --filter mobile build:android",
     "db:generate": "pnpm --filter database generate",
     "db:push": "pnpm --filter database push",
     "db:studio": "pnpm --filter database studio"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
-    "concurrently": "^9.1.0",
+    "concurrently": "^9.2.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
