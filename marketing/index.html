@@ -113,6 +113,7 @@
   <body class="antialiased selection:bg-primary selection:text-white">
     <!-- Background Effects -->
     <div class="fixed inset-0 pointer-events-none z-[-1]">
+        <div class="absolute inset-0 bg-[url('grid-pattern.png')] opacity-[0.03] animate-pulse"></div>
       <div
         class="absolute top-0 left-1/4 w-96 h-96 bg-primary/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"
       ></div>
@@ -141,21 +142,6 @@
                 stroke="currentColor"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            </div>
-            <span class="font-bold text-xl tracking-tight">PulseWeave</span>
-          </div>
-          <div class="hidden md:block">
-            <div class="ml-10 flex items-baseline space-x-8">
-              <a
-                href="#features"
-                class="hover:text-primary transition-colors px-3 py-2 rounded-md text-sm font-medium"
-                >Features</a
               >
               <a
                 href="security.html"
@@ -190,14 +176,15 @@
       ></div>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div class="text-center max-w-4xl mx-auto mb-16">
-          <h1 class="animate-fade-in-up opacity-0">
-            <span
-              class="block text-sm font-bold uppercase tracking-widest text-primary mb-4"
-              >Real-time Collaboration</span
-            >
-            <span
-              class="block text-5xl tracking-tight font-black sm:text-7xl xl:text-8xl leading-[1.1] mb-6"
-            >
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-6 animate-fade-in-up opacity-0">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                Now in Public Beta
+            </div>
+            <h1 class="animate-fade-in-up opacity-0 delay-100">
+                <span class="block text-5xl tracking-tight font-black sm:text-7xl xl:text-8xl leading-[1.1] mb-6">
               <span class="block text-white">Sync at the</span>
               <span class="block text-gradient">Speed of Thought</span>
             </span>
