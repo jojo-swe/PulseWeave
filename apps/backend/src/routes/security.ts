@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { requirePermission } from '../middleware/rbac';
+import { requirePermission, requireAdmin } from '../middleware/rbac';
 import { PERMISSIONS } from '../services/rbac';
 import {
   isIpBlocked,
@@ -10,6 +10,7 @@ import {
   getClientIp,
 } from '../middleware/advanced-security';
 import { getSslConfig } from '../middleware/ssl';
+import { asyncHandler, Errors } from '../middleware/error-handler';
 
 const router = Router();
 
@@ -21,7 +22,7 @@ const router = Router();
  * Get current security status and configuration.
  * Available to admins only.
  */
-router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/status', authenticateToken, requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
   try {
     const sslConfig = getSslConfig();
     
@@ -96,7 +97,7 @@ router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
     console.error('Get security status error:', error);
     res.status(500).json({ error: 'Failed to get security status' });
   }
-});
+}));
 
 // ============================================================================
 // IP Management
@@ -110,8 +111,9 @@ const blockIpSchema = z.object({
 
 /**
  * Block an IP address.
+ * SECURITY: Requires admin privileges.
  */
-router.post('/block-ip', authenticateToken, async (req: AuthRequest, res) => {
+router.post('/block-ip', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
   try {
     const { ip, reason, durationMinutes } = blockIpSchema.parse(req.body);
 
@@ -172,8 +174,9 @@ router.get('/check-ip/:ip', authenticateToken, async (req: AuthRequest, res) => 
 
 /**
  * Get locked accounts.
+ * SECURITY: Requires admin privileges.
  */
-router.get('/locked-accounts', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/locked-accounts', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
   try {
     const lockedAccounts = await prisma.user.findMany({
       where: {
@@ -205,8 +208,9 @@ router.get('/locked-accounts', authenticateToken, async (req: AuthRequest, res) 
 
 /**
  * Unlock a user account.
+ * SECURITY: Requires admin privileges.
  */
-router.post('/unlock-account/:userId', authenticateToken, async (req: AuthRequest, res) => {
+router.post('/unlock-account/:userId', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
   try {
     const { userId } = req.params;
 
@@ -244,8 +248,9 @@ router.post('/unlock-account/:userId', authenticateToken, async (req: AuthReques
 
 /**
  * Get security audit log with filters.
+ * SECURITY: Requires admin privileges.
  */
-router.get('/audit', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
   try {
     const { 
       action, 
@@ -322,8 +327,9 @@ router.get('/audit', authenticateToken, async (req: AuthRequest, res) => {
 
 /**
  * Get security event summary.
+ * SECURITY: Requires admin privileges.
  */
-router.get('/summary', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/summary', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
   try {
     const now = new Date();
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);

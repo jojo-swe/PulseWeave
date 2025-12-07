@@ -143,7 +143,7 @@ router.post(
       }));
 
     const missingKeys = userIds.filter(
-      (id) => !keys.find((k) => k.userId === id)
+      (id: string) => !keys.find((k) => k.userId === id)
     );
 
     res.json({

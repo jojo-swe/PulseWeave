@@ -11,6 +11,8 @@ import {
 } from '../services/webhooks';
 import crypto from 'crypto';
 import { hasAdminAccess } from '../utils/workspace-access';
+import { validateWebhookUrl } from '../utils/url-validator';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
@@ -101,6 +103,12 @@ router.post(
       throw Errors.forbidden('Admin access required');
     }
 
+    // SECURITY: Validate webhook URL to prevent SSRF attacks
+    const urlValidation = validateWebhookUrl(url);
+    if (!urlValidation.isValid) {
+      throw Errors.badRequest(`Invalid webhook URL: ${urlValidation.error}`);
+    }
+
     // Validate events
     const validEvents = Object.keys(WEBHOOK_EVENTS);
     for (const event of events) {
@@ -155,6 +163,14 @@ router.patch(
     // Verify admin access (workspace owner OR admin role)
     if (!(await hasAdminAccess(req.userId!, webhook.workspaceId))) {
       throw Errors.forbidden('Admin access required');
+    }
+
+    // SECURITY: Validate webhook URL if being updated
+    if (url !== undefined) {
+      const urlValidation = validateWebhookUrl(url);
+      if (!urlValidation.isValid) {
+        throw Errors.badRequest(`Invalid webhook URL: ${urlValidation.error}`);
+      }
     }
 
     // Validate events if provided
@@ -619,11 +635,28 @@ router.post(
 // ============================================================================
 
 /**
+ * Rate limiter for incoming webhooks.
+ * Limits each IP to 60 requests per minute to prevent abuse.
+ */
+const incomingWebhookLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute per IP
+  message: { error: 'Too many webhook requests, please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use the webhook token as part of the key to allow per-webhook limits
+    return `${req.ip}-${req.params.token}`;
+  },
+});
+
+/**
  * Receive incoming webhook payload.
  * POST /api/hooks/:token
  */
 router.post(
   '/hooks/:token',
+  incomingWebhookLimiter,
   asyncHandler(async (req, res) => {
     const { token } = req.params;
     const sourceIp =

@@ -5,6 +5,7 @@ import { AuthRequest, authenticateToken } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
 import { hasAdminAccess } from '../utils/workspace-access';
+import { validateWebhookUrl } from '../utils/url-validator';
 
 const router = Router();
 
@@ -205,6 +206,14 @@ router.post(
     for (const [field, schema] of Object.entries(typeInfo.configSchema)) {
       if ((schema as any).required && !config[field]) {
         throw Errors.badRequest(`Missing required field: ${field}`);
+      }
+    }
+
+    // SECURITY: Validate webhook URL to prevent SSRF attacks
+    if (config.webhookUrl) {
+      const urlValidation = validateWebhookUrl(config.webhookUrl);
+      if (!urlValidation.isValid) {
+        throw Errors.badRequest(`Invalid webhook URL: ${urlValidation.error}`);
       }
     }
 
