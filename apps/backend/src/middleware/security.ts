@@ -201,3 +201,4 @@ export function logSecurityEvent(event: string, details: Record<string, any>) {
     ...details,
   }));
 }
+export * from './rate-limit-tenant';

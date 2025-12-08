@@ -40,6 +40,8 @@ const JWT_REFRESH_EXPIRY = '7d';
 export interface AuthRequest extends Request {
   userId?: string;
   tokenId?: string;
+  workspaceId?: string;
+  workspaceRole?: string;
 }
 
 interface TokenPayload {
@@ -55,10 +57,12 @@ interface TokenPayload {
 /**
  * Authenticates JWT token from Authorization header.
  * Validates token signature, expiry, and session status in database.
+ * Also checks for X-Workspace-ID header to set workspace context.
  */
 export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
   const token = (authHeader && authHeader.split(' ')[1]) || req.cookies?.token;
+  const workspaceIdHeader = req.headers['x-workspace-id'] as string;
 
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });
@@ -83,6 +87,30 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
 
     req.userId = decoded.userId;
     req.tokenId = decoded.jti;
+
+    // Handle Workspace Context if header is present
+    if (workspaceIdHeader) {
+      const membership = await prisma.workspaceMember.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: decoded.userId,
+            workspaceId: workspaceIdHeader,
+          },
+        },
+        select: { roleName: true },
+      });
+
+      if (!membership) {
+        return res.status(403).json({ 
+          error: 'Access denied to this workspace',
+          code: 'WORKSPACE_ACCESS_DENIED'
+        });
+      }
+
+      req.workspaceId = workspaceIdHeader;
+      req.workspaceRole = membership.roleName;
+    }
+
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

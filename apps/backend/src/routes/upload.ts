@@ -126,6 +126,10 @@ router.post('/', authenticateToken, uploadLimiter, upload.single('file'), async 
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    if (!req.workspaceId) {
+      return res.status(400).json({ error: 'Workspace context required for uploads' });
+    }
+
     const file = req.file;
     const filePath = path.join(uploadsDir, file.filename);
 
@@ -147,6 +151,7 @@ router.post('/', authenticateToken, uploadLimiter, upload.single('file'), async 
         name: file.originalname,
         size: file.size,
         mimeType: file.mimetype,
+        workspaceId: req.workspaceId,
         uploadedById: req.userId!,
       },
     });
@@ -176,6 +181,10 @@ router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files',
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
+    if (!req.workspaceId) {
+      return res.status(400).json({ error: 'Workspace context required for uploads' });
+    }
+
     const results = [];
     for (const file of files) {
       const filePath = path.join(uploadsDir, file.filename);
@@ -197,6 +206,7 @@ router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files',
           name: file.originalname,
           size: file.size,
           mimeType: file.mimetype,
+          workspaceId: req.workspaceId,
           uploadedById: req.userId!,
         },
       });

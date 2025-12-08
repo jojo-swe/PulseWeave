@@ -218,44 +218,6 @@ router.get('/:id/messages', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 /**
- * Send a direct message.
- */
-router.post('/:id/messages', validate(sendMessageSchema), asyncHandler(async (req: AuthRequest, res) => {
-  const { content } = req.body;
-
-  // Verify user is member
-  const membership = await prisma.conversationMember.findUnique({
-    where: {
-      userId_conversationId: {
-        userId: req.userId!,
-        conversationId: req.params.id,
-      },
-    },
-  });
-
-  if (!membership) {
-    throw Errors.forbidden('Not a member of this conversation');
-  }
-
-  const message = await prisma.directMessage.create({
-    data: {
-      content,
-      conversationId: req.params.id,
-      userId: req.userId!,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          avatarUrl: true,
-        },
-      },
-    },
-  });
-
-  // Update conversation timestamp
   await prisma.conversation.update({
     where: { id: req.params.id },
     data: { updatedAt: new Date() },

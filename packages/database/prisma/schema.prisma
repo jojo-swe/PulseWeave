@@ -228,8 +228,12 @@ model Workspace {
   owner            User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   members          WorkspaceMember[]
   channels         Channel[]
+  messages         Message[]
+  reactions        Reaction[]
+  attachments      Attachment[]
   categories       ChannelCategory[]
   conversations    Conversation[]
+  directMessages   DirectMessage[]
   apiKeys          ApiKey[]
   webhooks         Webhook[]
   incomingWebhooks IncomingWebhook[]
@@ -321,6 +325,7 @@ model Message {
   id          String   @id @default(cuid())
   content     String
   channelId   String
+  workspaceId String   // Tenant Context
   userId      String
   parentId    String?
   isEdited    Boolean  @default(false)
@@ -337,6 +342,7 @@ model Message {
   iv            String?  // Initialization vector for AES-GCM
 
   // Relations
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   channel   Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent    Message?   @relation("ThreadReplies", fields: [parentId], references: [id])
@@ -344,6 +350,7 @@ model Message {
   reactions Reaction[]
   attachments Attachment[]
 
+  @@index([workspaceId])
   @@index([channelId, createdAt])
   @@map("messages")
 }
@@ -368,14 +375,17 @@ model Reaction {
   id        String   @id @default(cuid())
   emoji     String
   messageId String
+  workspaceId String // Tenant Context
   userId    String
   createdAt DateTime @default(now())
 
   // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId, emoji])
+  @@index([workspaceId])
   @@index([messageId]) // For loading message reactions
   @@map("reactions")
 }
@@ -388,13 +398,16 @@ model Attachment {
   size         Int?
   mimeType     String?
   messageId    String?  // Optional - standalone uploads don't have a message
+  workspaceId  String   // Tenant Context
   uploadedById String   // Track who uploaded the file for ownership verification
   createdAt    DateTime @default(now())
 
   // Relations
-  message    Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  uploadedBy User     @relation("UserUploads", fields: [uploadedById], references: [id], onDelete: Cascade)
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  message    Message?  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation("UserUploads", fields: [uploadedById], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId])
   @@map("attachments")
 }
 
@@ -437,6 +450,7 @@ model DirectMessage {
   id             String   @id @default(cuid())
   content        String
   conversationId String
+  workspaceId    String   // Tenant Context
   userId         String
   isEdited       Boolean  @default(false)
   createdAt      DateTime @default(now())
@@ -449,9 +463,11 @@ model DirectMessage {
   iv            String?  // Initialization vector for AES-GCM
 
   // Relations
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId])
   @@index([conversationId, createdAt])
   @@map("direct_messages")
 }

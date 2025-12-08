@@ -149,6 +149,7 @@ router.post('/', validate(createMessageSchema), asyncHandler(async (req: AuthReq
     data: {
       content,
       channelId,
+      workspaceId: channel.workspaceId,
       userId: req.userId!,
       parentId,
       // E2E encryption fields
@@ -289,6 +290,7 @@ router.post('/:id/reactions', validate(reactionSchema), asyncHandler(async (req:
     },
     create: {
       messageId: req.params.id,
+      workspaceId: message.channel.workspaceId,
       userId: req.userId!,
       emoji,
     },

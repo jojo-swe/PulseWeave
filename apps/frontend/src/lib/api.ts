@@ -5,11 +5,18 @@ interface FetchOptions extends RequestInit {
 }
 
 async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { token, ...fetchOptions } = options;
+  const { token: paramToken, ...fetchOptions } = options;
+  
+  // If token is passed explicitly, use it. Otherwise get from storage.
+  // Also get workspaceId from storage to attach to every request.
+  const context = getAuthContext();
+  const token = paramToken || context.token;
+  const workspaceId = context.workspaceId;
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
+    ...(workspaceId && { 'X-Workspace-ID': workspaceId }),
     ...options.headers,
   };
 
@@ -34,21 +41,34 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 }
 
+interface AuthContext {
+  token: string;
+  workspaceId: string;
+}
+
 /**
- * Gets the auth token from Zustand persisted storage.
+ * Gets the auth context (token and workspaceId) from Zustand persisted storage.
  */
-function getToken(): string {
-  if (typeof window === 'undefined') return '';
+function getAuthContext(): AuthContext {
+  if (typeof window === 'undefined') return { token: '', workspaceId: '' };
   try {
     const stored = localStorage.getItem('pulseweave-storage');
     if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed?.state?.token || '';
+      return {
+        token: parsed?.state?.token || '',
+        workspaceId: parsed?.state?.currentWorkspace?.id || '',
+      };
     }
   } catch {
     // Ignore parse errors
   }
-  return '';
+  return { token: '', workspaceId: '' };
+}
+
+// Keep backward compatibility for now if needed, or just remove usage
+function getToken(): string {
+  return getAuthContext().token;
 }
 
 export const api = {
@@ -244,11 +264,13 @@ export const api = {
     single: async (file: File, token: string) => {
       const formData = new FormData();
       formData.append('file', file);
+      const { workspaceId } = getAuthContext();
       
       const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
+          ...(workspaceId && { 'X-Workspace-ID': workspaceId }),
         },
         body: formData,
       });
@@ -263,11 +285,13 @@ export const api = {
     multiple: async (files: File[], token: string) => {
       const formData = new FormData();
       files.forEach((file) => formData.append('files', file));
+      const { workspaceId } = getAuthContext();
       
       const response = await fetch(`${API_URL}/api/upload/multiple`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
+          ...(workspaceId && { 'X-Workspace-ID': workspaceId }),
         },
         body: formData,
       });

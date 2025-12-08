@@ -204,11 +204,22 @@ router.post('/:id/send-now', asyncHandler(async (req: AuthRequest, res) => {
     throw Errors.badRequest('Message has already been sent or cancelled');
   }
 
+  // Get channel to fetch workspaceId
+  const channel = await prisma.channel.findUnique({
+    where: { id: message.channelId },
+    select: { workspaceId: true },
+  });
+
+  if (!channel) {
+    throw Errors.notFound('Channel not found');
+  }
+
   // Create the actual message
   const newMessage = await prisma.message.create({
     data: {
       content: message.content,
       channelId: message.channelId,
+      workspaceId: channel.workspaceId,
       userId: message.userId,
     },
     include: {
