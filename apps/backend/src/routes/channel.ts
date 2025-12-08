@@ -183,6 +183,92 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 /**
+ * Get channel members.
+ */
+router.get('/:id/members', asyncHandler(async (req: AuthRequest, res) => {
+  const channel = await prisma.channel.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!channel) {
+    throw Errors.notFound('Channel');
+  }
+
+  // SECURITY: Verify user is a member of the workspace
+  const workspaceMembership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: req.userId!,
+        workspaceId: channel.workspaceId,
+      },
+    },
+  });
+
+  if (!workspaceMembership) {
+    throw Errors.forbidden('Not a member of this workspace');
+  }
+
+  // For private channels, verify channel membership
+  if (channel.isPrivate) {
+    const channelMembership = await prisma.channelMember.findUnique({
+      where: {
+        userId_channelId: {
+          userId: req.userId!,
+          channelId: channel.id,
+        },
+      },
+    });
+
+    if (!channelMembership) {
+      throw Errors.forbidden('Not a member of this private channel');
+    }
+  }
+
+  // Get channel members with user details
+  const members = await prisma.channelMember.findMany({
+    where: { channelId: req.params.id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          status: true,
+          statusMessage: true,
+        },
+      },
+    },
+  });
+
+  // Get workspace membership to include roles
+  const workspaceMembers = await prisma.workspaceMember.findMany({
+    where: {
+      workspaceId: channel.workspaceId,
+      userId: { in: members.map(m => m.userId) },
+    },
+    include: {
+      role: true,
+    },
+  });
+
+  const roleMap = new Map(workspaceMembers.map(wm => [wm.userId, wm.role?.name || 'member']));
+
+  const formattedMembers = members.map(m => ({
+    id: m.user.id,
+    username: m.user.username,
+    displayName: m.user.displayName,
+    avatarUrl: m.user.avatarUrl,
+    status: m.user.status,
+    statusMessage: m.user.statusMessage,
+    role: roleMap.get(m.userId) || 'member',
+    joinedAt: m.joinedAt,
+  }));
+
+  res.json({ members: formattedMembers });
+}));
+
+/**
  * Join a channel.
  */
 router.post('/:id/join', asyncHandler(async (req: AuthRequest, res) => {

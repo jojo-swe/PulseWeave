@@ -220,8 +220,8 @@ export default function SettingsPage() {
                 ))}
               </ul>
 
-              {/* Integrations Link */}
-              <div className="mt-6 pt-6 border-t">
+              {/* Additional Links */}
+              <div className="mt-6 pt-6 border-t space-y-1">
                 <Link
                   href="/settings/integrations"
                   className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -229,6 +229,16 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3">
                     <Plug className="h-4 w-4" />
                     Integrations
+                  </div>
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/status"
+                  className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Monitor className="h-4 w-4" />
+                    System Status
                   </div>
                   <ChevronRight className="h-4 w-4" />
                 </Link>

@@ -10,6 +10,7 @@ interface User {
   displayName: string;
   avatarUrl?: string;
   status: string;
+  statusMessage?: string | null;
   role?: 'user' | 'admin' | 'owner';
 }
 

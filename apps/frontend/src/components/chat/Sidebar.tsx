@@ -329,61 +329,94 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                 </div>
               )}
               {/* Online Members */}
-              {onlineMembers.map(({ user: member }) => (
-                <button
-                  key={member.id}
-                  onClick={() => member.id !== user?.id && onStartDM?.(member.id)}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors',
-                    member.id === user?.id
-                      ? 'text-sidebar-foreground/80 cursor-default'
-                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
-                  )}
-                  title={member.id === user?.id ? undefined : `Message ${member.displayName}`}
-                >
-                  <div className="relative">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={member.avatarUrl} />
-                      <AvatarFallback className={cn('text-xs', generateAvatarColor(member.displayName))}>
-                        {getInitials(member.displayName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <PresenceIndicator 
-                      status={member.status as 'online' | 'away' | 'dnd' | 'offline'} 
-                      size="sm" 
-                      className="absolute -bottom-0.5 -right-0.5" 
-                    />
-                  </div>
-                  <span className="truncate">{member.displayName}</span>
-                  {member.id === user?.id && (
-                    <span className="text-xs opacity-50">(you)</span>
-                  )}
-                </button>
-              ))}
+              {onlineMembers.map(({ user: member }) => {
+                const statusLabel = member.status === 'online' ? 'Online' : 
+                                   member.status === 'away' ? 'Away' : 
+                                   member.status === 'dnd' ? 'Do Not Disturb' : 'Offline';
+                const statusMsg = member.statusMessage;
+                const tooltip = statusMsg 
+                  ? `${member.displayName} • ${statusLabel}\n"${statusMsg}"`
+                  : `${member.displayName} • ${statusLabel}`;
+                
+                return (
+                  <button
+                    key={member.id}
+                    onClick={() => member.id !== user?.id && onStartDM?.(member.id)}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors group',
+                      member.id === user?.id
+                        ? 'text-sidebar-foreground/80 cursor-default'
+                        : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                    )}
+                    title={member.id === user?.id ? undefined : tooltip}
+                  >
+                    <div className="relative">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={member.avatarUrl} />
+                        <AvatarFallback className={cn('text-xs', generateAvatarColor(member.displayName))}>
+                          {getInitials(member.displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <PresenceIndicator 
+                        status={member.status as 'online' | 'away' | 'dnd' | 'offline'} 
+                        size="sm" 
+                        className="absolute -bottom-0.5 -right-0.5" 
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate">{member.displayName}</span>
+                        {member.id === user?.id && (
+                          <span className="text-xs opacity-50">(you)</span>
+                        )}
+                      </div>
+                      {statusMsg && (
+                        <p className="text-xs text-sidebar-foreground/50 truncate italic">
+                          {statusMsg}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
               {/* Offline Members */}
-              {offlineMembers.map(({ user: member }) => (
-                <button
-                  key={member.id}
-                  onClick={() => member.id !== user?.id && onStartDM?.(member.id)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent/50 transition-colors"
-                  title={`Message ${member.displayName}`}
-                >
-                  <div className="relative">
-                    <Avatar className="h-6 w-6 opacity-50">
-                      <AvatarImage src={member.avatarUrl} />
-                      <AvatarFallback className={cn('text-xs', generateAvatarColor(member.displayName))}>
-                        {getInitials(member.displayName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <PresenceIndicator 
-                      status="offline" 
-                      size="sm" 
-                      className="absolute -bottom-0.5 -right-0.5" 
-                    />
-                  </div>
-                  <span className="truncate">{member.displayName}</span>
-                </button>
-              ))}
+              {offlineMembers.map(({ user: member }) => {
+                const statusMsg = member.statusMessage;
+                const tooltip = statusMsg 
+                  ? `${member.displayName} • Offline\n"${statusMsg}"`
+                  : `${member.displayName} • Offline`;
+                
+                return (
+                  <button
+                    key={member.id}
+                    onClick={() => member.id !== user?.id && onStartDM?.(member.id)}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent/50 transition-colors"
+                    title={tooltip}
+                  >
+                    <div className="relative">
+                      <Avatar className="h-6 w-6 opacity-50">
+                        <AvatarImage src={member.avatarUrl} />
+                        <AvatarFallback className={cn('text-xs', generateAvatarColor(member.displayName))}>
+                          {getInitials(member.displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <PresenceIndicator 
+                        status="offline" 
+                        size="sm" 
+                        className="absolute -bottom-0.5 -right-0.5" 
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <span className="truncate block">{member.displayName}</span>
+                      {statusMsg && (
+                        <p className="text-xs text-sidebar-foreground/40 truncate italic">
+                          {statusMsg}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { ThreadPanel } from './ThreadPanel';
 import { ChannelSettingsModal } from './ChannelSettingsModal';
 import { NotificationCenter } from './NotificationCenter';
 import { PinnedMessagesPanel } from './PinnedMessagesPanel';
+import { ChannelMembersPanel } from './ChannelMembersPanel';
 import { Portal } from '@/components/ui/portal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [pinnedOpen, setPinnedOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const { currentChannel, currentConversation, directMessages, user, members, typingUsers, activeThread, setActiveThread, useVirtualizedList, toggleVirtualizedList, starredChannels, toggleStarChannel } = useStore();
 
   // Get typing users for current channel
@@ -229,7 +231,13 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
                 starredChannels.has(currentChannel?.id || '') && 'fill-yellow-400 text-yellow-400'
               )} />
             </Button>
-            <Button variant="ghost" size="sm" className="gap-1 hidden sm:flex">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1 hidden sm:flex"
+              onClick={() => setMembersOpen(!membersOpen)}
+              title="View channel members"
+            >
               <Users className="h-4 w-4" />
               <span>{members.length}</span>
             </Button>
@@ -355,6 +363,16 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
           channelName={currentChannel.name}
           onClose={() => setActiveThread(null)}
           onSendReply={onSendReply || (async () => {})}
+        />
+      )}
+
+      {/* Channel Members Panel */}
+      {membersOpen && currentChannel && (
+        <ChannelMembersPanel
+          channelId={currentChannel.id}
+          channelName={currentChannel.name}
+          isPrivate={currentChannel.isPrivate}
+          onClose={() => setMembersOpen(false)}
         />
       )}
     </div>

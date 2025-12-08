@@ -34,6 +34,7 @@ import {
   UserPlus,
   KeyRound,
   Trash2,
+  HeartPulse,
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
@@ -441,6 +442,15 @@ export default function AdminPage() {
                     </button>
                   </li>
                 ))}
+                <li className="pt-4 border-t mt-4">
+                  <Link
+                    href="/admin/health"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                  >
+                    <HeartPulse className="h-4 w-4" />
+                    System Health
+                  </Link>
+                </li>
               </ul>
             </nav>
 

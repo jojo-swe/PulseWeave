@@ -24,6 +24,9 @@ interface StatusBannerProps {
   statusPageUrl?: string;
 }
 
+// Default to internal status page
+const DEFAULT_STATUS_PAGE = '/status';
+
 /**
  * Status banner that shows system health and any incidents.
  */
@@ -123,17 +126,13 @@ export function StatusBanner({ className, statusPageUrl }: StatusBannerProps) {
         <div className="flex items-center gap-2">
           <Icon className={cn('w-4 h-4', config.text)} />
           <span className={config.text}>{config.message}</span>
-          {statusPageUrl && (
-            <a
-              href={statusPageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn('inline-flex items-center gap-1 hover:underline', config.text)}
-            >
-              View status
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
+          <a
+            href={statusPageUrl || DEFAULT_STATUS_PAGE}
+            className={cn('inline-flex items-center gap-1 hover:underline', config.text)}
+          >
+            View status
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
         <button
           onClick={() => setDismissed(true)}
