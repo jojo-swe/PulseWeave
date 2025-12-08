@@ -25,6 +25,7 @@ import externalRouter from './routes/external';
 import integrationRouter from './routes/integration';
 import paymentRouter from './routes/payments';
 import preferencesRouter from './routes/preferences';
+import { friendRouter } from './routes/friend';
 import { initializeRbac } from './services/rbac';
 import path from 'path';
 import { setupSocketHandlers } from './socket';
@@ -241,6 +242,7 @@ app.use('/api/external', externalRouter); // External API (uses API key auth)
 app.use('/api/hooks', webhookRouter); // Incoming webhooks (no auth - uses token)
 app.use('/api/payments', paymentRouter);
 app.use('/api/preferences', authenticateToken, preferencesRouter);
+app.use('/api/friends', authenticateToken, friendRouter);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

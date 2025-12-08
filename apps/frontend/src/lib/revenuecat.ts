@@ -1,8 +1,27 @@
-
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-js';
 
-// TODO: Replace with your actual RevenueCat Public API Key
-const REVENUECAT_API_KEY = 'appl_PLACEHOLDER_KEY';
+/**
+ * RevenueCat Configuration
+ * 
+ * PRODUCTION SETUP:
+ * 1. Create a RevenueCat account at https://www.revenuecat.com
+ * 2. Create a new project and get your Public API Key
+ * 3. Set NEXT_PUBLIC_REVENUECAT_API_KEY in your .env.local file
+ * 4. Configure your products in RevenueCat dashboard
+ * 5. Set up entitlements for access control
+ * 
+ * Note: RevenueCat is primarily for mobile apps (iOS/Android).
+ * For web-only subscriptions, consider using Stripe directly.
+ */
+
+const REVENUECAT_API_KEY = process.env.NEXT_PUBLIC_REVENUECAT_API_KEY || '';
+
+/**
+ * Check if RevenueCat is configured.
+ */
+export function isRevenueCatConfigured(): boolean {
+  return !!REVENUECAT_API_KEY;
+}
 
 export class RevenueCatService {
   private static instance: RevenueCatService;
@@ -20,14 +39,25 @@ export class RevenueCatService {
   public async initialize(userId: string) {
     if (this.isInitialized) return;
 
+    if (!REVENUECAT_API_KEY) {
+      console.warn('RevenueCat not configured: NEXT_PUBLIC_REVENUECAT_API_KEY is not set');
+      return;
+    }
+
     try {
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG); // Set to WARN/ERROR in production
+      // Use WARN in production, DEBUG in development
+      const logLevel = process.env.NODE_ENV === 'production' ? LOG_LEVEL.WARN : LOG_LEVEL.DEBUG;
+      Purchases.setLogLevel(logLevel);
       await Purchases.configure(REVENUECAT_API_KEY, userId);
       this.isInitialized = true;
       console.log('RevenueCat initialized successfully');
     } catch (error) {
       console.error('Failed to initialize RevenueCat:', error);
     }
+  }
+
+  public isReady(): boolean {
+    return this.isInitialized;
   }
 
   public async getOfferings() {

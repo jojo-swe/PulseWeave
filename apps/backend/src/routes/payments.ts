@@ -1,9 +1,19 @@
 import express from 'express';
 import Stripe from 'stripe';
 import { z } from 'zod';
+import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
+
+// Plan mapping from Stripe price IDs to plan names
+// PRODUCTION: Update these with your actual Stripe price IDs
+const PRICE_TO_PLAN: Record<string, string> = {
+  'price_pro_monthly': 'pro',
+  'price_pro_yearly': 'pro',
+  'price_enterprise_monthly': 'enterprise',
+  'price_enterprise_yearly': 'enterprise',
+};
 
 const router = express.Router();
 
@@ -135,44 +145,103 @@ router.post(
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log(`[Stripe] Checkout completed for user: ${session.metadata?.userId}`);
-        // TODO: Activate subscription for user
-        // await activateSubscription(session.metadata?.userId, session.subscription);
+        const userId = session.metadata?.userId || session.client_reference_id;
+        console.log(`[Stripe] Checkout completed for user: ${userId}`);
+        
+        if (userId && session.customer && session.subscription) {
+          // Create or update subscription record
+          await prisma.subscription.upsert({
+            where: { userId },
+            create: {
+              userId,
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: session.subscription as string,
+              status: 'active',
+              plan: 'pro', // Default, will be updated by subscription.created event
+            },
+            update: {
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: session.subscription as string,
+              status: 'active',
+            },
+          });
+        }
         break;
       }
 
-      case 'customer.subscription.created': {
-        const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] Subscription created: ${subscription.id}`);
-        // TODO: Store subscription details
-        break;
-      }
-
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] Subscription updated: ${subscription.id}, status: ${subscription.status}`);
-        // TODO: Update subscription status
+        console.log(`[Stripe] Subscription ${event.type === 'customer.subscription.created' ? 'created' : 'updated'}: ${subscription.id}, status: ${subscription.status}`);
+        
+        // Find user by Stripe customer ID
+        const existingSub = await prisma.subscription.findFirst({
+          where: { stripeCustomerId: subscription.customer as string },
+        });
+        
+        if (existingSub) {
+          const priceId = subscription.items.data[0]?.price?.id;
+          const plan = priceId ? (PRICE_TO_PLAN[priceId] || 'pro') : existingSub.plan;
+          
+          await prisma.subscription.update({
+            where: { id: existingSub.id },
+            data: {
+              stripeSubscriptionId: subscription.id,
+              stripePriceId: priceId,
+              status: subscription.status,
+              plan,
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            },
+          });
+        }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         console.log(`[Stripe] Subscription cancelled: ${subscription.id}`);
-        // TODO: Deactivate subscription
+        
+        // Mark subscription as canceled
+        await prisma.subscription.updateMany({
+          where: { stripeSubscriptionId: subscription.id },
+          data: {
+            status: 'canceled',
+            plan: 'free',
+          },
+        });
         break;
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
         console.log(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
-        // TODO: Record payment
+        
+        // Update subscription status to active if it was past_due
+        if (invoice.subscription) {
+          await prisma.subscription.updateMany({
+            where: { 
+              stripeSubscriptionId: invoice.subscription as string,
+              status: 'past_due',
+            },
+            data: { status: 'active' },
+          });
+        }
         break;
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         console.log(`[Stripe] Payment failed for invoice: ${invoice.id}`);
-        // TODO: Handle failed payment (notify user, retry, etc.)
+        
+        // Mark subscription as past_due
+        if (invoice.subscription) {
+          await prisma.subscription.updateMany({
+            where: { stripeSubscriptionId: invoice.subscription as string },
+            data: { status: 'past_due' },
+          });
+        }
         break;
       }
 
@@ -192,12 +261,25 @@ router.get(
   '/subscription',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    // TODO: Implement subscription status lookup
-    // For now, return a placeholder
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: req.userId! },
+    });
+
+    if (!subscription) {
+      return res.json({
+        status: 'inactive',
+        plan: 'free',
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      });
+    }
+
     res.json({
-      status: 'inactive',
-      plan: null,
-      currentPeriodEnd: null,
+      status: subscription.status,
+      plan: subscription.plan,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
     });
   })
 );
@@ -214,16 +296,19 @@ router.post(
       throw Errors.internal('Payment processing is not configured');
     }
 
-    // TODO: Get customer ID from database
-    const customerId = req.body.customerId;
-    if (!customerId) {
+    // Get customer ID from database
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: req.userId! },
+    });
+
+    if (!subscription?.stripeCustomerId) {
       throw Errors.badRequest('No subscription found');
     }
 
-    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/settings?tab=billing`;
+    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:9797'}/settings?tab=billing`;
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
+      customer: subscription.stripeCustomerId,
       return_url: returnUrl,
     });
 

@@ -71,6 +71,9 @@ model User {
   preferences          UserPreferences?
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens  PasswordResetToken[]
+  friendRequestsSent   Friendship[]        @relation("FriendRequestsSent")
+  friendRequestsReceived Friendship[]      @relation("FriendRequestsReceived")
+  subscription         Subscription?
 
   @@map("users")
 }
@@ -627,4 +630,46 @@ model Integration {
 
   @@index([workspaceId, type])
   @@map("integrations")
+}
+
+// Friend requests and friendships
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String   // User who sent the request
+  addresseeId String   // User who received the request
+  status      String   @default("pending") // pending, accepted, declined, blocked
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  requester User @relation("FriendRequestsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendRequestsReceived", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+  @@map("friendships")
+}
+
+// User subscriptions for billing
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String    @default("inactive") // inactive, active, past_due, canceled, trialing
+  plan                 String    @default("free") // free, pro, enterprise
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscriptions")
 }

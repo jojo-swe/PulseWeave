@@ -25,18 +25,25 @@ import {
 
 type FriendStatus = 'online' | 'away' | 'dnd' | 'offline';
 
-interface Friend {
+interface FriendUser {
   id: string;
   displayName: string;
   username: string;
-  avatarUrl?: string;
-  status: FriendStatus;
-  customStatus?: string;
+  avatarUrl?: string | null;
+  status: string;
+  statusMessage?: string | null;
+}
+
+interface Friend {
+  id: string;
+  friendshipId: string;
+  user: FriendUser;
+  since: string;
 }
 
 interface FriendRequest {
   id: string;
-  from: Friend;
+  from: FriendUser;
   createdAt: string;
 }
 
@@ -56,71 +63,115 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [addFriendUsername, setAddFriendUsername] = useState('');
+  const [addFriendError, setAddFriendError] = useState('');
+  const [addFriendLoading, setAddFriendLoading] = useState(false);
 
-  // Use workspace members as friends for now
-  useEffect(() => {
-    const loadFriends = async () => {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 300));
+  // Load friends and requests from API
+  const loadFriends = async () => {
+    if (!token) return;
+    setLoading(true);
+    
+    try {
+      // Fetch friends
+      const friendsRes = await api.get<{ friends: Friend[] }>('/api/friends');
+      setFriends(friendsRes.friends || []);
       
-      // Convert members to friends format
-      const mapStatus = (status: string): FriendStatus => {
-        if (status === 'online') return 'online';
-        if (status === 'away') return 'away';
-        if (status === 'busy' || status === 'dnd') return 'dnd';
-        return 'offline';
-      };
-      
+      // Fetch pending requests
+      const requestsRes = await api.get<{ requests: FriendRequest[] }>('/api/friends/requests');
+      setRequests(requestsRes.requests || []);
+    } catch (err) {
+      console.error('Failed to load friends:', err);
+      // Fallback to workspace members if API fails
       const memberFriends: Friend[] = members
         .filter(m => m.user.id !== user?.id)
         .map(m => ({
           id: m.user.id,
-          displayName: m.user.displayName,
-          username: m.user.username,
-          avatarUrl: m.user.avatarUrl,
-          status: mapStatus(m.user.status),
+          friendshipId: '',
+          user: {
+            id: m.user.id,
+            displayName: m.user.displayName,
+            username: m.user.username,
+            avatarUrl: m.user.avatarUrl,
+            status: m.user.status,
+            statusMessage: m.user.statusMessage,
+          },
+          since: new Date().toISOString(),
         }));
-      
       setFriends(memberFriends);
-      
-      // Mock pending requests
-      setRequests([]);
-      
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
     loadFriends();
-  }, [members, user?.id]);
+  }, [token, members, user?.id]);
 
   const filteredFriends = friends.filter(friend => {
-    const matchesSearch = friend.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          friend.username.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = friend.user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          friend.user.username.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (!matchesSearch) return false;
     
-    if (filter === 'online') return friend.status === 'online' || friend.status === 'away' || friend.status === 'dnd';
+    if (filter === 'online') return friend.user.status === 'online' || friend.user.status === 'away' || friend.user.status === 'dnd';
     if (filter === 'pending') return false; // Pending shows requests, not friends
     return true;
   });
 
-  const onlineFriends = friends.filter(f => f.status !== 'offline');
+  const onlineFriends = friends.filter(f => f.user.status !== 'offline');
   const pendingCount = requests.length;
 
-  const handleAcceptRequest = (requestId: string) => {
-    setRequests(prev => prev.filter(r => r.id !== requestId));
-    // TODO: API call to accept
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      await api.post(`/api/friends/request/${requestId}/accept`, {});
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+      loadFriends(); // Refresh friends list
+    } catch (err) {
+      console.error('Failed to accept request:', err);
+    }
   };
 
-  const handleDeclineRequest = (requestId: string) => {
-    setRequests(prev => prev.filter(r => r.id !== requestId));
-    // TODO: API call to decline
+  const handleDeclineRequest = async (requestId: string) => {
+    try {
+      await api.post(`/api/friends/request/${requestId}/decline`, {});
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      console.error('Failed to decline request:', err);
+    }
   };
 
   const handleAddFriend = async () => {
     if (!addFriendUsername.trim()) return;
-    // TODO: API call to send friend request
-    setAddFriendUsername('');
-    setAddFriendOpen(false);
+    setAddFriendLoading(true);
+    setAddFriendError('');
+    
+    try {
+      const result = await api.post<{ message: string; status?: string }>('/api/friends/request', {
+        username: addFriendUsername.trim(),
+      });
+      
+      setAddFriendUsername('');
+      setAddFriendOpen(false);
+      
+      // If auto-accepted (they had sent us a request), refresh friends
+      if (result.status === 'accepted') {
+        loadFriends();
+      }
+    } catch (err: any) {
+      setAddFriendError(err.message || 'Failed to send friend request');
+    } finally {
+      setAddFriendLoading(false);
+    }
+  };
+
+  const handleRemoveFriend = async (friendshipId: string) => {
+    if (!confirm('Are you sure you want to remove this friend?')) return;
+    try {
+      await api.delete(`/api/friends/${friendshipId}`);
+      setFriends(prev => prev.filter(f => f.friendshipId !== friendshipId));
+    } catch (err) {
+      console.error('Failed to remove friend:', err);
+    }
   };
 
   return (
@@ -145,17 +196,26 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
 
         {/* Add friend input */}
         {addFriendOpen && (
-          <div className="flex gap-2 mb-4">
-            <Input
-              placeholder="Enter username..."
-              value={addFriendUsername}
-              onChange={(e) => setAddFriendUsername(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddFriend()}
-              className="flex-1"
-            />
-            <Button size="sm" onClick={handleAddFriend}>
-              Send
-            </Button>
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter username..."
+                value={addFriendUsername}
+                onChange={(e) => {
+                  setAddFriendUsername(e.target.value);
+                  setAddFriendError('');
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddFriend()}
+                className="flex-1"
+                disabled={addFriendLoading}
+              />
+              <Button size="sm" onClick={handleAddFriend} disabled={addFriendLoading}>
+                {addFriendLoading ? 'Sending...' : 'Send'}
+              </Button>
+            </div>
+            {addFriendError && (
+              <p className="text-xs text-destructive mt-1">{addFriendError}</p>
+            )}
           </div>
         )}
 
@@ -314,20 +374,20 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
                 >
                   <div className="relative">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={friend.avatarUrl} />
-                      <AvatarFallback className={cn('text-xs', generateAvatarColor(friend.displayName))}>
-                        {getInitials(friend.displayName)}
+                      <AvatarImage src={friend.user.avatarUrl || undefined} />
+                      <AvatarFallback className={cn('text-xs', generateAvatarColor(friend.user.displayName))}>
+                        {getInitials(friend.user.displayName)}
                       </AvatarFallback>
                     </Avatar>
                     <PresenceIndicator 
-                      status={friend.status} 
+                      status={(friend.user.status as FriendStatus) || 'offline'} 
                       className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 border-2 border-background"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{friend.displayName}</p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {friend.customStatus || friend.status}
+                    <p className="font-medium text-sm truncate">{friend.user.displayName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {friend.user.statusMessage || friend.user.status || 'offline'}
                     </p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -335,7 +395,7 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8"
-                      onClick={() => onStartDM?.(friend.id)}
+                      onClick={() => onStartDM?.(friend.user.id)}
                       title="Send message"
                     >
                       <MessageSquare className="h-4 w-4" />
@@ -343,10 +403,11 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8"
-                      title="More options"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      title="Remove friend"
+                      onClick={() => handleRemoveFriend(friend.friendshipId)}
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <UserMinus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

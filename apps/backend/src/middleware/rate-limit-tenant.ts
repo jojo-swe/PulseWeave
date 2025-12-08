@@ -53,9 +53,46 @@ const handler = async (req: Request, res: Response, next: any, options: any) => 
   });
 };
 
+// Cache for subscription tiers to avoid DB lookups on every request
+const tierCache = new Map<string, { tier: string; expiresAt: number }>();
+const TIER_CACHE_TTL = 60 * 1000; // 1 minute cache
+
+/**
+ * Get user's subscription tier from cache or database.
+ */
+async function getUserTier(userId: string): Promise<string> {
+  const cached = tierCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.tier;
+  }
+
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId },
+      select: { plan: true, status: true },
+    });
+
+    // Only count active subscriptions
+    const tier = (subscription?.status === 'active' || subscription?.status === 'trialing')
+      ? subscription.plan
+      : 'free';
+
+    tierCache.set(userId, { tier, expiresAt: Date.now() + TIER_CACHE_TTL });
+    return tier;
+  } catch {
+    // On error, default to free tier
+    return 'free';
+  }
+}
+
 /**
  * Tenant-aware Rate Limiter.
  * Uses MemoryStore by default. For production, use RedisStore.
+ * 
+ * Rate limits are based on user subscription tier:
+ * - free: 100 requests/minute
+ * - pro: 1000 requests/minute
+ * - enterprise: 5000 requests/minute
  */
 export const tenantRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -63,17 +100,13 @@ export const tenantRateLimiter = rateLimit({
   max: async (req: Request) => {
     const authReq = req as AuthRequest;
     
-    // If authenticated with workspace context
-    if (authReq.workspaceId) {
-      // TODO: Fetch real tier from database if we add a 'tier' field to Workspace
-      // const workspace = await prisma.workspace.findUnique({ where: { id: authReq.workspaceId } });
-      // const tier = workspace?.tier || 'free';
-      
-      // For now, assume 'pro' for all authenticated workspaces in this SaaS version
-      return TIER_LIMITS.pro;
+    // If authenticated user, check their subscription tier
+    if (authReq.userId) {
+      const tier = await getUserTier(authReq.userId);
+      return TIER_LIMITS[tier as keyof typeof TIER_LIMITS] || TIER_LIMITS.free;
     }
 
-    // Default for IP-based (unauthenticated or global)
+    // Default for IP-based (unauthenticated)
     return TIER_LIMITS.free;
   },
   keyGenerator,
