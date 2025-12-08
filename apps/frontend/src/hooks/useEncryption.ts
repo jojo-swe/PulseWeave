@@ -18,7 +18,7 @@ import {
   DECRYPTION_FAILED_PLACEHOLDER,
 } from '@/lib/encryption';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090/api';
 
 /**
  * Public key info from server.

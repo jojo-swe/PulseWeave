@@ -254,7 +254,7 @@ app.use(errorHandler);
 // Socket.io setup
 setupSocketHandlers(io);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 9090;
 const protocol = sslOptions ? 'https' : 'http';
 
 // Verify database connection before starting

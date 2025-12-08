@@ -98,7 +98,7 @@ export default function LoginScreen() {
                 style={[styles.input, styles.serverInput]}
                 value={tempServerUrl}
                 onChangeText={setTempServerUrl}
-                placeholder="http://localhost:3001"
+                placeholder="http://localhost:9090"
                 placeholderTextColor="#71717a"
                 autoCapitalize="none"
                 autoCorrect={false}

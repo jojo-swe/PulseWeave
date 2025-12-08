@@ -72,7 +72,7 @@ export function SecuritySettings() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/mfa/status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090'}/api/mfa/status`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',

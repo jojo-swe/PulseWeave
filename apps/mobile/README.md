@@ -115,4 +115,4 @@ Update `app.json` for your app:
 
 Users can configure the server URL in the login screen by tapping "Configure server". The URL is persisted in secure storage.
 
-Default: `http://localhost:3001`
+Default: `http://localhost:9090`

@@ -10,7 +10,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Server
-  PORT: z.string().transform(Number).default('3001'),
+  PORT: z.string().transform(Number).default('9090'),
   HOST: z.string().default('0.0.0.0'),
 
   // Database
@@ -26,7 +26,7 @@ const envSchema = z.object({
   COOKIE_DOMAIN: z.string().optional(),
 
   // CORS
-  CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  CORS_ORIGINS: z.string().default('http://localhost:9797'),
 
   // SSL/TLS
   SSL_ENABLED: z.string().transform((v) => v === 'true').default('false'),

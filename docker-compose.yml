@@ -18,16 +18,16 @@ services:
       dockerfile: Dockerfile
       target: backend
     ports:
-      - "3001:3001"
+      - "9090:9090"
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=9090
       - DATABASE_URL=file:/app/data/pulseweave.db
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
       - COOKIE_SECRET=${COOKIE_SECRET:?COOKIE_SECRET is required}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:9797}
       - USE_DB_SESSIONS=true
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:9797}
       # SSL (optional - use reverse proxy in production)
       - SSL_ENABLED=false
     volumes:
@@ -35,7 +35,7 @@ services:
       - pulseweave-data:/app/data
       - pulseweave-uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health/live"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -53,11 +53,11 @@ services:
       dockerfile: Dockerfile
       target: frontend
     ports:
-      - "3000:3000"
+      - "9797:9797"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:3001}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:9090}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:9090}
     depends_on:
       backend:
         condition: service_healthy

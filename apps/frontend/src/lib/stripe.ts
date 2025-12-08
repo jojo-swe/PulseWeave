@@ -13,7 +13,7 @@ export async function redirectToCheckout(priceId: string) {
   }
 
   // Call your backend to create a Checkout Session
-  const response = await fetch('http://localhost:3001/api/payments/create-checkout-session', {
+  const response = await fetch('http://localhost:9090/api/payments/create-checkout-session', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

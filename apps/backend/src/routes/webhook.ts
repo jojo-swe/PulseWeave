@@ -442,7 +442,7 @@ router.get(
     const result = webhooks.map((w) => ({
       ...w,
       allowedIps: w.allowedIps ? JSON.parse(w.allowedIps) : [],
-      webhookUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/hooks/${w.token}`,
+      webhookUrl: `${process.env.API_URL || 'http://localhost:9090'}/api/hooks/${w.token}`,
     }));
 
     res.json(result);
@@ -496,7 +496,7 @@ router.post(
     res.status(201).json({
       ...webhook,
       allowedIps: webhook.allowedIps ? JSON.parse(webhook.allowedIps) : [],
-      webhookUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/hooks/${webhook.token}`,
+      webhookUrl: `${process.env.API_URL || 'http://localhost:9090'}/api/hooks/${webhook.token}`,
     });
   })
 );
@@ -555,7 +555,7 @@ router.patch(
     res.json({
       ...updated,
       allowedIps: updated.allowedIps ? JSON.parse(updated.allowedIps) : [],
-      webhookUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/hooks/${updated.token}`,
+      webhookUrl: `${process.env.API_URL || 'http://localhost:9090'}/api/hooks/${updated.token}`,
     });
   })
 );
@@ -625,7 +625,7 @@ router.post(
     res.json({
       ...updated,
       allowedIps: updated.allowedIps ? JSON.parse(updated.allowedIps) : [],
-      webhookUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/hooks/${updated.token}`,
+      webhookUrl: `${process.env.API_URL || 'http://localhost:9090'}/api/hooks/${updated.token}`,
     });
   })
 );

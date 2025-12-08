@@ -156,7 +156,7 @@ services:
   app:
     build: .
     ports:
-      - "3001:3001"
+      - "9090:9090"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/pulseweave.db
@@ -179,7 +179,7 @@ services:
   app:
     build: .
     ports:
-      - "3001:3001"
+      - "9090:9090"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:password@db:5432/pulseweave
@@ -246,20 +246,20 @@ spec:
       - name: pulseweave
         image: pulseweave:latest
         ports:
-        - containerPort: 3001
+        - containerPort: 9090
         env:
         - name: NODE_ENV
           value: "production"
         livenessProbe:
           httpGet:
             path: /health/live
-            port: 3001
+            port: 9090
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health/ready
-            port: 3001
+            port: 9090
           initialDelaySeconds: 5
           periodSeconds: 5
         resources:
@@ -289,7 +289,7 @@ spec:
 scrape_configs:
   - job_name: 'pulseweave'
     static_configs:
-      - targets: ['localhost:3001']
+      - targets: ['localhost:9090']
     metrics_path: '/metrics'
 ```
 

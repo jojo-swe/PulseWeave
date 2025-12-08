@@ -83,7 +83,7 @@ export const useStore = create<Store>()(
       setHydrated: (hydrated) => set({ hydrated }),
 
       // Server config
-      serverUrl: 'http://localhost:3001',
+      serverUrl: 'http://localhost:9090',
       setServerUrl: (url) => set({ serverUrl: url }),
 
       // Auth

@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -35,7 +35,7 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     return response.json();
   } catch (error) {
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Unable to connect to server. Please ensure the backend is running on http://localhost:3001');
+      throw new Error('Unable to connect to server. Please ensure the backend is running on http://localhost:9090');
     }
     throw error;
   }

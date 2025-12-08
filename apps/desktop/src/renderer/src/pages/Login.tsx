@@ -83,7 +83,7 @@ export function Login(): JSX.Element {
                 type="url"
                 value={tempServerUrl}
                 onChange={(e) => setTempServerUrl(e.target.value)}
-                placeholder="http://localhost:3001"
+                placeholder="http://localhost:9090"
                 className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm"
               />
               <button

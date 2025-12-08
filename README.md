@@ -68,8 +68,8 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
    ```
 
    This starts both:
-   - Frontend: http://localhost:3000
-   - Backend: http://localhost:3001
+   - Frontend: http://localhost:9797
+   - Backend: http://localhost:9090
 
 ### First Time Setup
 
@@ -131,9 +131,9 @@ PulseWeave/
 ### Backend (`apps/backend/.env`)
 ```env
 # Core
-PORT=3001
+PORT=9090
 NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:9797
 
 # JWT
 JWT_SECRET=change-this-in-production
@@ -194,7 +194,7 @@ DATABASE_URL="file:./dev.db"
 
 ### Frontend (`apps/frontend/.env.local`)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:9090
 ```
 
 ## API Endpoints

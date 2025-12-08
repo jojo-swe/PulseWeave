@@ -49,4 +49,11 @@ uploads/
 .idea
 .cache
 
+# Databases
 dev.db
+prod.db
+
+# IDE
+.idea
+.vscode
+.windsurf

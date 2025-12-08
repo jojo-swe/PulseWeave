@@ -74,7 +74,7 @@ export const useStore = create<Store>()(
   persist(
     (set) => ({
       // Server config
-      serverUrl: 'http://localhost:3001',
+      serverUrl: 'http://localhost:9090',
       setServerUrl: (url) => set({ serverUrl: url }),
 
       // Auth

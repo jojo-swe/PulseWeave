@@ -13,7 +13,7 @@ const router = express.Router();
  */
 const ALLOWED_REDIRECT_ORIGINS = [
   process.env.FRONTEND_URL || 'http://localhost:3000',
-  process.env.API_URL || 'http://localhost:3001',
+  process.env.API_URL || 'http://localhost:9090',
 ].filter(Boolean);
 
 /**
