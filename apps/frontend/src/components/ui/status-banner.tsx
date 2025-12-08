@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
 const STATUS_CHECK_INTERVAL = 60000; // 1 minute
+const BACKOFF_MULTIPLIER = 2;
+const MAX_BACKOFF = 300000; // 5 minutes max
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'down';
@@ -31,14 +33,27 @@ export function StatusBanner({ className, statusPageUrl }: StatusBannerProps) {
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
 
   useEffect(() => {
+    let currentInterval = STATUS_CHECK_INTERVAL;
+    let consecutiveFailures = 0;
+    let timeoutId: NodeJS.Timeout;
+
     const checkHealth = async () => {
       try {
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => controller.abort(), 5000);
+        
         const response = await fetch(`${API_URL}/health`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
         });
-
+        
+        clearTimeout(fetchTimeout);
         const data = await response.json();
+        
+        // Reset backoff on successful response
+        consecutiveFailures = 0;
+        currentInterval = STATUS_CHECK_INTERVAL;
         
         // Map backend status to our status
         if (data.status === 'healthy') {
@@ -50,18 +65,28 @@ export function StatusBanner({ className, statusPageUrl }: StatusBannerProps) {
           setHealth({ status: 'degraded', message: 'Service degraded', services: data.services });
         }
       } catch {
-        setHealth({ status: 'down', message: 'Unable to reach server' });
+        consecutiveFailures++;
+        // Exponential backoff on failures (max 5 min)
+        currentInterval = Math.min(
+          STATUS_CHECK_INTERVAL * Math.pow(BACKOFF_MULTIPLIER, consecutiveFailures),
+          MAX_BACKOFF
+        );
+        
+        // Only show "down" after 2+ consecutive failures to avoid flicker
+        if (consecutiveFailures >= 2) {
+          setHealth({ status: 'down', message: 'Unable to reach server' });
+        }
       }
       setLastCheck(new Date());
+      
+      // Schedule next check with current interval
+      timeoutId = setTimeout(checkHealth, currentInterval);
     };
 
-    // Initial check
-    checkHealth();
+    // Initial check after short delay
+    timeoutId = setTimeout(checkHealth, 2000);
 
-    // Periodic checks
-    const interval = setInterval(checkHealth, STATUS_CHECK_INTERVAL);
-
-    return () => clearInterval(interval);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Don't show banner if healthy or dismissed

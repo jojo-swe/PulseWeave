@@ -59,13 +59,21 @@ export function updateWsConnectionCount(count: number): void {
 }
 
 /**
- * Checks database connectivity and latency.
+ * Checks database connectivity and latency with timeout.
  */
 async function checkDatabase(): Promise<ServiceHealth> {
   const start = Date.now();
+  const TIMEOUT_MS = 2000; // 2 second timeout for health check
+  
   try {
-    // Use a simple query that works with both SQLite and PostgreSQL
-    await prisma.$queryRawUnsafe('SELECT 1 as health_check');
+    // Race between DB query and timeout
+    const result = await Promise.race([
+      prisma.$queryRawUnsafe('SELECT 1 as health_check'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database health check timeout')), TIMEOUT_MS)
+      ),
+    ]);
+    
     const latency = Date.now() - start;
     
     return {
@@ -74,6 +82,19 @@ async function checkDatabase(): Promise<ServiceHealth> {
       message: latency > 1000 ? 'High latency detected' : undefined,
     };
   } catch (error) {
+    const latency = Date.now() - start;
+    const isTimeout = error instanceof Error && error.message.includes('timeout');
+    
+    // Timeout = degraded (server is busy), actual failure = down
+    if (isTimeout) {
+      logger.warn('Database health check timed out', { latency });
+      return {
+        status: 'degraded',
+        latency,
+        message: 'Database response slow',
+      };
+    }
+    
     logger.error('Database health check failed', { error: String(error) });
     return {
       status: 'down',

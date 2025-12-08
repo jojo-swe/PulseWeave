@@ -57,16 +57,18 @@ export function useNetworkStatus(): NetworkStatus {
 /**
  * Hook to check if the API server is reachable.
  * More reliable than just checking navigator.onLine.
+ * Uses exponential backoff on failures to reduce noise.
  */
-export function useApiHealth(checkInterval = 30000) {
+export function useApiHealth(baseInterval = 30000) {
   const [isApiReachable, setIsApiReachable] = useState(true);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
+  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
 
   const checkHealth = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
 
       const response = await fetch(`${API_URL}/health/live`, {
         method: 'GET',
@@ -76,30 +78,52 @@ export function useApiHealth(checkInterval = 30000) {
       clearTimeout(timeoutId);
       setIsApiReachable(response.ok);
       setLastCheck(new Date());
+      setConsecutiveFailures(0); // Reset on success
+      return response.ok;
     } catch {
-      setIsApiReachable(false);
+      setConsecutiveFailures((prev) => prev + 1);
       setLastCheck(new Date());
+      // Only mark unreachable after 2+ failures to avoid flicker
+      if (consecutiveFailures >= 1) {
+        setIsApiReachable(false);
+      }
+      return false;
     }
-  }, []);
+  }, [consecutiveFailures]);
 
   useEffect(() => {
-    // Initial check
-    checkHealth();
+    let timeoutId: NodeJS.Timeout;
+    
+    const scheduleCheck = () => {
+      // Exponential backoff: 30s, 60s, 120s, max 5min
+      const backoffInterval = Math.min(
+        baseInterval * Math.pow(2, consecutiveFailures),
+        300000
+      );
+      timeoutId = setTimeout(async () => {
+        await checkHealth();
+        scheduleCheck();
+      }, consecutiveFailures > 0 ? backoffInterval : baseInterval);
+    };
 
-    // Periodic checks
-    const interval = setInterval(checkHealth, checkInterval);
+    // Initial check after short delay
+    const initialTimeout = setTimeout(() => {
+      checkHealth().then(() => scheduleCheck());
+    }, 3000);
 
     // Also check when coming back online
     const handleOnline = () => {
-      setTimeout(checkHealth, 1000); // Small delay to let network stabilize
+      setConsecutiveFailures(0); // Reset backoff
+      setTimeout(checkHealth, 1000);
     };
     window.addEventListener('online', handleOnline);
 
     return () => {
-      clearInterval(interval);
+      clearTimeout(initialTimeout);
+      clearTimeout(timeoutId);
       window.removeEventListener('online', handleOnline);
     };
-  }, [checkHealth, checkInterval]);
+  }, [checkHealth, baseInterval, consecutiveFailures]);
 
-  return { isApiReachable, lastCheck, checkHealth };
+  return { isApiReachable, lastCheck, checkHealth, consecutiveFailures };
 }
