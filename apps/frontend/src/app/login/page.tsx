@@ -150,12 +150,8 @@ export default function LoginPage() {
   const showLdapTab = authConfig?.ldap?.enabled;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/10 p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-[url('/assets/app-background.png')] bg-cover bg-center bg-no-repeat bg-fixed p-4 relative overflow-hidden">
+
       
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
