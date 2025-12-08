@@ -41,5 +41,6 @@
     "cookie-parser": "^1.4.7",
     "pnpm": "^10.24.0"
   },
-  "license": "GPL-3.0"
+  "license": "AGPL-3.0"
 }
+
