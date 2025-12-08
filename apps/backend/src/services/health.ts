@@ -64,7 +64,8 @@ export function updateWsConnectionCount(count: number): void {
 async function checkDatabase(): Promise<ServiceHealth> {
   const start = Date.now();
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    // Use a simple query that works with both SQLite and PostgreSQL
+    await prisma.$queryRawUnsafe('SELECT 1 as health_check');
     const latency = Date.now() - start;
     
     return {
@@ -73,6 +74,7 @@ async function checkDatabase(): Promise<ServiceHealth> {
       message: latency > 1000 ? 'High latency detected' : undefined,
     };
   } catch (error) {
+    logger.error('Database health check failed', { error: String(error) });
     return {
       status: 'down',
       message: error instanceof Error ? error.message : 'Database connection failed',

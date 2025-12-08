@@ -1,8 +1,6 @@
 import nodemailer from 'nodemailer';
-import { getConfig } from '../config/environment';
 
-// Email configuration from environment
-const config = getConfig();
+// Note: Environment config is accessed lazily to avoid loading before app init
 
 // Create transporter based on environment
 const createTransporter = () => {

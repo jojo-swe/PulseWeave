@@ -38,15 +38,16 @@ export function StatusBanner({ className, statusPageUrl }: StatusBannerProps) {
           headers: { 'Accept': 'application/json' },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          setHealth({
-            status: data.status === 'ok' ? 'healthy' : 'degraded',
-            services: data.services,
-            uptime: data.uptime,
-          });
+        const data = await response.json();
+        
+        // Map backend status to our status
+        if (data.status === 'healthy') {
+          setHealth({ status: 'healthy', services: data.services, uptime: data.uptime });
+        } else if (data.status === 'degraded') {
+          setHealth({ status: 'degraded', message: 'Some services are experiencing issues', services: data.services });
         } else {
-          setHealth({ status: 'degraded', message: 'Some services may be unavailable' });
+          // unhealthy but server is responding
+          setHealth({ status: 'degraded', message: 'Service degraded', services: data.services });
         }
       } catch {
         setHealth({ status: 'down', message: 'Unable to reach server' });
