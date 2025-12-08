@@ -47,15 +47,20 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('pulseweave-theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  } else if (theme === 'light') {
-                    document.documentElement.classList.add('light');
-                  } else {
-                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                      document.documentElement.classList.add('dark');
-                    }
+                  var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var resolved = theme || (systemPrefersDark ? 'dark' : 'light');
+                  var validThemes = ['dark', 'light', 'corporate', 'midnight', 'system'];
+
+                  if (!validThemes.includes(resolved)) {
+                    resolved = systemPrefersDark ? 'dark' : 'light';
                   }
+
+                  // If the stored theme is "system", resolve to the current system preference
+                  if (resolved === 'system') {
+                    resolved = systemPrefersDark ? 'dark' : 'light';
+                  }
+
+                  document.documentElement.classList.add(resolved);
                 } catch (e) {}
               })();
             `,

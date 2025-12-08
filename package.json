@@ -30,7 +30,8 @@
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "stop:dev": "powershell -Command \"if ($env:NODE_ENV -eq 'production') { Write-Output 'Skip stop:dev in production'; exit 0 } Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\""
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
@@ -43,4 +44,3 @@
   },
   "license": "AGPL-3.0"
 }
-
