@@ -150,7 +150,7 @@ export default function LoginPage() {
   const showLdapTab = authConfig?.ldap?.enabled;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('/assets/app-background.png')] bg-cover bg-center bg-no-repeat bg-fixed p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[url('/assets/app-background-login.png')] bg-cover bg-center bg-no-repeat bg-fixed p-4 relative overflow-hidden">
 
       
       <div className="w-full max-w-md relative z-10">
