@@ -11,11 +11,13 @@ import { ChatArea } from '@/components/chat/ChatArea';
 import { CommandPalette } from '@/components/chat/CommandPalette';
 import { KeyboardShortcuts } from '@/components/chat/KeyboardShortcuts';
 import { CreateChannelModal } from '@/components/chat/CreateChannelModal';
+import { GlobalSearch } from '@/components/chat/GlobalSearch';
 import { ActivityPanel } from '@/components/chat/ActivityPanel';
 import { FriendsPanel } from '@/components/chat/FriendsPanel';
 import { Portal } from '@/components/ui/portal';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NavigationRail } from '@/components/chat/NavigationRail';
+import { WelcomeGuide } from '@/components/onboarding/WelcomeGuide';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -50,6 +52,7 @@ export default function Home() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'activity' | 'friends'>('chat');
 
   // Global keyboard shortcuts
@@ -59,6 +62,11 @@ export default function Home() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setCommandPaletteOpen(prev => !prev);
+      }
+      // Ctrl+Shift+F - Open global search
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'f') {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
       }
       // Ctrl+/ - Open keyboard shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key === '/') {
@@ -472,6 +480,16 @@ export default function Home() {
             />
           </Portal>
         )}
+
+        {/* Global Search */}
+        {searchOpen && (
+          <Portal>
+            <GlobalSearch onClose={() => setSearchOpen(false)} />
+          </Portal>
+        )}
+
+        {/* Welcome Guide for new users */}
+        <WelcomeGuide />
       </div>
     </TooltipProvider>
   );

@@ -16,7 +16,9 @@ import {
   AlertTriangle,
   QrCode,
   RefreshCw,
+  Monitor,
 } from 'lucide-react';
+import { SessionManagement } from './SessionManagement';
 
 interface MfaStatus {
   mfaEnabled: boolean;
@@ -448,6 +450,11 @@ export function SecuritySettings() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Session Management Section */}
+      <div className="border-t border-border pt-8 mt-8">
+        <SessionManagement />
       </div>
     </div>
   );

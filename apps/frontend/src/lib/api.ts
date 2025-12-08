@@ -2,10 +2,43 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
 
 interface FetchOptions extends RequestInit {
   token?: string;
+  retry?: boolean;
+  maxRetries?: number;
 }
 
+/**
+ * Custom API error with additional context
+ */
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  isNetworkError: boolean;
+  isRetryable: boolean;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.isNetworkError = status === 0;
+    this.isRetryable = this.isNetworkError || status >= 500 || status === 429;
+  }
+}
+
+/**
+ * Sleep helper for retry delays
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Calculate exponential backoff delay
+ */
+const getRetryDelay = (attempt: number, baseDelay = 1000): number => {
+  return Math.min(baseDelay * Math.pow(2, attempt), 10000); // Max 10 seconds
+};
+
 async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { token: paramToken, ...fetchOptions } = options;
+  const { token: paramToken, retry = true, maxRetries = 3, ...fetchOptions } = options;
   
   // If token is passed explicitly, use it. Otherwise get from storage.
   // Also get workspaceId from storage to attach to every request.
@@ -20,25 +53,60 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     ...options.headers,
   };
 
-  try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...fetchOptions,
-      headers,
-      credentials: 'include', // Ensure cookies are sent with requests
-    });
+  let lastError: Error | null = null;
+  const isIdempotent = !fetchOptions.method || fetchOptions.method === 'GET' || fetchOptions.method === 'HEAD';
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || 'Request failed');
-    }
+  for (let attempt = 0; attempt <= (retry && isIdempotent ? maxRetries : 0); attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = getRetryDelay(attempt - 1);
+        console.log(`[API] Retry attempt ${attempt}/${maxRetries} after ${delay}ms`);
+        await sleep(delay);
+      }
 
-    return response.json();
-  } catch (error) {
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Unable to connect to server. Please ensure the backend is running on http://localhost:9090');
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...fetchOptions,
+        headers,
+        credentials: 'include', // Ensure cookies are sent with requests
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+        const error = new ApiError(
+          errorData.error || 'Request failed',
+          response.status,
+          errorData.code
+        );
+
+        // Don't retry client errors (except 429 rate limit)
+        if (!error.isRetryable) {
+          throw error;
+        }
+
+        lastError = error;
+        continue;
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        lastError = new ApiError(
+          'Unable to connect to server. Please check your internet connection.',
+          0
+        );
+        continue;
+      }
+      
+      if (error instanceof ApiError && !error.isRetryable) {
+        throw error;
+      }
+
+      lastError = error instanceof Error ? error : new Error(String(error));
     }
-    throw error;
   }
+
+  // All retries exhausted
+  throw lastError || new ApiError('Request failed after retries', 0);
 }
 
 interface AuthContext {

@@ -69,6 +69,8 @@ model User {
   integrations         Integration[]
   uploads              Attachment[]        @relation("UserUploads")
   preferences          UserPreferences?
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@map("users")
 }
@@ -145,6 +147,39 @@ model Session {
 
   @@index([userId, isValid])
   @@map("sessions")
+}
+
+// Email verification tokens
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("email_verification_tokens")
+}
+
+// Password reset tokens
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
 }
 
 // Audit log for security events

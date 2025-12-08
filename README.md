@@ -71,12 +71,23 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
    - Frontend: http://localhost:9797
    - Backend: http://localhost:9090
 
-### First Time Setup
+### First Time Setup (Local)
 
-1. Open http://localhost:3000
-2. Click "Sign up" to create an account
-3. A default workspace and #general channel will be created
+1. Open http://localhost:9797
+2. Click **Sign up** to create an account
+3. A default workspace and `#general` channel will be created
 4. Start chatting!
+
+### Configuration Checklist
+
+- **Ports**: frontend runs on **9797**, backend on **9090**. Update any reverse proxy accordingly.
+- **Database**: SQLite by default (`packages/database/.env`). For production, switch to PostgreSQL and run `pnpm db:generate && pnpm db:push`.
+- **Email (SMTP)**: configure in `apps/backend/.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`). If left empty, the backend logs emails to console (dev-friendly).
+- **Email Verification & Password Reset**: already wired to SMTP settings above. Verify links hit `NEXT_PUBLIC_API_URL` (9090 by default).
+- **Stripe**: set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET` in `apps/backend/.env`. Webhook endpoint: `POST /api/payments/webhook` (requires raw body). Billing portal: `POST /api/payments/create-portal-session`.
+- **Sentry (optional)**: set `SENTRY_DSN` in `apps/backend/.env` to enable backend error reporting.
+- **Cookie/Analytics consent**: frontend shows a GDPR-style consent banner; analytics only initialize if consent is granted.
+- **Health / Uptime banner**: frontend polls `/health` and shows a status banner when degraded/down.
 
 ### How the first admin user is created
 

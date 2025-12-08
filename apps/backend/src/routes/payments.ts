@@ -95,4 +95,140 @@ router.post(
   })
 );
 
+/**
+ * Stripe webhook handler.
+ * Verifies webhook signature and processes events.
+ * 
+ * IMPORTANT: This endpoint must receive the raw body for signature verification.
+ * Configure express.raw() middleware for this route in your main app.
+ */
+router.post(
+  '/webhook',
+  asyncHandler(async (req, res) => {
+    const stripe = getStripeClient();
+    if (!stripe) {
+      throw Errors.internal('Payment processing is not configured');
+    }
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET not configured');
+      throw Errors.internal('Webhook not configured');
+    }
+
+    const sig = req.headers['stripe-signature'];
+    if (!sig) {
+      throw Errors.badRequest('Missing stripe-signature header');
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      // Verify webhook signature
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      throw Errors.badRequest('Invalid webhook signature');
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log(`[Stripe] Checkout completed for user: ${session.metadata?.userId}`);
+        // TODO: Activate subscription for user
+        // await activateSubscription(session.metadata?.userId, session.subscription);
+        break;
+      }
+
+      case 'customer.subscription.created': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[Stripe] Subscription created: ${subscription.id}`);
+        // TODO: Store subscription details
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[Stripe] Subscription updated: ${subscription.id}, status: ${subscription.status}`);
+        // TODO: Update subscription status
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[Stripe] Subscription cancelled: ${subscription.id}`);
+        // TODO: Deactivate subscription
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
+        // TODO: Record payment
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log(`[Stripe] Payment failed for invoice: ${invoice.id}`);
+        // TODO: Handle failed payment (notify user, retry, etc.)
+        break;
+      }
+
+      default:
+        console.log(`[Stripe] Unhandled event type: ${event.type}`);
+    }
+
+    // Return 200 to acknowledge receipt
+    res.json({ received: true });
+  })
+);
+
+/**
+ * Get subscription status for current user.
+ */
+router.get(
+  '/subscription',
+  authenticateToken,
+  asyncHandler(async (req: AuthRequest, res) => {
+    // TODO: Implement subscription status lookup
+    // For now, return a placeholder
+    res.json({
+      status: 'inactive',
+      plan: null,
+      currentPeriodEnd: null,
+    });
+  })
+);
+
+/**
+ * Create a billing portal session for managing subscription.
+ */
+router.post(
+  '/create-portal-session',
+  authenticateToken,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const stripe = getStripeClient();
+    if (!stripe) {
+      throw Errors.internal('Payment processing is not configured');
+    }
+
+    // TODO: Get customer ID from database
+    const customerId = req.body.customerId;
+    if (!customerId) {
+      throw Errors.badRequest('No subscription found');
+    }
+
+    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/settings?tab=billing`;
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
+
+    res.json({ url: session.url });
+  })
+);
+
 export default router;

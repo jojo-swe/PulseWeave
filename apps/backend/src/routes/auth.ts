@@ -24,6 +24,11 @@ import {
   isPasswordCompromised,
   logSecurityAudit,
 } from '../middleware/advanced-security';
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
+} from '../services/email';
 
 const router = Router();
 
@@ -771,5 +776,447 @@ router.post('/ldap/test', authenticateToken, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ============================================================================
+// Email Verification Routes
+// ============================================================================
+
+const resendVerificationSchema = z.object({
+  email: z.string().email().toLowerCase(),
+});
+
+/**
+ * Send/resend email verification
+ */
+router.post('/send-verification', async (req, res) => {
+  try {
+    const { email } = resendVerificationSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, displayName: true, isVerified: true },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists
+      return res.json({ message: 'If an account exists, a verification email has been sent.' });
+    }
+
+    if (user.isVerified) {
+      return res.json({ message: 'Email is already verified.' });
+    }
+
+    // Delete any existing tokens for this user
+    await prisma.emailVerificationToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // Create new token (24 hour expiry)
+    const token = crypto.randomBytes(32).toString('hex');
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // Send email
+    await sendVerificationEmail(user.email, token, user.displayName);
+
+    res.json({ message: 'If an account exists, a verification email has been sent.' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Send verification error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Verify email with token
+ */
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+
+    const verificationToken = await prisma.emailVerificationToken.findUnique({
+      where: { token },
+      include: { user: { select: { id: true, email: true, displayName: true, isVerified: true } } },
+    });
+
+    if (!verificationToken) {
+      return res.status(400).json({ error: 'Invalid or expired verification link' });
+    }
+
+    if (verificationToken.expiresAt < new Date()) {
+      // Clean up expired token
+      await prisma.emailVerificationToken.delete({ where: { id: verificationToken.id } });
+      return res.status(400).json({ error: 'Verification link has expired. Please request a new one.' });
+    }
+
+    if (verificationToken.user.isVerified) {
+      // Clean up token
+      await prisma.emailVerificationToken.delete({ where: { id: verificationToken.id } });
+      return res.json({ message: 'Email is already verified.' });
+    }
+
+    // Verify the user
+    await prisma.user.update({
+      where: { id: verificationToken.user.id },
+      data: { isVerified: true },
+    });
+
+    // Delete the token
+    await prisma.emailVerificationToken.delete({ where: { id: verificationToken.id } });
+
+    // Send welcome email
+    await sendWelcomeEmail(verificationToken.user.email, verificationToken.user.displayName);
+
+    // Log the event
+    await prisma.auditLog.create({
+      data: {
+        userId: verificationToken.user.id,
+        action: 'EMAIL_VERIFIED',
+        resource: 'user',
+        resourceId: verificationToken.user.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    logSecurityEvent('EMAIL_VERIFIED', { userId: verificationToken.user.id });
+
+    res.json({ message: 'Email verified successfully!' });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// Password Reset Routes
+// ============================================================================
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email().toLowerCase(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: passwordSchema,
+});
+
+/**
+ * Request password reset
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, displayName: true },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({ message: 'If an account exists, a password reset email has been sent.' });
+    }
+
+    // Delete any existing tokens for this user
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // Create new token (1 hour expiry)
+    const token = crypto.randomBytes(32).toString('hex');
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      },
+    });
+
+    // Send email
+    await sendPasswordResetEmail(user.email, token, user.displayName);
+
+    // Log the event
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'PASSWORD_RESET_REQUESTED',
+        resource: 'user',
+        resourceId: user.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({ message: 'If an account exists, a password reset email has been sent.' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Reset password with token
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: { select: { id: true, email: true } } },
+    });
+
+    if (!resetToken) {
+      return res.status(400).json({ error: 'Invalid or expired reset link' });
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+      return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
+    }
+
+    if (resetToken.usedAt) {
+      return res.status(400).json({ error: 'This reset link has already been used.' });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Update password and mark token as used
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.user.id },
+        data: { passwordHash },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+      // Invalidate all existing sessions for security
+      prisma.session.updateMany({
+        where: { userId: resetToken.user.id },
+        data: { isValid: false },
+      }),
+    ]);
+
+    // Log the event
+    await prisma.auditLog.create({
+      data: {
+        userId: resetToken.user.id,
+        action: 'PASSWORD_RESET_COMPLETED',
+        resource: 'user',
+        resourceId: resetToken.user.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    logSecurityEvent('PASSWORD_RESET_COMPLETED', { userId: resetToken.user.id });
+
+    res.json({ message: 'Password has been reset successfully. Please log in with your new password.' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Check verification status
+ */
+router.get('/verification-status', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { isVerified: true, email: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ isVerified: user.isVerified, email: user.email });
+  } catch (error) {
+    console.error('Verification status error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// Session Management Routes
+// ============================================================================
+
+/**
+ * Get all active sessions for the current user
+ */
+router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const sessions = await prisma.session.findMany({
+      where: {
+        userId: req.userId,
+        isValid: true,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        deviceInfo: true,
+        ipAddress: true,
+        createdAt: true,
+        lastActiveAt: true,
+        tokenId: true,
+      },
+      orderBy: { lastActiveAt: 'desc' },
+    });
+
+    // Mark current session
+    const currentTokenId = req.tokenId; // We'll need to add this to AuthRequest
+    const sessionsWithCurrent = sessions.map((session) => ({
+      ...session,
+      isCurrent: session.tokenId === currentTokenId,
+      // Parse device info for display
+      device: parseDeviceInfo(session.deviceInfo),
+    }));
+
+    res.json({ sessions: sessionsWithCurrent });
+  } catch (error) {
+    console.error('Get sessions error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Revoke a specific session
+ */
+router.delete('/sessions/:sessionId', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    // Verify the session belongs to the current user
+    const session = await prisma.session.findFirst({
+      where: {
+        id: sessionId,
+        userId: req.userId,
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Invalidate the session
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: { isValid: false },
+    });
+
+    // Log the event
+    await prisma.auditLog.create({
+      data: {
+        userId: req.userId,
+        action: 'SESSION_REVOKED',
+        resource: 'session',
+        resourceId: sessionId,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    logSecurityEvent('SESSION_REVOKED', { userId: req.userId, sessionId });
+
+    res.json({ message: 'Session revoked successfully' });
+  } catch (error) {
+    console.error('Revoke session error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Revoke all sessions except current
+ */
+router.post('/sessions/revoke-all', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const currentTokenId = req.tokenId;
+
+    // Invalidate all sessions except current
+    const result = await prisma.session.updateMany({
+      where: {
+        userId: req.userId,
+        isValid: true,
+        tokenId: { not: currentTokenId },
+      },
+      data: { isValid: false },
+    });
+
+    // Log the event
+    await prisma.auditLog.create({
+      data: {
+        userId: req.userId,
+        action: 'ALL_SESSIONS_REVOKED',
+        resource: 'session',
+        details: JSON.stringify({ count: result.count }),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    logSecurityEvent('ALL_SESSIONS_REVOKED', { userId: req.userId, count: result.count });
+
+    res.json({ message: `${result.count} session(s) revoked successfully` });
+  } catch (error) {
+    console.error('Revoke all sessions error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Helper to parse user agent into readable device info
+ */
+function parseDeviceInfo(userAgent: string | null): { browser: string; os: string; device: string } {
+  if (!userAgent) {
+    return { browser: 'Unknown', os: 'Unknown', device: 'Unknown' };
+  }
+
+  // Simple parsing - in production you might use a library like ua-parser-js
+  let browser = 'Unknown';
+  let os = 'Unknown';
+  let device = 'Desktop';
+
+  // Browser detection
+  if (userAgent.includes('Firefox')) browser = 'Firefox';
+  else if (userAgent.includes('Edg')) browser = 'Edge';
+  else if (userAgent.includes('Chrome')) browser = 'Chrome';
+  else if (userAgent.includes('Safari')) browser = 'Safari';
+  else if (userAgent.includes('Opera') || userAgent.includes('OPR')) browser = 'Opera';
+
+  // OS detection
+  if (userAgent.includes('Windows')) os = 'Windows';
+  else if (userAgent.includes('Mac OS')) os = 'macOS';
+  else if (userAgent.includes('Linux')) os = 'Linux';
+  else if (userAgent.includes('Android')) { os = 'Android'; device = 'Mobile'; }
+  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) { os = 'iOS'; device = 'Mobile'; }
+
+  // Device type
+  if (userAgent.includes('Mobile')) device = 'Mobile';
+  else if (userAgent.includes('Tablet')) device = 'Tablet';
+
+  return { browser, os, device };
+}
 
 export { router as authRouter };
