@@ -103,7 +103,7 @@ export function ThemeProvider({
 
   return (
     <ThemeProviderContext.Provider value={value}>
-      {children}
+      <>{children}</>
     </ThemeProviderContext.Provider>
   );
 }

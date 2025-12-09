@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ToastProvider>
           <PushNotificationManager />
           <StatusBanner />
-          {children}
+          <>{children}</>
           <KeyboardShortcutsHint />
           <KeyboardShortcutsDialog />
           <ConnectionToast />

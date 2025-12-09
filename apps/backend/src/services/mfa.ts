@@ -40,8 +40,33 @@ const ORIGIN = process.env.WEBAUTHN_ORIGIN || 'http://localhost:3000';
 
 /**
  * In-memory challenge store (use Redis in production).
+ * Challenges are stored with timestamps and cleaned up periodically.
  */
-const challengeStore = new Map<string, string>();
+const challengeStore = new Map<string, { challenge: string; createdAt: number }>();
+const CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CHALLENGE_MAX_SIZE = 10000;
+
+/**
+ * Cleanup expired challenges.
+ */
+function cleanupChallenges(): void {
+  const now = Date.now();
+  let removed = 0;
+  
+  for (const [key, data] of challengeStore) {
+    if (now - data.createdAt > CHALLENGE_TTL_MS) {
+      challengeStore.delete(key);
+      removed++;
+    }
+  }
+  
+  if (removed > 0) {
+    console.log(`[ChallengeStore] Cleaned up ${removed} expired challenges, ${challengeStore.size} remaining`);
+  }
+}
+
+// Run cleanup every 5 minutes
+setInterval(cleanupChallenges, 5 * 60 * 1000);
 
 // ============================================================================
 // TOTP (Time-based One-Time Password)
@@ -298,7 +323,7 @@ export async function generateWebAuthnRegistrationOptions(userId: string) {
   });
 
   // Store challenge
-  challengeStore.set(userId, options.challenge);
+  challengeStore.set(userId, { challenge: options.challenge, createdAt: Date.now() });
 
   return options;
 }
@@ -315,10 +340,11 @@ export async function verifyWebAuthnRegistration(
   response: RegistrationResponseJSON,
   credentialName: string
 ): Promise<{ success: boolean; error?: string }> {
-  const expectedChallenge = challengeStore.get(userId);
-  if (!expectedChallenge) {
+  const storedChallenge = challengeStore.get(userId);
+  if (!storedChallenge) {
     return { success: false, error: 'No challenge found' };
   }
+  const expectedChallenge = storedChallenge.challenge;
 
   try {
     const verification: VerifiedRegistrationResponse = await verifyRegistrationResponse({
@@ -393,7 +419,7 @@ export async function generateWebAuthnAuthenticationOptions(userId: string) {
   });
 
   // Store challenge
-  challengeStore.set(userId, options.challenge);
+  challengeStore.set(userId, { challenge: options.challenge, createdAt: Date.now() });
 
   return options;
 }
@@ -408,10 +434,11 @@ export async function verifyWebAuthnAuthentication(
   userId: string,
   response: AuthenticationResponseJSON
 ): Promise<{ success: boolean; error?: string }> {
-  const expectedChallenge = challengeStore.get(userId);
-  if (!expectedChallenge) {
+  const storedChallenge = challengeStore.get(userId);
+  if (!storedChallenge) {
     return { success: false, error: 'No challenge found' };
   }
+  const expectedChallenge = storedChallenge.challenge;
 
   const credentialId = response.id;
   const credential = await prisma.webAuthnCredential.findUnique({

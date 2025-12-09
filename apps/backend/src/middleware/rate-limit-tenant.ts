@@ -56,6 +56,32 @@ const handler = async (req: Request, res: Response, next: any, options: any) => 
 // Cache for subscription tiers to avoid DB lookups on every request
 const tierCache = new Map<string, { tier: string; expiresAt: number }>();
 const TIER_CACHE_TTL = 60 * 1000; // 1 minute cache
+const TIER_CACHE_MAX_SIZE = 10000; // Maximum entries
+
+/**
+ * Cleanup expired tier cache entries.
+ */
+function cleanupTierCache(): number {
+  const now = Date.now();
+  let removed = 0;
+  
+  for (const [key, value] of tierCache) {
+    if (now > value.expiresAt) {
+      tierCache.delete(key);
+      removed++;
+    }
+  }
+  
+  return removed;
+}
+
+// Run cleanup every 5 minutes
+setInterval(() => {
+  const removed = cleanupTierCache();
+  if (removed > 0) {
+    console.log(`[TierCache] Cleaned up ${removed} expired entries, ${tierCache.size} remaining`);
+  }
+}, 5 * 60 * 1000);
 
 /**
  * Get user's subscription tier from cache or database.
@@ -76,6 +102,12 @@ async function getUserTier(userId: string): Promise<string> {
     const tier = (subscription?.status === 'active' || subscription?.status === 'trialing')
       ? subscription.plan
       : 'free';
+
+    // Enforce max size by removing oldest entry if needed
+    if (tierCache.size >= TIER_CACHE_MAX_SIZE) {
+      const firstKey = tierCache.keys().next().value;
+      if (firstKey) tierCache.delete(firstKey);
+    }
 
     tierCache.set(userId, { tier, expiresAt: Date.now() + TIER_CACHE_TTL });
     return tier;

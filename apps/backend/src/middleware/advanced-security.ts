@@ -14,6 +14,43 @@ import hpp from 'hpp';
 const blockedIps = new Map<string, { until: Date; reason: string }>();
 const failedAttempts = new Map<string, { count: number; firstAttempt: Date }>();
 
+// Maximum cache sizes to prevent memory leaks
+const MAX_BLOCKED_IPS = 10000;
+const MAX_FAILED_ATTEMPTS = 50000;
+
+/**
+ * Cleanup expired entries from security caches.
+ */
+function cleanupSecurityCaches(): void {
+  const now = new Date();
+  let blockedRemoved = 0;
+  let attemptsRemoved = 0;
+
+  // Cleanup expired blocked IPs
+  for (const [ip, block] of blockedIps) {
+    if (now > block.until) {
+      blockedIps.delete(ip);
+      blockedRemoved++;
+    }
+  }
+
+  // Cleanup stale failed attempts (older than attempt window)
+  const windowMs = (parseInt(process.env.ATTEMPT_WINDOW_MINUTES || '15', 10) + 5) * 60 * 1000;
+  for (const [ip, data] of failedAttempts) {
+    if (now.getTime() - data.firstAttempt.getTime() > windowMs) {
+      failedAttempts.delete(ip);
+      attemptsRemoved++;
+    }
+  }
+
+  if (blockedRemoved > 0 || attemptsRemoved > 0) {
+    console.log(`[SecurityCache] Cleaned up ${blockedRemoved} blocked IPs, ${attemptsRemoved} failed attempts`);
+  }
+}
+
+// Run cleanup every 5 minutes
+setInterval(cleanupSecurityCaches, 5 * 60 * 1000);
+
 /**
  * Configuration for IP blocking.
  */
@@ -322,6 +359,29 @@ export const speedLimiter = slowDown({
  * Uses double-submit cookie pattern.
  */
 const csrfTokens = new Map<string, { token: string; expires: Date }>();
+const CSRF_TOKEN_MAX_SIZE = 50000;
+
+/**
+ * Cleanup expired CSRF tokens.
+ */
+function cleanupCsrfTokens(): void {
+  const now = new Date();
+  let removed = 0;
+  
+  for (const [sessionId, data] of csrfTokens) {
+    if (now > data.expires) {
+      csrfTokens.delete(sessionId);
+      removed++;
+    }
+  }
+  
+  if (removed > 0) {
+    console.log(`[CsrfTokens] Cleaned up ${removed} expired tokens, ${csrfTokens.size} remaining`);
+  }
+}
+
+// Run cleanup every 15 minutes
+setInterval(cleanupCsrfTokens, 15 * 60 * 1000);
 
 /**
  * Generates a CSRF token for a session.
@@ -329,6 +389,12 @@ const csrfTokens = new Map<string, { token: string; expires: Date }>();
 export function generateCsrfToken(sessionId: string): string {
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  
+  // Enforce max size by removing oldest entry if needed
+  if (csrfTokens.size >= CSRF_TOKEN_MAX_SIZE) {
+    const firstKey = csrfTokens.keys().next().value;
+    if (firstKey) csrfTokens.delete(firstKey);
+  }
   
   csrfTokens.set(sessionId, { token, expires });
   
