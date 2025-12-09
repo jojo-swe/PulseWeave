@@ -30,10 +30,12 @@ import {
   Briefcase,
   Sparkles,
   Clock,
+  CreditCard,
 } from 'lucide-react';
 import type { Theme } from '@/components/theme-provider';
+import { BillingSettings } from '@/components/settings/BillingSettings';
 
-type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance';
+type SettingsTab = 'profile' | 'security' | 'notifications' | 'appearance' | 'billing';
 
 /**
  * User settings page.
@@ -47,7 +49,7 @@ export default function SettingsPage() {
   // Get initial tab from URL query parameter
   const tabFromUrl = searchParams.get('tab') as SettingsTab | null;
   const [activeTab, setActiveTab] = useState<SettingsTab>(
-    tabFromUrl && ['profile', 'security', 'notifications', 'appearance'].includes(tabFromUrl)
+    tabFromUrl && ['profile', 'security', 'notifications', 'appearance', 'billing'].includes(tabFromUrl)
       ? tabFromUrl
       : 'profile'
   );
@@ -176,6 +178,7 @@ export default function SettingsPage() {
     { id: 'profile' as const, label: 'Profile', icon: User },
     { id: 'security' as const, label: 'Security', icon: Shield },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell },
+    { id: 'billing' as const, label: 'Billing', icon: CreditCard },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette },
   ];
 
@@ -552,6 +555,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'billing' && <BillingSettings />}
 
               {activeTab === 'appearance' && (
                 <div className="space-y-6">
