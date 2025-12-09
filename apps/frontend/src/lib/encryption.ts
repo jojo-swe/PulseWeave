@@ -253,7 +253,7 @@ export async function encryptMessage(
   const encryptedBuffer = await crypto.subtle.encrypt(
     {
       name: ALGORITHM,
-      iv,
+      iv: iv as any,
     },
     messageKey,
     messageData
@@ -264,7 +264,7 @@ export async function encryptMessage(
   const wrappedKeyBuffer = await crypto.subtle.encrypt(
     {
       name: ALGORITHM,
-      iv,
+      iv: iv as any,
     },
     sharedKey,
     exportedKey

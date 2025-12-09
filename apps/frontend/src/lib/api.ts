@@ -570,6 +570,58 @@ export const api = {
         token: getToken(),
       }),
   },
+  admin: {
+    getWorkspaceUsers: (workspaceId: string, token: string, params?: { page?: number; limit?: number; search?: string; role?: string }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.role) queryParams.append('role', params.role);
+      
+      return fetchApi<{ users: any[]; pagination: any }>(
+        `/api/admin/workspaces/${workspaceId}/users?${queryParams.toString()}`,
+        { token }
+      );
+    },
+    updateUserRole: (workspaceId: string, userId: string, roleName: string, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(
+        `/api/admin/workspaces/${workspaceId}/users/${userId}/role`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ roleName }),
+          token,
+        }
+      ),
+    removeUser: (workspaceId: string, userId: string, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(
+        `/api/admin/workspaces/${workspaceId}/users/${userId}`,
+        {
+          method: 'DELETE',
+          token,
+        }
+      ),
+    banUser: (workspaceId: string, userId: string, data: { reason?: string; duration?: number }, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(
+        `/api/admin/workspaces/${workspaceId}/users/${userId}/ban`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+          token,
+        }
+      ),
+    getAuditLog: (workspaceId: string, token: string, params?: { page?: number; limit?: number; action?: string; userId?: string }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.action) queryParams.append('action', params.action);
+      if (params?.userId) queryParams.append('userId', params.userId);
+
+      return fetchApi<{ logs: any[]; pagination: any }>(
+        `/api/admin/workspaces/${workspaceId}/audit-log?${queryParams.toString()}`,
+        { token }
+      );
+    },
+  },
 };
 
 export interface UserPreferences {

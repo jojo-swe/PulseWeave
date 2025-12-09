@@ -1,0 +1,304 @@
+<project_specification>
+  <project_name>PulseWeave - Next-Gen SaaS Collaboration Platform</project_name>
+
+  <overview>
+    PulseWeave is a premium, high-performance SaaS communication platform designed to streamline team collaboration. 
+    It combines the real-time messaging capabilities of Discord/Slack with a stunning, motion-rich interface and robust 
+    multi-tenancy architecture. The platform supports workspace-based isolation, threaded conversations, rich media 
+    sharing, and powerful administrative controls, all wrapped in a visually immersive "dark mode first" aesthetic 
+    featuring glassmorphism and fluid animations.
+  </overview>
+
+  <technology_stack>
+    <frontend>
+      <framework>Next.js (App Router)</framework>
+      <language>TypeScript</language>
+      <styling>Tailwind CSS + Framer Motion (Animations)</styling>
+      <state_management>Zustand (Persistent Store)</state_management>
+      <realtime>Socket.io Client</realtime>
+      <ui_components>Radix UI (Primitives) + Lucid React (Icons)</ui_components>
+      <forms>React Hook Form + Zod</forms>
+    </frontend>
+    <backend>
+      <runtime>Node.js with Express</runtime>
+      <language>TypeScript</language>
+      <database>PostgreSQL</database>
+      <orm>Prisma</orm>
+      <realtime>Socket.io Server</realtime>
+      <caching>Redis (for queues/sessions)</caching>
+      <storage>Local/S3-compatible object storage</storage>
+    </backend>
+    <infrastructure>
+      <auth>JWT (Access/Refresh Tokens) + Multi-tenancy Middleware</auth>
+      <deployment>Docker / Kubernetes ready</deployment>
+      <payments>Stripe & RevenueCat Integration</payments>
+    </infrastructure>
+  </technology_stack>
+
+  <core_features>
+    <multi_tenancy>
+      - Strict workspace isolation
+      - Workspace-specific data boundaries (Channels, Messages, Members)
+      - Role-Based Access Control (RBAC) per workspace
+      - Invite system with expiration
+      - Workspace switching mechanism
+    </multi_tenancy>
+
+    <messaging_system>
+      - Real-time message delivery via WebSockets
+      - Optimistic UI updates for instant feedback
+      - Rich text formatting (Markdown support)
+      - Threaded replies (Slack-style)
+      - Emoji reactions (customizable)
+      - File attachments (Image, Video, Documents)
+      - Link previews (Open Graph)
+      - Message editing and deletion
+      - @mentions (User and Channel)
+    </messaging_system>
+
+    <channel_management>
+      - Public and Private channels
+      - Channel categories/sections
+      - Topic descriptions
+      - Channel-specific permissions
+      - Drag-and-drop organization (planned)
+    </channel_management>
+
+    <direct_messaging>
+      - 1:1 Direct Messages
+      - Group DMs (Multi-user)
+      - Online presence indicators
+      - Typing indicators
+      - Read receipts
+    </direct_messaging>
+
+    <search_discovery>
+      - Global search across workspace
+      - Fuzzy matching for messages and files
+      - Filter by user, channel, date
+      - "Jump to" navigation (Cmd+K)
+    </search_discovery>
+
+    <admin_controls>
+      - User management (Promote/Demote/Ban)
+      - Workspace settings
+      - Audit logs
+      - Rate limiting configuration
+      - Usage analytics
+    </admin_controls>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <users>
+        - id, email, password_hash, username, display_name
+        - avatar_url, status, theme_preference
+        - created_at, updated_at
+      </users>
+
+      <workspaces>
+        - id, name, slug, owner_id, icon_url
+        - settings (JSON), subscription_tier
+        - created_at, updated_at
+      </workspaces>
+
+      <workspace_members>
+        - id, workspace_id, user_id
+        - role (OWNER, ADMIN, MEMBER, GUEST)
+        - joined_at, last_active_at
+      </workspace_members>
+
+      <channels>
+        - id, workspace_id, name, type (PUBLIC/PRIVATE)
+        - topic, parent_id (category)
+        - created_at, updated_at
+      </channels>
+
+      <messages>
+        - id, workspace_id, channel_id, user_id
+        - content, type (TEXT, SYSTEM)
+        - parent_id (thread), is_edited
+        - created_at, updated_at
+      </messages>
+
+      <direct_messages>
+        - id, conversation_id, user_id, workspace_id
+        - content
+        - created_at
+      </direct_messages>
+
+      <conversations>
+        - id, workspace_id, type (DIRECT, GROUP)
+        - created_at, updated_at
+      </conversations>
+
+      <conversation_members>
+        - conversation_id, user_id
+        - last_read_at
+      </conversation_members>
+
+      <attachments>
+        - id, workspace_id, uploader_id, message_id
+        - url, filename, mime_type, size
+        - created_at
+      </attachments>
+
+      <reactions>
+        - id, workspace_id, message_id, user_id
+        - emoji, skin_tone
+        - created_at
+      </reactions>
+
+      <api_keys>
+        - id, workspace_id, user_id
+        - name, key_hash, scopes
+        - last_used_at, expires_at
+      </api_keys>
+
+      <audit_logs>
+        - id, workspace_id, actor_id
+        - action, resource, metadata (JSON)
+        - ip_address, user_agent
+        - created_at
+      </audit_logs>
+    </tables>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <auth>
+      - POST /api/auth/register
+      - POST /api/auth/login
+      - POST /api/auth/refresh
+      - POST /api/auth/logout
+      - GET /api/auth/me
+    </auth>
+
+    <workspaces>
+      - GET /api/workspaces (List joined)
+      - POST /api/workspaces (Create)
+      - GET /api/workspaces/:id
+      - PUT /api/workspaces/:id
+      - DELETE /api/workspaces/:id
+      - POST /api/workspaces/:id/invite
+    </workspaces>
+
+    <channels>
+      - GET /api/channels (List for workspace)
+      - POST /api/channels
+      - GET /api/channels/:id
+      - PATCH /api/channels/:id
+      - DELETE /api/channels/:id
+    </channels>
+
+    <messages>
+      - GET /api/messages (List with pagination)
+      - POST /api/messages
+      - PATCH /api/messages/:id
+      - DELETE /api/messages/:id
+      - POST /api/messages/:id/react
+    </messages>
+
+    <direct_messages>
+      - GET /api/dm/workspace/:workspaceId
+      - POST /api/dm/start (1:1)
+      - POST /api/dm/group
+      - GET /api/dm/:id/messages
+      - POST /api/dm/:id/messages
+    </direct_messages>
+
+    <uploads>
+      - POST /api/upload (Single)
+      - POST /api/upload/multiple
+      - DELETE /api/upload/:filename
+    </uploads>
+
+    <users>
+      - GET /api/users/profile
+      - PATCH /api/users/profile
+      - PATCH /api/users/status
+      - GET /api/users/:id
+    </users>
+
+    <admin>
+      - GET /api/admin/users
+      - PATCH /api/admin/users/:id/role
+      - GET /api/admin/audit-logs
+    </admin>
+  </api_endpoints_summary>
+
+  <ui_layout>
+    <main_structure>
+      - Three-column layout: 
+        1. Workspace Switcher (Leftmost, Icon only)
+        2. Navigation Sidebar (Channels/DMs)
+        3. Main Content Area (Chat/Settings)
+        4. (Optional) Right Sidebar (Thread/Profile)
+      - Responsive collapsible design
+    </main_structure>
+
+    <design_system>
+      <theme>
+        - Primary: "Midnight" dark theme (Deep blues/purples)
+        - Accents: Vibrant gradients (Blue -> Purple -> Pink)
+        - Glassmorphism: Heavy use of backdrop-blur for overlays and sidebars
+        - Typography: Inter / Sans-serif (Clean, readable)
+      </theme>
+      <animations>
+        - Exit/Enter transitions for route changes
+        - Smooth height adjustment for lists
+        - Micro-interactions on buttons/reactions
+        - Skeleton loading states
+      </animations>
+    </design_system>
+  </ui_layout>
+
+  <implementation_roadmap>
+    <phase_1_core>
+      - [x] Project Setup & Database Schema
+      - [x] Authentication & Session Management
+      - [x] Workspace Creation & Switching
+      - [x] Basic Channel Messaging
+    </phase_1_core>
+
+    <phase_2_realtime>
+      - [x] Socket.io Integration
+      - [x] Real-time Message Delivery
+      - [x] Typing Indicators & Presence
+      - [x] Direct Messages
+    </phase_2_realtime>
+
+    <phase_3_multitenancy>
+      - [x] Strict Data Isolation
+      - [x] Tenant-based Rate Limiting
+      - [x] Workspace-scoped API Keys
+      - [ ] Advanced Role Management
+    </phase_3_multitenancy>
+
+    <phase_4_polish_scale>
+      - [ ] File Uploads (S3)
+      - [ ] Push Notifications
+      - [ ] Search Implementation (Elastic/PgVector)
+      - [ ] Billing Integration
+      - [ ] Mobile Responsiveness Optimization
+    </phase_4_polish_scale>
+  </implementation_roadmap>
+
+  <success_criteria>
+    <performance>
+      - Message latency < 100ms
+      - Workspace switch time < 500ms
+      - 60fps animations
+    </performance>
+    <security>
+      - Zero cross-tenant data leakage
+      - Secure storage of credentials
+      - Rate limiting active
+    </security>
+    <experience>
+      - "Wow" factor design
+      - Intuitive navigation
+      - Bug-free critical paths (Login -> Chat)
+    </experience>
+  </success_criteria>
+
+</project_specification>
