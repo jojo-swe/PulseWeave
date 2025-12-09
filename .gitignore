@@ -50,7 +50,7 @@ uploads/
 .cache
 
 # Databases
-dev.db
+#dev.db
 prod.db
 
 # IDE
