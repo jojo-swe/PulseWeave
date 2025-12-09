@@ -1,0 +1,965 @@
+[
+  {
+    "category": "functional",
+    "description": "User Registration - Valid Data",
+    "steps": [
+      "Navigate to /register",
+      "Fill in valid email, username, display name, and password",
+      "Click Register",
+      "Verify redirect to workspace creation or home"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Registration - Invalid Email",
+    "steps": [
+      "Navigate to /register",
+      "Fill in invalid email",
+      "Click Register",
+      "Verify error message appears"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Login - Valid Credentials",
+    "steps": [
+      "Navigate to /login",
+      "Fill in valid email and password",
+      "Click Login",
+      "Verify redirect to App"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Login - Invalid Password",
+    "steps": [
+      "Navigate to /login",
+      "Fill in valid email and wrong password",
+      "Click Login",
+      "Verify error message invalid credentials"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Logout",
+    "steps": [
+      "Click User Avatar in sidebar",
+      "Click Logout",
+      "Verify redirect to /login"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Session Persistence",
+    "steps": [
+      "Log in",
+      "Refresh page",
+      "Verify user is still logged in"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Create Workspace - UI Open",
+    "steps": [
+      "Navigate to dashboard",
+      "Click + icon in sidebar",
+      "Verify Create Workspace modal opens"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Create Workspace - Submission",
+    "steps": [
+      "Open Create Workspace modal",
+      "Enter unique workspace name",
+      "Click Create",
+      "Verify workspace is created and switched to"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Switch Workspace",
+    "steps": [
+      "Have multiple workspaces",
+      "Click a different workspace icon in sidebar",
+      "Verify channels and messages update"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "List Channels",
+    "steps": [
+      "Navigate to a workspace",
+      "Verify channel list is displayed in sidebar"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Create Public Channel",
+    "steps": [
+      "Click + next to Channels",
+      "Enter channel name",
+      "Select Public",
+      "Click Create",
+      "Verify channel appears in list"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Create Private Channel",
+    "steps": [
+      "Click + next to Channels",
+      "Enter channel name",
+      "Select Private",
+      "Click Create",
+      "Verify channel appears with lock icon"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Join Channel",
+    "steps": [
+      "Click on a channel name",
+      "Verify chat area loads with channel title"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Send Text Message",
+    "steps": [
+      "Select a channel",
+      "Type message in input",
+      "Press Enter",
+      "Verify message appears in chat"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Receive Realtime Message",
+    "steps": [
+      "Open two browser windows with different users",
+      "User A sends message",
+      "Verify User B sees message instantly without refresh"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Typing Indicator",
+    "steps": [
+      "User A types in channel",
+      "Verify User B sees 'User A is typing...'"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Presence - Online",
+    "steps": [
+      "Login as User A",
+      "Verify User B sees green dot for User A"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Direct Message List",
+    "steps": [
+      "Check DM section in sidebar",
+      "Verify list of recent DMs exists"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Start New DM",
+    "steps": [
+      "Click + next to DMs",
+      "Select a user",
+      "Verify DM chat opens"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Send DM",
+    "steps": [
+      "Open DM with user",
+      "Send message",
+      "Verify recipient receives it"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Message Timestamp Highlighting",
+    "steps": [
+      "Hover over message",
+      "Verify timestamp is visible/formatted"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Edit Message",
+    "steps": [
+      "Hover own message",
+      "Click Edit",
+      "Change text and save",
+      "Verify text updates and shows (edited)"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Delete Message",
+    "steps": [
+      "Hover own message",
+      "Click Delete",
+      "Confirm",
+      "Verify message disappears"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Reply in Thread (Start)",
+    "steps": [
+      "Hover message",
+      "Click Reply",
+      "Send reply",
+      "Verify thread opens or reply count increases"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Add Reaction",
+    "steps": [
+      "Hover message",
+      "Click ID emoji",
+      "Verify reaction count increases"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Remove Reaction",
+    "steps": [
+      "Click existing reaction",
+      "Verify count decreases"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Profile Modal",
+    "steps": [
+      "Click User Avatar in sidebar footer",
+      "Verify profile settings modal opens"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Update Status Message",
+    "steps": [
+      "Open Profile",
+      "Edit status message",
+      "Save",
+      "Verify updated status is visible"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Push Notifications Toggle",
+    "steps": [
+      "Open Profile > Notifications",
+      "Toggle Push Notifications",
+      "Verify permission request or success toast"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Search Interface Open",
+    "steps": [
+      "Press Ctrl+Shift+F",
+      "Verify Search Modal opens"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Global Search Query",
+    "steps": [
+      "Open Search",
+      "Type query",
+      "Verify results appear"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Search Navigation",
+    "steps": [
+      "Click a search result",
+      "Verify navigated to correct channel/message"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "File Upload UI",
+    "steps": [
+      "Click + in chat input",
+      "Verify file picker opens"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Upload Image",
+    "steps": [
+      "Select image file",
+      "Send message",
+      "Verify image preview in chat"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Billing Subscription Page",
+    "steps": [
+      "Navigate to /settings/billing",
+      "Verify pricing tiers displayed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stripe Checkout",
+    "steps": [
+      "Click Upgrade",
+      "Verify redirect to Stripe/RevenueCat"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Admin - Ban User",
+    "steps": [
+      "Navigate to Workspace Settings > Members",
+      "Click Ban on a user",
+      "Verify user removed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Admin - Audit Log",
+    "steps": [
+      "Navigate to Workspace Settings > Audit Log",
+      "Verify logs display"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Login Page Aesthetic",
+    "steps": [
+      "Go to /login",
+      "Verify glassmorphism background and centered card"
+    ],
+    "passes": true
+  },
+  {
+    "category": "style",
+    "description": "Sidebar Glass Effect",
+    "steps": [
+      "Check Sidebar",
+      "Verify translucency and blur"
+    ],
+    "passes": true
+  },
+  {
+    "category": "style",
+    "description": "Dark Mode Default",
+    "steps": [
+      "Check general coloring",
+      "Verify dark theme is applied"
+    ],
+    "passes": true
+  },
+  {
+    "category": "style",
+    "description": "Responsive Mobile Layout",
+    "steps": [
+      "Resize browser to mobile width",
+      "Verify sidebar becomes drawer/hamburger"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User Registration - Username Validation",
+    "steps": [
+      "Register with invalid username characters",
+      "Verify validation error"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "User Registration - Password Strength",
+    "steps": [
+      "Enter weak password",
+      "Verify strength indicator shows weak"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Channel Creation - Duplicate Name",
+    "steps": [
+      "Create channel with existing name",
+      "Verify unique name enforcement or handling"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Channel Creation - Validation",
+    "steps": [
+      "Create channel with empty name",
+      "Verify validation error"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Workspace Settings - Update Name",
+    "steps": [
+      "Go to Workspace Settings",
+      "Change name",
+      "Save",
+      "Verify new name in sidebar"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Workspace Settings - Delete Workspace (UI)",
+    "steps": [
+      "Go to Workspace Settings > Danger Zone",
+      "Check Delete button exists"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Message Input - Auto-resize",
+    "steps": [
+      "Type long message",
+      "Verify input grows vertically"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Message Input - Empty Submit",
+    "steps": [
+      "Focus input empty",
+      "Press Enter",
+      "Verify no message sent"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Sidebar - Channel Unread Indicator",
+    "steps": [
+      "Receive message in non-active channel",
+      "Verify channel name bolds or shows dot"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Sidebar - DM Unread Indicator",
+    "steps": [
+      "Receive DM in background",
+      "Verify user name bolds or shows count"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Command Palette - Open",
+    "steps": [
+      "Press Cmd+K",
+      "Verify palette opens"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Command Palette - Navigation",
+    "steps": [
+      "Open Palette",
+      "Search for channel",
+      "Select it",
+      "Verify channel changed"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Message Pinning",
+    "steps": [
+      "Pin a message",
+      "Verify it appears in pinned messages list"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Pinned Messages View",
+    "steps": [
+      "Click Channel Info/Pins",
+      "Verify list of pinned messages"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Notification Sound",
+    "steps": [
+      "Receive message",
+      "Verify sound plays"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Browser Notification Permission",
+    "steps": [
+      "First load",
+      "Verify permission prompt or settings state"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Service Worker Registration",
+    "steps": [
+      "Check DevTools > Application > Service Workers",
+      "Verify sw.js is running"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Receive Push Notification (Background)",
+    "steps": [
+      "Tab in background",
+      "Trigger push",
+      "Verify system notification appears"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Click Push Notification",
+    "steps": [
+      "Click notification",
+      "Verify tab focuses and opens relevant chat"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Invite User to Workspace",
+    "steps": [
+      "Workspace Settings > Invite",
+      "Generate Link",
+      "Verify link created"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Join via Invite Link",
+    "steps": [
+      "New user opens invite link",
+      "Verify joins workspace"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Code Block Formatting",
+    "steps": [
+      "Send message with markdown code block",
+      "Verify syntax highlighting"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Link Preview",
+    "steps": [
+      "Send message with URL",
+      "Verify clickable link"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Emoji Picker UI",
+    "steps": [
+      "Click Emoji icon in input",
+      "Verify picker opens"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Send Emoji",
+    "steps": [
+      "Select emoji",
+      "Send",
+      "Verify emoji appears in message"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Member List View",
+    "steps": [
+      "Click Channel Info",
+      "Verify list of members"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Search Results Highlighting",
+    "steps": [
+      "Search for term",
+      "Verify term is highlighted in results"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Search No Results",
+    "steps": [
+      "Search for nonsense",
+      "Verify 'No results' message"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Profile - Avatar Upload",
+    "steps": [
+      "Profile Settings",
+      "Click Avatar",
+      "Upload image",
+      "Verify avatar updates"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Skeleton Loading - Chat",
+    "steps": [
+      "Refresh page",
+      "Verify skeleton loaders before messages appear"
+    ],
+    "passes": true
+  },
+  {
+    "category": "style",
+    "description": "Skeleton Loading - Sidebar",
+    "steps": [
+      "Refresh page",
+      "Verify skeleton loaders for channels"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Access Control - Private Channel",
+    "steps": [
+      "User A (member) sees channel",
+      "User B (non-member) does not see channel"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "404 Page",
+    "steps": [
+      "Navigate to /invalid-route",
+      "Verify 404 page appears"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Rate Limiting - Login",
+    "steps": [
+      "Attempt login 10 times quickly",
+      "Verify 429 Too Many Requests"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Rate Limiting - API",
+    "steps": [
+      "Spam API endpoint",
+      "Verify blocking"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Security - HSTS",
+    "steps": [
+      "Inspect headers",
+      "Verify strict-transport-security"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Security - XSS Protection",
+    "steps": [
+      "Send message with <script>alert(1)</script>",
+      "Verify script does not execute"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "MFA Setup Flow",
+    "steps": [
+      "Settings > Security",
+      "Enable MFA",
+      "Verify QR code appears"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "MFA Login",
+    "steps": [
+      "Login with MFA enabled user",
+      "Verify OTP prompt"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User Status - DND",
+    "steps": [
+      "Set status to Do Not Disturb",
+      "Verify no notification sounds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Role Assignment - Admin",
+    "steps": [
+      "Admin promotes Member to Admin",
+      "Verify permissions update"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Role Assignment - Moderator",
+    "steps": [
+      "Admin promotes Member to Moderator",
+      "Verify can delete messages"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Workspace Deletion - Logic",
+    "steps": [
+      "Delete workspace",
+      "Verify data cleaned up"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Leave Workspace",
+    "steps": [
+      "Settings > Leave Workspace",
+      "Confirm",
+      "Verify removed from member list"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Leave Channel",
+    "steps": [
+      "Channel Settings > Leave",
+      "Confirm",
+      "Verify removed from channel"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Welcome Guide",
+    "steps": [
+      "New user login",
+      "Verify Welcome Guide appears"
+    ],
+    "passes": true
+  },
+  {
+    "category": "style",
+    "description": "Scrollbar Styling",
+    "steps": [
+      "Check scrollable areas",
+      "Verify custom thin scrollbars"
+    ],
+    "passes": true
+  },
+  {
+    "category": "style",
+    "description": "Focus States",
+    "steps": [
+      "Tab through interface",
+      "Verify visible focus rings"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Keyboard Shortcut - Toggle Sidebar",
+    "steps": [
+      "Press Ctrl+B (or similar)",
+      "Verify sidebar toggles"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Mention User",
+    "steps": [
+      "Type @username",
+      "Verify mention highlighting"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Mention Notification",
+    "steps": [
+      "User A mentions User B",
+      "User B receives special notification/sound"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Drag and Drop File",
+    "steps": [
+      "Drag file into chat area",
+      "Verify upload triggers"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Paste Image",
+    "steps": [
+      "Copy image, paste in input",
+      "Verify image upload starts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pagination - Messages",
+    "steps": [
+      "Scroll to top of chat",
+      "Verify older messages load"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Pagination - Search Results",
+    "steps": [
+      "Search common term",
+      "Scroll down results",
+      "Verify more load"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Channel Description View",
+    "steps": [
+      "View Channel Info",
+      "Verify description is visible"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Edit Channel Details",
+    "steps": [
+      "Admin opens Channel Settings",
+      "Edit description",
+      "Save",
+      "Verify updated"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Video Call Button",
+    "steps": [
+      "Check Chat Header",
+      "Verify Call button exists (even if mock)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Threads View",
+    "steps": [
+      "Click 'Threads' in sidebar",
+      "Verify list of threads matches"
+    ],
+    "passes": false
+  }
+]
