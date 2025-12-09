@@ -422,8 +422,34 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
         </div>
       </ScrollArea>
 
-
-
+      {/* User Footer */}
+      <div className="p-3 border-t border-white/5 bg-black/20 mt-auto">
+        <button
+          onClick={() => setShowProfile(true)}
+          className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-white/5 transition-colors group"
+        >
+          <div className="relative">
+            <Avatar className="h-9 w-9 border border-white/10">
+              <AvatarImage src={user?.avatarUrl} />
+              <AvatarFallback className={cn('text-sm', generateAvatarColor(user?.displayName || 'User'))}>
+                {getInitials(user?.displayName || 'User')}
+              </AvatarFallback>
+            </Avatar>
+            <PresenceIndicator 
+              status={user?.status as any || 'online'} 
+              size="sm" 
+              className="absolute -bottom-0.5 -right-0.5 border-2 border-[#1a1b1e]" 
+            />
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <div className="font-medium text-sm truncate text-sidebar-foreground">{user?.displayName}</div>
+            <div className="text-xs text-sidebar-foreground/60 truncate">
+              {user?.status === 'online' ? 'Online' : user?.status === 'dnd' ? 'Do Not Disturb' : user?.status === 'away' ? 'Away' : 'Offline'}
+            </div>
+          </div>
+          <Settings className="h-4 w-4 text-sidebar-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </button>
+      </div>
       {/* Create Channel Modal */}
       {showCreateChannel && (
         <Portal>

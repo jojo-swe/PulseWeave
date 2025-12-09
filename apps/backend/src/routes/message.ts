@@ -4,6 +4,7 @@ import { prisma } from '@pulseweave/database';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate, paginationSchema, idParamsSchema } from '../middleware/validate';
+import { NotificationService } from '../services/notifications';
 
 const router = Router();
 
@@ -168,6 +169,16 @@ router.post('/', validate(createMessageSchema), asyncHandler(async (req: AuthReq
         },
       },
     },
+  });
+
+
+
+  // Trigger push notifications
+  // Using setImmediate to not block the response
+  setImmediate(() => {
+    NotificationService.notifyNewMessage(message, channel).catch(err => 
+      console.error('Failed to send notifications:', err)
+    );
   });
 
   res.status(201).json(message);

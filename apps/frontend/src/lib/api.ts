@@ -622,6 +622,25 @@ export const api = {
       );
     },
   },
+  notifications: {
+    subscribe: (data: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
+      fetchApi<{ success: boolean }>('/api/notifications/subscribe', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token: getToken(),
+      }),
+    unsubscribe: (endpoint: string) =>
+      fetchApi<{ success: boolean }>('/api/notifications/unsubscribe', {
+        method: 'POST',
+        body: JSON.stringify({ endpoint }),
+        token: getToken(),
+      }),
+    test: () =>
+      fetchApi<{ success: boolean }>('/api/notifications/test', {
+        method: 'POST',
+        token: getToken(),
+      }),
+  },
 };
 
 export interface UserPreferences {
