@@ -1,4 +1,4 @@
-import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-js';
+import { Purchases, LogLevel } from '@revenuecat/purchases-js';
 
 /**
  * RevenueCat Configuration
@@ -25,6 +25,7 @@ export function isRevenueCatConfigured(): boolean {
 
 export class RevenueCatService {
   private static instance: RevenueCatService;
+  private purchases: Purchases | null = null;
   private isInitialized = false;
 
   private constructor() {}
@@ -46,9 +47,9 @@ export class RevenueCatService {
 
     try {
       // Use WARN in production, DEBUG in development
-      const logLevel = process.env.NODE_ENV === 'production' ? LOG_LEVEL.WARN : LOG_LEVEL.DEBUG;
+      const logLevel = process.env.NODE_ENV === 'production' ? LogLevel.Warn : LogLevel.Debug;
       Purchases.setLogLevel(logLevel);
-      await Purchases.configure(REVENUECAT_API_KEY, userId);
+      this.purchases = Purchases.configure(REVENUECAT_API_KEY, userId);
       this.isInitialized = true;
       console.log('RevenueCat initialized successfully');
     } catch (error) {
@@ -57,15 +58,15 @@ export class RevenueCatService {
   }
 
   public isReady(): boolean {
-    return this.isInitialized;
+    return this.isInitialized && !!this.purchases;
   }
 
   public async getOfferings() {
-    if (!this.isInitialized) {
+    if (!this.purchases) {
       throw new Error('RevenueCat not initialized');
     }
     try {
-      const offerings = await Purchases.getOfferings();
+      const offerings = await this.purchases.getOfferings();
       return offerings;
     } catch (error) {
       console.error('Error fetching offerings:', error);
@@ -74,11 +75,11 @@ export class RevenueCatService {
   }
 
   public async getCustomerInfo() {
-    if (!this.isInitialized) {
+    if (!this.purchases) {
       throw new Error('RevenueCat not initialized');
     }
     try {
-      const customerInfo = await Purchases.getCustomerInfo();
+      const customerInfo = await this.purchases.getCustomerInfo();
       return customerInfo;
     } catch (error) {
       console.error('Error fetching customer info:', error);
@@ -87,11 +88,11 @@ export class RevenueCatService {
   }
 
   public async purchasePackage(rcPackage: any) {
-    if (!this.isInitialized) {
+    if (!this.purchases) {
       throw new Error('RevenueCat not initialized');
     }
     try {
-      const { customerInfo } = await Purchases.purchasePackage(rcPackage);
+      const { customerInfo } = await this.purchases.purchasePackage(rcPackage);
       return customerInfo;
     } catch (error) {
       console.error('Error purchasing package:', error);

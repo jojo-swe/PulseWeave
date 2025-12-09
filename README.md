@@ -19,6 +19,7 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 14** - React framework with App Router
 - **TailwindCSS** - Utility-first CSS
 - **Radix UI** - Accessible component primitives
@@ -26,6 +27,7 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
 - **Socket.io Client** - Real-time communication
 
 ### Backend
+
 - **Node.js + Express** - API server
 - **Socket.io** - WebSocket server
 - **Prisma** - Type-safe ORM
@@ -68,12 +70,12 @@ A modern, real-time team communication platform built as a Slack alternative. Fe
    ```
 
    This starts both:
-   - Frontend: http://localhost:9797
-   - Backend: http://localhost:9090
+   - Frontend: <http://localhost:9797>
+   - Backend: <http://localhost:9090>
 
 ### First Time Setup (Local)
 
-1. Open http://localhost:9797
+1. Open <http://localhost:9797>
 2. Click **Sign up** to create an account
 3. A default workspace and `#general` channel will be created
 4. Start chatting!
@@ -140,6 +142,7 @@ PulseWeave/
 ## Environment Variables
 
 ### Backend (`apps/backend/.env`)
+
 ```env
 # Core
 PORT=9090
@@ -204,6 +207,7 @@ DATABASE_URL="file:./dev.db"
 > **Scaling Note:** SQLite works well for teams up to ~100 users. For larger deployments or horizontal scaling, switch to PostgreSQL. See `packages/database/.env.example` for instructions.
 
 ### Frontend (`apps/frontend/.env.local`)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:9090
 ```
@@ -211,6 +215,7 @@ NEXT_PUBLIC_API_URL=http://localhost:9090
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - Create account (local)
 - `POST /api/auth/login` - Sign in (local, MFA-aware)
 - `POST /api/auth/ldap/login` - Sign in with LDAP
@@ -218,6 +223,7 @@ NEXT_PUBLIC_API_URL=http://localhost:9090
 - `GET /api/auth/me` - Get current user
 
 ### MFA
+
 - `POST /api/mfa/totp/setup` - Generate TOTP secret + QR
 - `POST /api/mfa/totp/enable` - Verify + enable TOTP
 - `POST /api/mfa/totp/disable` - Disable TOTP (password required)
@@ -229,16 +235,19 @@ NEXT_PUBLIC_API_URL=http://localhost:9090
 - `DELETE /api/mfa/webauthn/credentials/:id` - Remove credential
 
 ### Workspaces
+
 - `GET /api/workspaces` - List user's workspaces
 - `GET /api/workspaces/:id` - Get workspace details
 - `POST /api/workspaces` - Create workspace
 
 ### Channels
+
 - `GET /api/channels/:id` - Get channel details
 - `POST /api/channels` - Create channel
 - `POST /api/channels/:id/join` - Join channel
 
 ### Messages
+
 - `GET /api/messages/channel/:channelId` - Get messages
 - `POST /api/messages` - Send message
 - `PATCH /api/messages/:id` - Edit message
@@ -246,6 +255,7 @@ NEXT_PUBLIC_API_URL=http://localhost:9090
 - `POST /api/messages/:id/reactions` - Add reaction
 
 ### Admin & Security
+
 - `GET /api/admin/workspaces/:id/users` - List users with roles
 - `PATCH /api/admin/workspaces/:id/users/:userId/role` - Change user role
 - `POST /api/admin/workspaces/:id/users/:userId/ban` - Ban user
@@ -260,6 +270,7 @@ NEXT_PUBLIC_API_URL=http://localhost:9090
 ## WebSocket Events
 
 ### Client → Server
+
 - `workspace:join` - Join workspace room
 - `channel:join` - Join channel room
 - `channel:leave` - Leave channel room
@@ -270,6 +281,7 @@ NEXT_PUBLIC_API_URL=http://localhost:9090
 - `reaction:remove` - Remove reaction
 
 ### Server → Client
+
 - `message:new` - New message received
 - `message:reaction` - Reaction added/removed
 - `user:typing` - User started typing

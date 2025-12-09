@@ -57,6 +57,7 @@ pnpm db:push
 ```
 
 **SQLite Hardening:**
+
 - Store the database file outside the web root
 - Set restrictive file permissions (`chmod 600 pulseweave.db`)
 - Enable WAL mode for better concurrency (automatic with Prisma)
@@ -80,6 +81,7 @@ pnpm db:push
 ```
 
 **PostgreSQL Hardening:**
+
 - Use strong, unique passwords
 - Enable SSL connections (`?sslmode=require`)
 - Restrict network access to the database
@@ -96,6 +98,7 @@ SSL_MIN_VERSION=TLSv1.2
 ```
 
 For Let's Encrypt:
+
 ```bash
 certbot certonly --standalone -d your-domain.com
 ```
@@ -103,6 +106,7 @@ certbot certonly --standalone -d your-domain.com
 ### 4. Security Hardening
 
 #### Rate Limiting
+
 ```env
 RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
 RATE_LIMIT_MAX_REQUESTS=100      # Per window
@@ -110,6 +114,7 @@ AUTH_RATE_LIMIT_MAX=5            # Login attempts
 ```
 
 #### Account Security
+
 ```env
 ACCOUNT_MAX_FAILED_ATTEMPTS=5
 ACCOUNT_LOCKOUT_DURATION_MINUTES=15
@@ -140,6 +145,7 @@ pnpm docker:logs
 ```
 
 The Docker setup includes:
+
 - Multi-stage build for optimized images
 - Non-root user for security
 - Health checks for container orchestration
@@ -438,11 +444,13 @@ io.adapter(createAdapter(pubClient, subClient));
 - Verify credentials and database exists
 
 **WebSocket connection issues:**
+
 - Verify CORS origins include your domain
 - Check load balancer supports WebSocket
 - Verify SSL certificates are valid
 
 **High memory usage:**
+
 - Check for memory leaks in custom code
 - Monitor with `/metrics` endpoint
 - Consider increasing Node.js heap size
