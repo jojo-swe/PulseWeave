@@ -8,6 +8,66 @@ import { NotificationService } from '../services/notifications';
 
 const router = Router();
 
+// Search messages
+router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
+  const { workspaceId, q, limit = '50' } = req.query;
+
+  if (!workspaceId || typeof workspaceId !== 'string') {
+    throw Errors.badRequest('Workspace ID is required');
+  }
+
+  if (!q || typeof q !== 'string' || q.length < 2) {
+    return res.json([]);
+  }
+
+  const take = Math.min(parseInt(limit as string), 100);
+
+  // TODO: Search Implementation (Elastic/PgVector)
+  // For now, we use simple database LIKE matching as a "Lite" version.
+  // In a production Postgres setup, this should be replaced with:
+  // 1. PgVector for semantic search
+  // 2. Full Text Search (tsvector) for keyword search
+  const messages = await prisma.message.findMany({
+    where: {
+      workspaceId,
+      content: {
+        contains: q,
+      },
+      // Access control: User must be able to see the channel
+      channel: {
+        workspaceId,
+        OR: [
+          { isPrivate: false },
+          { members: { some: { userId: req.userId } } },
+        ],
+      },
+      // Can't search encrypted content server-side
+      isEncrypted: false, 
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+        },
+      },
+      channel: {
+        select: {
+          id: true,
+          name: true,
+          isPrivate: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take,
+  });
+
+  res.json(messages);
+}));
+
 // Get messages for a channel
 router.get('/channel/:channelId', asyncHandler(async (req: AuthRequest, res) => {
   const { cursor, limit = '50' } = req.query;

@@ -276,7 +276,7 @@
 
     <phase_4_polish_scale>
       - [ ] File Uploads (S3)
-      - [ ] Push Notifications
+      - [x] Push Notifications
       - [ ] Search Implementation (Elastic/PgVector)
       - [ ] Billing Integration
       - [ ] Mobile Responsiveness Optimization

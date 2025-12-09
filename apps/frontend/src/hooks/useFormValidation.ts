@@ -65,8 +65,9 @@ export function useFormValidation<T extends Record<string, string>>({
   const validateField = useCallback(
     (name: keyof T, value: string): string | null => {
       try {
-        // Create a partial schema for single field validation
-        const fieldSchema = (schema as z.ZodObject<any>).shape[name as string];
+        // Safely access shape if available (for ZodObject)
+        const schemaAny = schema as any;
+        const fieldSchema = schemaAny.shape ? schemaAny.shape[name] : null;
         if (fieldSchema) {
           fieldSchema.parse(value);
         }

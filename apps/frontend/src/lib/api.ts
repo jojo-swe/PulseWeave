@@ -280,6 +280,8 @@ export const api = {
       }),
   },
   messages: {
+    search: (workspaceId: string, query: string, token: string) =>
+      fetchApi<any[]>(`/api/messages/search?workspaceId=${workspaceId}&q=${encodeURIComponent(query)}`, { token }),
     list: (channelId: string, token: string, cursor?: string) =>
       fetchApi<{ messages: any[]; nextCursor: string | null }>(
         `/api/messages/channel/${channelId}${cursor ? `?cursor=${cursor}` : ''}`,
@@ -325,8 +327,7 @@ export const api = {
       }),
     getPinned: (channelId: string, token: string) =>
       fetchApi<any[]>(`/api/messages/channel/${channelId}/pinned`, { token }),
-    search: (workspaceId: string, query: string, token: string) =>
-      fetchApi<any[]>(`/api/messages/search?workspaceId=${workspaceId}&q=${encodeURIComponent(query)}`, { token }),
+
   },
   upload: {
     single: async (file: File, token: string) => {
