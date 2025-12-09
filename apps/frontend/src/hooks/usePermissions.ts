@@ -80,6 +80,7 @@ const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     PERMISSIONS.message.pin,
     PERMISSIONS.user.read,
     PERMISSIONS.user.kick,
+    PERMISSIONS.user.ban,
   ],
   member: [
     PERMISSIONS.workspace.read,

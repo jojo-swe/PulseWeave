@@ -19,6 +19,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { NavigationRail } from '@/components/chat/NavigationRail';
 import { BottomNavigation } from '@/components/chat/BottomNavigation';
 import { WelcomeGuide } from '@/components/onboarding/WelcomeGuide';
+import { UserProfileModal } from '@/components/chat/UserProfileModal';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -54,6 +55,7 @@ export default function Home() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'activity' | 'friends'>('chat');
 
   // Global keyboard shortcuts
@@ -436,6 +438,17 @@ export default function Home() {
             />
           </div>
         </div>
+
+
+
+        {/* User Profile Modal */}
+        {showProfile && user && (
+          <Portal>
+            <UserProfileModal
+              onClose={() => setShowProfile(false)}
+            />
+          </Portal>
+        )}
 
         {/* Command Palette */}
         {commandPaletteOpen && (

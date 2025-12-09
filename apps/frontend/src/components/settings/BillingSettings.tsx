@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { revenueCatService, isRevenueCatConfigured } from '@/lib/revenuecat';
+import { cn } from '@/lib/utils';
 import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

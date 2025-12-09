@@ -84,6 +84,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.message.pin,
       PERMISSIONS.user.read,
       PERMISSIONS.user.kick,
+      PERMISSIONS.user.ban,
     ],
   },
   member: {

@@ -12,6 +12,7 @@ interface User {
   status: string;
   statusMessage?: string | null;
   role?: 'user' | 'admin' | 'owner';
+  isActive: boolean;
 }
 
 interface Workspace {

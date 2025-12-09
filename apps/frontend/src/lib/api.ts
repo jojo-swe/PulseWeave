@@ -610,6 +610,14 @@ export const api = {
           token,
         }
       ),
+    unbanUser: (workspaceId: string, userId: string, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(
+        `/api/admin/workspaces/${workspaceId}/users/${userId}/unban`,
+        {
+          method: 'POST',
+          token,
+        }
+      ),
     getAuditLog: (workspaceId: string, token: string, params?: { page?: number; limit?: number; action?: string; userId?: string }) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
