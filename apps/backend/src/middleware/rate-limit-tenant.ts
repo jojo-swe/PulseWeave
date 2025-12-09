@@ -96,7 +96,7 @@ async function getUserTier(userId: string): Promise<string> {
  */
 export const tenantRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  validate: { xForwardedForHeader: false, ip: false }, // We handle IPv6 normalization ourselves
+  validate: { xForwardedForHeader: false, ip: false, keyGeneratorIpFallback: false }, // We handle IPv6 normalization ourselves
   max: async (req: Request) => {
     const authReq = req as AuthRequest;
     
