@@ -311,7 +311,7 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
                     className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
                   >
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={request.from.avatarUrl} />
+                      <AvatarImage src={request.from.avatarUrl || undefined} />
                       <AvatarFallback className={cn('text-xs', generateAvatarColor(request.from.displayName))}>
                         {getInitials(request.from.displayName)}
                       </AvatarFallback>

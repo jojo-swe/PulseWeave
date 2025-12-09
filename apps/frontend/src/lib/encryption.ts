@@ -87,6 +87,19 @@ async function getStoredKeyPair(): Promise<StoredKeyPair | null> {
 }
 
 /**
+ * Helper to convert ArrayBuffer to Base64 to avoid stack overflow with spread operator.
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
+  let binary = '';
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
  * Generates a new ECDH key pair for key exchange.
  *
  * @returns Object containing keyId, public key (base64), and the private CryptoKey.
@@ -107,7 +120,7 @@ export async function generateKeyPair(): Promise<{
 
   // Export public key as base64
   const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-  const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
+  const publicKeyBase64 = arrayBufferToBase64(publicKeyBuffer);
 
   // Generate key ID
   const keyId = `key_${crypto.randomUUID().replace(/-/g, '')}`;
@@ -258,9 +271,9 @@ export async function encryptMessage(
   );
 
   // Convert to base64
-  const encryptedContent = btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
-  const wrappedKey = btoa(String.fromCharCode(...new Uint8Array(wrappedKeyBuffer)));
-  const ivBase64 = btoa(String.fromCharCode(...iv));
+  const encryptedContent = arrayBufferToBase64(encryptedBuffer);
+  const wrappedKey = arrayBufferToBase64(wrappedKeyBuffer);
+  const ivBase64 = arrayBufferToBase64(iv);
 
   return {
     encryptedContent,
