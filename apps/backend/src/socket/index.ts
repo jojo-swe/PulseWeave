@@ -158,10 +158,21 @@ export function setupSocketHandlers(io: Server) {
     // Handle new message
     socket.on('message:send', async (data: { channelId: string; content: string; parentId?: string }) => {
       try {
+        const channel = await prisma.channel.findUnique({
+          where: { id: data.channelId },
+          select: { workspaceId: true },
+        });
+
+        if (!channel) {
+          socket.emit('error', { message: 'Channel not found' });
+          return;
+        }
+
         const message = await prisma.message.create({
           data: {
             content: data.content,
             channelId: data.channelId,
+            workspaceId: channel.workspaceId,
             userId,
             parentId: data.parentId,
           },
@@ -209,6 +220,13 @@ export function setupSocketHandlers(io: Server) {
     // Handle reactions
     socket.on('reaction:add', async (data: { messageId: string; emoji: string }) => {
       try {
+        const message = await prisma.message.findUnique({
+          where: { id: data.messageId },
+          select: { workspaceId: true, channelId: true },
+        });
+
+        if (!message) return;
+
         const reaction = await prisma.reaction.upsert({
           where: {
             messageId_userId_emoji: {
@@ -221,6 +239,7 @@ export function setupSocketHandlers(io: Server) {
             messageId: data.messageId,
             userId,
             emoji: data.emoji,
+            workspaceId: message.workspaceId,
           },
           update: {},
           include: {

@@ -190,8 +190,8 @@ router.post(
               stripePriceId: priceId,
               status: subscription.status,
               plan,
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+              currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             },
           });
@@ -219,10 +219,10 @@ router.post(
         console.log(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
         
         // Update subscription status to active if it was past_due
-        if (invoice.subscription) {
+        if ((invoice as any).subscription) {
           await prisma.subscription.updateMany({
             where: { 
-              stripeSubscriptionId: invoice.subscription as string,
+              stripeSubscriptionId: (invoice as any).subscription as string,
               status: 'past_due',
             },
             data: { status: 'active' },
@@ -236,9 +236,9 @@ router.post(
         console.log(`[Stripe] Payment failed for invoice: ${invoice.id}`);
         
         // Mark subscription as past_due
-        if (invoice.subscription) {
+        if ((invoice as any).subscription) {
           await prisma.subscription.updateMany({
-            where: { stripeSubscriptionId: invoice.subscription as string },
+            where: { stripeSubscriptionId: (invoice as any).subscription as string },
             data: { status: 'past_due' },
           });
         }

@@ -2,155 +2,114 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@pulseweave/database';
 import { AuthRequest, authenticateToken } from '../middleware/auth';
 import { uploadLimiter } from '../middleware/security';
+import { StorageService } from '../services/storage';
 
 const router = Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Configure multer with StorageService
+// Note: limits are applied here
+const upload = multer({
+  storage: StorageService.getStorageEngine(),
+  fileFilter: (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const ALLOWED_MIMES = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'text/plain',
+      'application/json',
+    ];
+    
+    if (ALLOWED_MIMES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed`));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
+});
+
+/**
+ * Helper to normalize file object attributes across Local/S3 providers
+ */
+const normalizeFile = (file: any) => {
+  const filename = file.filename || file.key;
+  const url = StorageService.getFileUrl(filename);
+  return {
+    filename,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size,
+    url,
+    path: file.path // Only defined for local storage
+  };
+};
 
 /**
  * Magic byte signatures for file type validation.
  * Validates actual file content, not just MIME headers.
+ * Note: Only works for local storage where we have direct file access
  */
 const MAGIC_BYTES: Record<string, Buffer[]> = {
   'image/jpeg': [Buffer.from([0xFF, 0xD8, 0xFF])],
   'image/png': [Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
   'image/gif': [Buffer.from([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]), Buffer.from([0x47, 0x49, 0x46, 0x38, 0x39, 0x61])],
-  'image/webp': [Buffer.from([0x52, 0x49, 0x46, 0x46])], // RIFF header (WebP starts with RIFF)
-  'application/pdf': [Buffer.from([0x25, 0x50, 0x44, 0x46])], // %PDF
+  'image/webp': [Buffer.from([0x52, 0x49, 0x46, 0x46])],
+  'application/pdf': [Buffer.from([0x25, 0x50, 0x44, 0x46])],
 };
 
-/**
- * Validates file content against magic bytes.
- * @param filePath - Path to the file
- * @param mimeType - Expected MIME type
- * @returns True if file content matches expected type
- */
-async function validateFileContent(filePath: string, mimeType: string): Promise<boolean> {
+async function validateFileContent(filename: string, mimeType: string): Promise<boolean> {
   const signatures = MAGIC_BYTES[mimeType];
-  
-  // For types without magic byte validation (text/plain, application/json), allow
-  if (!signatures) {
-    return true;
-  }
+  if (!signatures) return true;
 
   try {
-    const fd = fs.openSync(filePath, 'r');
-    const buffer = Buffer.alloc(16);
-    fs.readSync(fd, buffer, 0, 16, 0);
-    fs.closeSync(fd);
-
+    const buffer = await StorageService.readFirstBytes(filename, 16);
+    if (!buffer) return false;
     return signatures.some(sig => buffer.slice(0, sig.length).equals(sig));
   } catch {
     return false;
   }
 }
 
-/**
- * Validates filename to prevent path traversal attacks.
- * @param filename - The filename to validate
- * @returns True if filename is safe
- */
-function isValidFilename(filename: string): boolean {
-  // Reject if contains path separators or parent directory references
-  if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
-    return false;
-  }
-  // Reject if contains null bytes
-  if (filename.includes('\0')) {
-    return false;
-  }
-  // Reject if starts with a dot (hidden files)
-  if (filename.startsWith('.')) {
-    return false;
-  }
-  // Only allow alphanumeric, dash, underscore, and dot
-  if (!/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/.test(filename)) {
-    return false;
-  }
-  return true;
-}
-
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (_req, file, cb) => {
-    // Generate a secure unique filename
-    const ext = path.extname(file.originalname).toLowerCase().replace(/[^a-z0-9.]/g, '');
-    const uniqueName = `${uuidv4()}${ext}`;
-    cb(null, uniqueName);
-  },
-});
-
-// Allowed MIME types
-const ALLOWED_MIMES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-  'text/plain',
-  'application/json',
-];
-
-// File filter for allowed types
-const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (ALLOWED_MIMES.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error(`File type ${file.mimetype} not allowed`));
-  }
-};
-
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
-  },
-});
-
 // Upload single file (with rate limiting)
 router.post('/', authenticateToken, uploadLimiter, upload.single('file'), async (req: AuthRequest, res) => {
+  const uploadedFile = req.file;
+  
   try {
-    if (!req.file) {
+    if (!uploadedFile) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     if (!req.workspaceId) {
+      // Clean up if workspace missing
+      const norm = normalizeFile(uploadedFile);
+      await StorageService.deleteFile(norm.filename);
       return res.status(400).json({ error: 'Workspace context required for uploads' });
     }
 
-    const file = req.file;
-    const filePath = path.join(uploadsDir, file.filename);
+    const { filename, originalName, mimeType, size, url } = normalizeFile(uploadedFile);
 
-    // Validate file content matches claimed MIME type (magic bytes check)
-    const isValidContent = await validateFileContent(filePath, file.mimetype);
+    // Validate content (Works for Local & S3)
+    const isValidContent = await validateFileContent(filename, mimeType);
     if (!isValidContent) {
-      // Delete the uploaded file
-      fs.unlinkSync(filePath);
+      await StorageService.deleteFile(filename);
       return res.status(400).json({ error: 'File content does not match declared type' });
     }
 
-    const fileUrl = `/uploads/${file.filename}`;
-
-    // Store file record in database for ownership tracking
+    // Store file record in database
     const attachment = await prisma.attachment.create({
       data: {
-        type: file.mimetype.startsWith('image/') ? 'image' : 'file',
-        url: fileUrl,
-        name: file.originalname,
-        size: file.size,
-        mimeType: file.mimetype,
+        type: mimeType.startsWith('image/') ? 'image' : 'file',
+        url,
+        name: originalName,
+        size,
+        mimeType,
         workspaceId: req.workspaceId,
         uploadedById: req.userId!,
       },
@@ -158,54 +117,63 @@ router.post('/', authenticateToken, uploadLimiter, upload.single('file'), async 
 
     res.json({
       id: attachment.id,
-      filename: file.filename,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      url: fileUrl,
+      filename,
+      originalName,
+      mimeType,
+      size,
+      url,
       uploadedBy: req.userId,
       uploadedAt: attachment.createdAt,
     });
   } catch (error) {
     console.error('Upload error:', error);
+    // Attempt cleanup
+    if (uploadedFile) {
+      const filename = uploadedFile.filename || (uploadedFile as any).key;
+      if (filename) await StorageService.deleteFile(filename).catch(console.error);
+    }
     res.status(500).json({ error: 'Failed to upload file' });
   }
 });
 
-// Upload multiple files (with rate limiting and validation)
+// Upload multiple files
 router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files', 5), async (req: AuthRequest, res) => {
+  const uploadedFiles = req.files as Express.Multer.File[];
+
   try {
-    const files = req.files as Express.Multer.File[];
-    
-    if (!files || files.length === 0) {
+    if (!uploadedFiles || uploadedFiles.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
     if (!req.workspaceId) {
+      // Cleanup all
+      for (const file of uploadedFiles) {
+        const norm = normalizeFile(file);
+        await StorageService.deleteFile(norm.filename);
+      }
       return res.status(400).json({ error: 'Workspace context required for uploads' });
     }
 
     const results = [];
-    for (const file of files) {
-      const filePath = path.join(uploadsDir, file.filename);
+    
+    for (const file of uploadedFiles) {
+      const { filename, originalName, mimeType, size, url } = normalizeFile(file);
       
-      // Validate file content
-      const isValidContent = await validateFileContent(filePath, file.mimetype);
+      // Validate content (Works for Local & S3)
+      const isValidContent = await validateFileContent(filename, mimeType);
       if (!isValidContent) {
-        fs.unlinkSync(filePath);
+        await StorageService.deleteFile(filename);
         continue; // Skip invalid files
       }
 
-      const fileUrl = `/uploads/${file.filename}`;
-      
       // Store in database
       const attachment = await prisma.attachment.create({
         data: {
-          type: file.mimetype.startsWith('image/') ? 'image' : 'file',
-          url: fileUrl,
-          name: file.originalname,
-          size: file.size,
-          mimeType: file.mimetype,
+          type: mimeType.startsWith('image/') ? 'image' : 'file',
+          url,
+          name: originalName,
+          size,
+          mimeType,
           workspaceId: req.workspaceId,
           uploadedById: req.userId!,
         },
@@ -213,11 +181,11 @@ router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files',
 
       results.push({
         id: attachment.id,
-        filename: file.filename,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        size: file.size,
-        url: fileUrl,
+        filename,
+        originalName,
+        mimeType,
+        size,
+        url,
         uploadedBy: req.userId,
         uploadedAt: attachment.createdAt,
       });
@@ -226,51 +194,59 @@ router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files',
     res.json(results);
   } catch (error) {
     console.error('Upload error:', error);
+    // Cleanup on catastrophe
+    if (uploadedFiles) {
+      for (const file of uploadedFiles) {
+        const norm = normalizeFile(file);
+        await StorageService.deleteFile(norm.filename).catch(console.error);
+      }
+    }
     res.status(500).json({ error: 'Failed to upload files' });
   }
 });
 
-// Delete file (with ownership verification and path traversal protection)
+// Delete file
 router.delete('/:filename', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { filename } = req.params;
 
-    // SECURITY: Validate filename to prevent path traversal
-    if (!isValidFilename(filename)) {
-      return res.status(400).json({ error: 'Invalid filename' });
-    }
-
-    // SECURITY: Verify ownership - find attachment by URL
-    const fileUrl = `/uploads/${filename}`;
+    // Use StorageService URL generation to match
+    const fileUrl = StorageService.getFileUrl(filename);
+    
+    // Security: verify ownership by looking up attachment
+    // Note: We search by URL endswith because S3 URLs might vary slightly if bucket changes
+    // But practically, exact match on what we stored is best.
     const attachment = await prisma.attachment.findFirst({
       where: { url: fileUrl },
     });
+    
+    // Fallback search by filename if URL doesn't match
+    const attachmentByFilename = !attachment ? await prisma.attachment.findFirst({
+        where: { url: { contains: filename } } 
+    }) : null;
 
-    if (!attachment) {
+    const targetAttachment = attachment || attachmentByFilename;
+
+    if (!targetAttachment) {
       return res.status(404).json({ error: 'File not found' });
     }
 
     // SECURITY: Only allow owner to delete their files
-    if (attachment.uploadedById !== req.userId) {
+    if (targetAttachment.uploadedById !== req.userId) {
+      // Unless admin? For now rigid ownership.
       return res.status(403).json({ error: 'You can only delete your own files' });
     }
 
-    // Construct safe file path
-    const filePath = path.join(uploadsDir, filename);
-    
-    // Double-check the resolved path is within uploads directory
-    const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(path.resolve(uploadsDir))) {
-      return res.status(400).json({ error: 'Invalid file path' });
-    }
-
-    // Delete from filesystem
-    if (fs.existsSync(resolvedPath)) {
-      fs.unlinkSync(resolvedPath);
+    // Delete from storage
+    const deleted = await StorageService.deleteFile(filename);
+    if (!deleted && StorageService.getDriver() === 'local') {
+        // If local delete failed, it might be gone already or permission error
+        // We log but continue to delete DB record if it was "not found"
+        console.warn(`File ${filename} not found on disk during delete`);
     }
 
     // Delete from database
-    await prisma.attachment.delete({ where: { id: attachment.id } });
+    await prisma.attachment.delete({ where: { id: targetAttachment.id } });
 
     res.json({ success: true });
   } catch (error) {

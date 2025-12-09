@@ -310,6 +310,7 @@ export async function processIncomingWebhook(
     data: {
       content,
       channelId: webhook.channelId,
+      workspaceId: webhook.workspaceId,
       userId: webhook.userId,
     },
     include: {

@@ -345,9 +345,9 @@ export function MessageInput({
           const fileLinks = uploaded.map((f: UploadedFile) => {
             const isImage = f.mimeType.startsWith('image/');
             if (isImage) {
-              return `![${f.originalName}](${api.upload.getUrl(f.filename)})`;
+              return `![${f.originalName}](${f.url})`;
             }
-            return `[📎 ${f.originalName}](${api.upload.getUrl(f.filename)})`;
+            return `[📎 ${f.originalName}](${f.url})`;
           }).join('\n');
           
           messageContent = trimmed ? `${trimmed}\n\n${fileLinks}` : fileLinks;

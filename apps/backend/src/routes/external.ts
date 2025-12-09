@@ -224,6 +224,7 @@ router.post(
       data: {
         content,
         channelId,
+        workspaceId,
         userId,
         attachments: attachments
           ? {
@@ -233,6 +234,8 @@ router.post(
                 name: a.name,
                 size: a.size,
                 mimeType: a.mimeType,
+                workspaceId,
+                uploadedById: userId,
               })),
             }
           : undefined,

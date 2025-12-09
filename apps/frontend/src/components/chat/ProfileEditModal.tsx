@@ -55,7 +55,7 @@ export function ProfileEditModal({ onClose }: ProfileEditModalProps) {
 
     try {
       const result = await api.upload.single(file, token!);
-      setAvatarUrl(api.upload.getUrl(result.filename));
+      setAvatarUrl(result.url);
     } catch (err: any) {
       setError(err.message || 'Failed to upload avatar');
     } finally {

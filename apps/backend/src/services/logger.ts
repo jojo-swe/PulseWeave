@@ -159,7 +159,9 @@ export function logError(
         scope.setTag('requestId', context.requestId);
       }
 
-      Sentry.captureException(errorObj);
+    if (Sentry) {
+        Sentry.captureException(errorObj);
+      }
     });
   }
 }
@@ -184,7 +186,9 @@ export function captureMessage(
           }
         });
       }
-      Sentry.captureMessage(message, level);
+      if (Sentry) {
+        Sentry.captureMessage(message, level);
+      }
     });
   }
 }

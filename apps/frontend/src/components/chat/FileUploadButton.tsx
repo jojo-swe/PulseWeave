@@ -121,7 +121,7 @@ export function FilePreview({ file, onRemove }: FilePreviewProps) {
     <div className="relative group flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
       {isImage ? (
         <img
-          src={api.upload.getUrl(file.filename)}
+          src={file.url}
           alt={file.originalName}
           className="h-10 w-10 rounded object-cover"
         />
