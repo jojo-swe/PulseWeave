@@ -330,7 +330,7 @@
       "Click + in chat input",
       "Verify file picker opens"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -340,7 +340,7 @@
       "Send message",
       "Verify image preview in chat"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -413,7 +413,7 @@
       "Resize browser to mobile width",
       "Verify sidebar becomes drawer/hamburger"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

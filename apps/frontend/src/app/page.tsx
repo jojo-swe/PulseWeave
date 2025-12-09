@@ -17,6 +17,7 @@ import { FriendsPanel } from '@/components/chat/FriendsPanel';
 import { Portal } from '@/components/ui/portal';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NavigationRail } from '@/components/chat/NavigationRail';
+import { BottomNavigation } from '@/components/chat/BottomNavigation';
 import { WelcomeGuide } from '@/components/onboarding/WelcomeGuide';
 import { cn } from '@/lib/utils';
 
@@ -395,13 +396,21 @@ export default function Home() {
             <NavigationRail 
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              onOpenProfile={() => setShowProfile(true)}
             />
           </div>
 
+          {/* Bottom Navigation - Mobile only */}
+          <BottomNavigation 
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            className="lg:hidden z-[60]"
+          />
+
           {/* Sidebar Panel */}
           <div className={cn(
-            "flex-col shrink-0 transition-all duration-300 ease-in-out lg:z-auto bg-background/20 lg:bg-transparent absolute inset-y-0 left-0 z-50",
-            sidebarOpen ? "translate-x-0 w-64 border-r border-white/5 shadow-2xl lg:shadow-none lg:static" : "-translate-x-full lg:translate-x-0 lg:w-64"
+            "flex-col shrink-0 transition-all duration-300 ease-in-out lg:z-auto bg-background/95 backdrop-blur-xl lg:bg-transparent absolute inset-y-0 left-0 z-50 pb-16 lg:pb-0",
+            sidebarOpen ? "translate-x-0 w-80 border-r border-white/5 shadow-2xl lg:shadow-none lg:static lg:w-64" : "-translate-x-full lg:translate-x-0 lg:w-64"
           )}>
             {activeTab === 'chat' && (
               <Sidebar onToggle={toggleSidebar} onStartDM={handleStartDM} />
@@ -415,7 +424,7 @@ export default function Home() {
           </div>
           
           {/* Chat Area */}
-          <div className="flex-1 min-w-0 flex flex-col h-full relative bg-gradient-to-br from-transparent to-indigo-950/20">
+          <div className="flex-1 min-w-0 flex flex-col h-full relative bg-gradient-to-br from-transparent to-indigo-950/20 pb-16 lg:pb-0">
             <ChatArea
               onSendMessage={handleSendMessage}
               onTyping={handleTyping}
