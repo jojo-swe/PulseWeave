@@ -808,7 +808,7 @@
       "Set status to Do Not Disturb",
       "Verify no notification sounds"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -826,7 +826,7 @@
       "Admin promotes Member to Moderator",
       "Verify can delete messages"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
