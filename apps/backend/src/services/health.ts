@@ -1,6 +1,7 @@
 import { prisma } from '@pulseweave/database';
 import { logger } from '../utils/logger';
 import os from 'os';
+import v8 from 'v8';
 
 /**
  * Health check status.
@@ -108,18 +109,24 @@ async function checkDatabase(): Promise<ServiceHealth> {
  */
 function checkMemory(): MemoryHealth {
   const used = process.memoryUsage();
+  const heapStats = v8.getHeapStatistics();
   const heapUsed = used.heapUsed;
-  const heapTotal = used.heapTotal;
-  const percentage = (heapUsed / heapTotal) * 100;
+  const heapLimit = heapStats.heap_size_limit;
+  
+  // Calculate percentage against the configured V8 heap limit, not the current allocation
+  const percentage = (heapUsed / heapLimit) * 100;
 
   let status: 'healthy' | 'warning' | 'critical' = 'healthy';
-  if (percentage > 90) status = 'critical';
-  else if (percentage > 75) status = 'warning';
+  
+  // Warn at 85% of max heap (approaching OOM)
+  // Critical at 95% of max heap
+  if (percentage > 95) status = 'critical';
+  else if (percentage > 85) status = 'warning';
 
   return {
     status,
     used: Math.round(heapUsed / 1024 / 1024), // MB
-    total: Math.round(heapTotal / 1024 / 1024), // MB
+    total: Math.round(heapLimit / 1024 / 1024), // MB (Max Limit)
     percentage: Math.round(percentage),
   };
 }
