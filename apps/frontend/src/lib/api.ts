@@ -235,6 +235,19 @@ export const api = {
         method: 'POST',
         token,
       }),
+    getBySlug: (slug: string, token?: string) =>
+      fetchApi<{ id: string; name: string; slug: string; iconUrl?: string; memberCount: number; isMember: boolean }>(
+        `/api/workspaces/join/${slug}`,
+        { token }
+      ),
+    joinBySlug: (slug: string, token: string) =>
+      fetchApi<{ success: boolean; message: string; workspace: any; alreadyMember: boolean }>(
+        `/api/workspaces/join/${slug}`,
+        {
+          method: 'POST',
+          token,
+        }
+      ),
   },
   channels: {
     get: (id: string, token: string) =>

@@ -243,4 +243,119 @@ router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
   res.json({ success: true, message: 'You have left the workspace' });
 }));
 
+/**
+ * Get workspace by slug (public info for join page).
+ */
+router.get('/join/:slug', asyncHandler(async (req: AuthRequest, res) => {
+  const { slug } = req.params;
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      iconUrl: true,
+      _count: {
+        select: { members: true },
+      },
+    },
+  });
+
+  if (!workspace) {
+    throw Errors.notFound('Workspace');
+  }
+
+  // Check if user is already a member
+  let isMember = false;
+  if (req.userId) {
+    const membership = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: req.userId,
+          workspaceId: workspace.id,
+        },
+      },
+    });
+    isMember = !!membership;
+  }
+
+  res.json({
+    ...workspace,
+    memberCount: workspace._count.members,
+    isMember,
+  });
+}));
+
+/**
+ * Join workspace by slug.
+ */
+router.post('/join/:slug', asyncHandler(async (req: AuthRequest, res) => {
+  const { slug } = req.params;
+
+  if (!req.userId) {
+    throw Errors.unauthorized();
+  }
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { slug },
+  });
+
+  if (!workspace) {
+    throw Errors.notFound('Workspace');
+  }
+
+  // Check if already a member
+  const existingMembership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: req.userId,
+        workspaceId: workspace.id,
+      },
+    },
+  });
+
+  if (existingMembership) {
+    return res.json({
+      success: true,
+      message: 'Already a member',
+      workspace,
+      alreadyMember: true,
+    });
+  }
+
+  // Add user as member
+  await prisma.workspaceMember.create({
+    data: {
+      userId: req.userId,
+      workspaceId: workspace.id,
+      roleName: 'member',
+    },
+  });
+
+  // Add user to general channel
+  const generalChannel = await prisma.channel.findFirst({
+    where: {
+      workspaceId: workspace.id,
+      name: 'general',
+    },
+  });
+
+  if (generalChannel) {
+    await prisma.channelMember.create({
+      data: {
+        userId: req.userId,
+        channelId: generalChannel.id,
+      },
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Joined workspace successfully',
+    workspace,
+    alreadyMember: false,
+  });
+}));
+
 export { router as workspaceRouter };

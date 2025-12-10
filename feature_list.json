@@ -624,7 +624,7 @@
       "Generate Link",
       "Verify link created"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -633,7 +633,7 @@
       "New user opens invite link",
       "Verify joins workspace"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
