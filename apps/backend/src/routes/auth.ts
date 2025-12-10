@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -7,6 +7,7 @@ import { prisma } from '@pulseweave/database';
 import { verifyTotpToken, verifyBackupCode } from '../services/mfa';
 import { generateToken, generateRefreshToken, verifyRefreshToken, revokeToken, authenticateToken, AuthRequest, JWT_SECRET } from '../middleware/auth';
 import { logSecurityEvent } from '../middleware/security';
+import { cookieConfig } from '../config/security';
 import { 
   isLdapEnabled, 
   getLdapConfig, 
@@ -31,6 +32,30 @@ import {
 } from '../services/email';
 
 const router = Router();
+
+/**
+ * Sets authentication cookies with secure configuration.
+ * Uses centralized cookie config for consistency.
+ */
+function setAuthCookies(res: Response, token: string, refreshToken: string): void {
+  res.cookie(cookieConfig.accessToken.name, token, {
+    ...cookieConfig.options,
+    maxAge: cookieConfig.accessToken.maxAge,
+  });
+  
+  res.cookie(cookieConfig.refreshToken.name, refreshToken, {
+    ...cookieConfig.options,
+    maxAge: cookieConfig.refreshToken.maxAge,
+  });
+}
+
+/**
+ * Clears authentication cookies.
+ */
+function clearAuthCookies(res: Response): void {
+  res.clearCookie(cookieConfig.accessToken.name, cookieConfig.options);
+  res.clearCookie(cookieConfig.refreshToken.name, cookieConfig.options);
+}
 
 /**
  * Helper to create sessions for tokens
@@ -186,20 +211,8 @@ router.post('/register', async (req, res) => {
       },
     });
 
-    // Set secure cookies
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Lax is better for navigation and localhost dev
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-    
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    // Set secure cookies using centralized config
+    setAuthCookies(res, token, refreshToken);
 
     res.status(201).json({
       user: {
@@ -371,20 +384,8 @@ router.post('/login', async (req, res) => {
     // Get user's role from workspace membership
     const userRole = user.workspaceMemberships[0]?.roleName || 'member';
 
-    // Set secure cookies
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Lax is better for navigation and localhost dev
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-    
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    // Set secure cookies using centralized config
+    setAuthCookies(res, token, refreshToken);
 
     res.json({
       user: {
@@ -554,20 +555,8 @@ router.post('/refresh', async (req, res) => {
     const { token: newToken } = generateToken(user.id, undefined, accessJti);
     const { token: newRefreshToken } = generateRefreshToken(user.id, refreshJti);
 
-    // Set secure cookies
-    res.cookie('token', newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-    
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    // Set secure cookies using centralized config
+    setAuthCookies(res, newToken, newRefreshToken);
 
     res.json({
       success: true
@@ -606,9 +595,8 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
       logSecurityEvent('LOGOUT', { userId: req.userId });
     }
 
-    // Clear cookies
-    res.clearCookie('token');
-    res.clearCookie('refreshToken');
+    // Clear cookies using centralized config
+    clearAuthCookies(res);
 
     res.json({ success: true });
   } catch (error) {

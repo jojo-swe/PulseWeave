@@ -36,8 +36,8 @@ import {
   authLimiter, 
   sanitizeBody,
   helmetConfig,
-  validateEnvironment,
 } from './middleware/security';
+import securityConfig, { validateSecurityConfig, corsConfig, cookieConfig } from './config/security';
 import {
   getSslConfig,
   loadSslCertificates,
@@ -64,15 +64,19 @@ import {
   updateWsConnectionCount,
 } from './services/health';
 
-// Validate environment on startup
-try {
-  validateEnvironment();
-} catch (error) {
-  console.error('Environment validation failed:', error);
-  // Don't exit in development, but warn
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(1);
-  }
+// =============================================================================
+// Security Validation at Startup
+// =============================================================================
+// Validate all security configuration before starting the server
+const securityValidation = validateSecurityConfig();
+if (!securityValidation.valid && securityConfig.isProduction) {
+  console.error('❌ Security validation failed. Server cannot start in production with invalid configuration.');
+  process.exit(1);
+}
+
+logger.info(`🔐 Security mode: ${securityConfig.isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+if (securityValidation.warnings.length > 0) {
+  logger.warn(`Security warnings: ${securityValidation.warnings.length}`)
 }
 
 const app = express();
@@ -86,13 +90,8 @@ const httpServer = sslOptions
   ? https.createServer(sslOptions, app) 
   : createServer(app);
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://localhost:3000',
-  'https://127.0.0.1:3000',
-  process.env.FRONTEND_URL,
-].filter(Boolean) as string[];
+// Use centralized CORS config
+const allowedOrigins = corsConfig.allowedOrigins;
 
 const io = new Server(httpServer, {
   cors: {
@@ -132,20 +131,8 @@ if (process.env.NODE_ENV === 'production') {
   app.use(requireHttps);
 }
 
-// Cookie parser (for CSRF and sessions)
-// SECURITY: Cookie secret must be set in production
-const cookieSecret = (() => {
-  const secret = process.env.COOKIE_SECRET;
-  if (process.env.NODE_ENV === 'production' && !secret) {
-    throw new Error('CRITICAL: COOKIE_SECRET must be set in production');
-  }
-  if (!secret) {
-    console.warn('⚠️  WARNING: COOKIE_SECRET not set. Using insecure default.');
-    return 'pulseweave-dev-cookie-secret';
-  }
-  return secret;
-})();
-app.use(cookieParser(cookieSecret));
+// Cookie parser (using centralized security config)
+app.use(cookieParser(cookieConfig.secret));
 
 // CORS configuration
 // SECURITY: More restrictive in production
