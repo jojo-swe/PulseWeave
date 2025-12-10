@@ -14,7 +14,7 @@ import { ChannelMembersPanel } from './ChannelMembersPanel';
 import { Portal } from '@/components/ui/portal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap, MessageCircle } from 'lucide-react';
+import { Hash, Lock, Users, Star, Bell, Pin, Search, Settings, Menu, Zap, MessageCircle, Video } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, generateAvatarColor } from '@/lib/utils';
 
@@ -258,6 +258,15 @@ export function ChatArea({ onSendMessage, onTyping, onReaction, onEditMessage, o
               onClick={() => setNotificationsOpen(true)}
             >
               <Bell className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hidden md:flex"
+              title="Start video call (coming soon)"
+              onClick={() => alert('Video calls coming soon!')}
+            >
+              <Video className="h-4 w-4" />
             </Button>
             <Button 
               variant="ghost" 

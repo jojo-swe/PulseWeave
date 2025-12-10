@@ -975,7 +975,7 @@
       "Check Chat Header",
       "Verify Call button exists (even if mock)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
