@@ -269,6 +269,16 @@ async function startServer(): Promise<void> {
     await prisma.$connect();
     logger.info('Database connected successfully');
 
+    // Reset all user statuses to offline on server startup
+    // This handles stale online statuses from previous server instances
+    const resetCount = await prisma.user.updateMany({
+      where: { status: { not: 'offline' } },
+      data: { status: 'offline' },
+    });
+    if (resetCount.count > 0) {
+      logger.info(`Reset ${resetCount.count} stale user statuses to offline`);
+    }
+
     // Start HTTP server
     httpServer.listen(PORT, async () => {
       logger.info(`🚀 PulseWeave API running on ${protocol}://localhost:${PORT}`);

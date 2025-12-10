@@ -68,8 +68,9 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
   const starredChannelsList = channels.filter(c => starredChannels.has(c.id));
   const regularChannels = channels.filter(c => !starredChannels.has(c.id));
 
-  const onlineMembers = members.filter((m) => m.user.status === 'online');
-  const offlineMembers = members.filter((m) => m.user.status !== 'online');
+  // Users with online/away/dnd are "active" (connected), only 'offline' means disconnected
+  const onlineMembers = members.filter((m) => m.user.status !== 'offline');
+  const offlineMembers = members.filter((m) => m.user.status === 'offline');
 
   const handleCreateChannel = async (name: string, description: string, isPrivate: boolean) => {
     if (!token || !currentWorkspace) throw new Error('Not authenticated');

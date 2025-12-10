@@ -289,6 +289,8 @@ export const useStore = create<AppState>()(
           members: state.members.map((m) =>
             m.user.id === userId ? { ...m, user: { ...m.user, status } } : m
           ),
+          // Also update current user's status if it's our own status change
+          user: state.user?.id === userId ? { ...state.user, status } : state.user,
         })),
 
       // Typing
