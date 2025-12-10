@@ -30,7 +30,9 @@ export function NavigationRail({
   onOpenProfile 
 }: NavigationRailProps) {
   const router = useRouter();
-  const { user, logout, userStatus } = useStore();
+  const { user, logout } = useStore();
+  // Use user.status directly for consistency across all UI components
+  const userStatus = user?.status || 'offline';
   const [showProfile, setShowProfile] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [statusPickerPosition, setStatusPickerPosition] = useState({ left: 0, bottom: 0 });
@@ -138,12 +140,12 @@ export function NavigationRail({
               "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center transition-transform hover:scale-125 z-10",
               userStatus === 'online' ? "bg-green-500" :
               userStatus === 'away' ? "bg-yellow-500" :
-              userStatus === 'busy' ? "bg-red-500" : "bg-gray-500"
+              (userStatus === 'dnd' || userStatus === 'busy') ? "bg-red-500" : "bg-gray-500"
             )}
             title="Change Status"
           >
-             {/* Small inner dot for 'busy' to make it look like DND icon if needed, or just color */}
-             {userStatus === 'busy' && <div className="w-1.5 h-0.5 bg-white rounded-full" />}
+             {/* Small inner dot for DND to show minus icon */}
+             {(userStatus === 'dnd' || userStatus === 'busy') && <div className="w-1.5 h-0.5 bg-white rounded-full" />}
           </button>
         </div>
       </div>

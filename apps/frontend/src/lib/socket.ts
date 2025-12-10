@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { useStore } from '@/store';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
 
@@ -13,9 +14,20 @@ export function connectSocket(token: string): Socket {
     return socket;
   }
 
+  // Disconnect existing socket if any
+  if (socket) {
+    socket.disconnect();
+  }
+
   socket = io(SOCKET_URL, {
     auth: { token },
     transports: ['websocket', 'polling'],
+  });
+
+  // Register status listener BEFORE connection completes
+  // This ensures we don't miss the initial status event from the server
+  socket.on('user:status', ({ userId, status }: { userId: string; status: string }) => {
+    useStore.getState().updateMemberStatus(userId, status);
   });
 
   socket.on('connect', () => {

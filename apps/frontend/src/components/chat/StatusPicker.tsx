@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Circle, Clock, MinusCircle, Moon, Check } from 'lucide-react';
 
+type StatusValue = 'online' | 'away' | 'dnd' | 'offline';
+
 interface StatusOption {
-  value: 'online' | 'away' | 'busy' | 'offline';
+  value: StatusValue;
   label: string;
   description: string;
   icon: typeof Circle;
@@ -32,7 +35,7 @@ const STATUS_OPTIONS: StatusOption[] = [
     bgColor: 'bg-yellow-500',
   },
   {
-    value: 'busy',
+    value: 'dnd',
     label: 'Do Not Disturb',
     description: 'Mute all notifications',
     icon: MinusCircle,
@@ -59,8 +62,10 @@ interface StatusPickerProps {
  * Can be positioned relative to a trigger element.
  */
 export function StatusPicker({ onClose, position }: StatusPickerProps) {
-  const { userStatus, setUserStatus } = useStore();
+  const { user, token, updateMemberStatus } = useStore();
   const ref = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
+  const currentStatus = user?.status || 'offline';
 
   // Close on click outside
   useEffect(() => {
@@ -84,9 +89,23 @@ export function StatusPicker({ onClose, position }: StatusPickerProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleSelect = (status: 'online' | 'away' | 'busy' | 'offline') => {
-    setUserStatus(status);
-    onClose();
+  const handleSelect = async (status: StatusValue) => {
+    if (!user || loading) return;
+    setLoading(true);
+    
+    try {
+      // Update status on server (uses /api/user/me endpoint)
+      await api.patch('/user/me', { status });
+      
+      // Update local store (this updates both user.status and members array)
+      updateMemberStatus(user.id, status);
+      
+      onClose();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const style: React.CSSProperties = position
@@ -102,7 +121,7 @@ export function StatusPicker({ onClose, position }: StatusPickerProps) {
       <div className="p-1">
         {STATUS_OPTIONS.map((option) => {
           const Icon = option.icon;
-          const isSelected = userStatus === option.value;
+          const isSelected = currentStatus === option.value;
           
           return (
             <button

@@ -35,7 +35,6 @@ export default function Home() {
     setMessages,
     addMessage,
     setCurrentChannel,
-    updateMemberStatus,
     setUserTyping,
     clearUserTyping,
     sidebarOpen,
@@ -173,9 +172,7 @@ export default function Home() {
             }
           });
 
-          socket.on('user:status', ({ userId, status }: { userId: string; status: string }) => {
-            updateMemberStatus(userId, status);
-          });
+          // Note: user:status listener is registered in socket.ts to avoid race conditions
 
           socket.on('user:typing', ({ channelId, userId, username }: any) => {
             setUserTyping(channelId, userId, username);

@@ -70,8 +70,11 @@ export function setupSocketHandlers(io: Server) {
       data: { status: 'online' },
     });
 
-    // Broadcast online status
+    // Broadcast online status to all OTHER users
     socket.broadcast.emit('user:status', { userId, status: 'online' });
+    
+    // Also send to the connecting user themselves so they update their own status
+    socket.emit('user:status', { userId, status: 'online' });
 
     // Join workspace rooms
     socket.on('workspace:join', async (workspaceId: string) => {
