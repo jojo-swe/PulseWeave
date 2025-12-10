@@ -90,19 +90,31 @@ export function StatusPicker({ onClose, position }: StatusPickerProps) {
   }, [onClose]);
 
   const handleSelect = async (status: StatusValue) => {
-    if (!user || loading) return;
+    console.log('StatusPicker: handleSelect called with status:', status, 'user:', user?.id, 'loading:', loading);
+    
+    if (!user) {
+      console.error('StatusPicker: No user found');
+      return;
+    }
+    if (loading) {
+      console.log('StatusPicker: Already loading, skipping');
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      // Update status on server (uses /api/user/me endpoint)
-      await api.patch('/user/me', { status });
+      console.log('StatusPicker: Calling API to update status');
+      // Update status on server (uses /api/users/me endpoint)
+      await api.patch('/users/me', { status });
+      console.log('StatusPicker: API call succeeded');
       
       // Update local store (this updates both user.status and members array)
       updateMemberStatus(user.id, status);
       
       onClose();
     } catch (error) {
-      console.error('Failed to update status:', error);
+      console.error('StatusPicker: Failed to update status:', error);
     } finally {
       setLoading(false);
     }
@@ -126,10 +138,15 @@ export function StatusPicker({ onClose, position }: StatusPickerProps) {
           return (
             <button
               key={option.value}
-              onClick={() => handleSelect(option.value)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSelect(option.value);
+              }}
+              disabled={loading}
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left',
-                isSelected ? 'bg-accent' : 'hover:bg-accent/50'
+                'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left cursor-pointer',
+                isSelected ? 'bg-accent' : 'hover:bg-accent/50',
+                loading && 'opacity-50 cursor-wait'
               )}
             >
               <div className={cn('p-1 rounded-full', option.bgColor + '/20')}>
