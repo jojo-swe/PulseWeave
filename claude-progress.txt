@@ -49,3 +49,18 @@ Accomplished:
 
 Status: Core stability issues resolved. Advanced Role Management feature complete and secure.
 Next: Workspace Deletion Logic or User Experience Polish.
+
+Session: 2025-12-10 (continued)
+Accomplished:
+- [x] Fixed False Positive Memory Alert (Health check now uses V8 heap_size_limit)
+- [x] Implemented Workspace Lifecycle Features
+  - [x] Backend: PATCH /workspaces/:id (Update name/icon)
+  - [x] Backend: DELETE /workspaces/:id (Owner-only cascade delete)
+  - [x] Backend: POST /workspaces/:id/leave (Non-owner can leave)
+  - [x] Frontend: Delete Workspace dialog with confirmation
+  - [x] Frontend: Leave Workspace dialog
+  - [x] Store: Updated setCurrentWorkspace to allow null
+  - [x] Verified via scripts/verify-workspace-lifecycle.ts
+
+Status: Workspace Deletion Logic feature complete and verified.
+Next: Leave Workspace (requires join-by-invite implementation) or other failing tests.

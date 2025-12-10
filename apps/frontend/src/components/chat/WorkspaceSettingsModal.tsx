@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, Copy, Check, Users, Settings, Link2, Trash2, ShieldAlert, Ban, RotateCcw, Clock } from 'lucide-react';
+import { X, Copy, Check, Users, Settings, Link2, Trash2, ShieldAlert, Ban, RotateCcw, Clock, LogOut } from 'lucide-react';
 import { cn, getInitials, generateAvatarColor } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 
@@ -17,7 +18,8 @@ interface WorkspaceSettingsModalProps {
 }
 
 export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps) {
-  const { currentWorkspace, token, members, setCurrentWorkspace, setMembers } = useStore();
+  const router = useRouter();
+  const { currentWorkspace, token, members, setCurrentWorkspace, setMembers, workspaces, setWorkspaces } = useStore();
   const { canManageRoles, canManageMembers, canViewAuditLog, canBanUsers, isOwner: currentUserIsOwner } = usePermissions();
   const [activeTab, setActiveTab] = useState<'general' | 'members' | 'invite' | 'audit'>('general');
   const [name, setName] = useState(currentWorkspace?.name || '');
@@ -36,6 +38,13 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
   const [auditPage, setAuditPage] = useState(1);
   const [auditTotalPages, setAuditTotalPages] = useState(1);
   const [loadingAudit, setLoadingAudit] = useState(false);
+
+  // Delete/Leave Dialog State
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const inviteLink = `${window.location.origin}/join/${currentWorkspace?.slug}`;
 
@@ -159,6 +168,66 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
     }
   };
 
+  const handleDeleteWorkspace = async () => {
+    if (!token || !currentWorkspace) return;
+    if (deleteConfirmText !== currentWorkspace.name) {
+      toast.error('Please type the workspace name to confirm deletion');
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await api.workspaces.delete(currentWorkspace.id, token);
+      toast.success('Workspace deleted');
+      
+      // Remove from local state and navigate away
+      const remaining = workspaces.filter(w => w.id !== currentWorkspace.id);
+      setWorkspaces(remaining);
+      
+      if (remaining.length > 0) {
+        setCurrentWorkspace(remaining[0]);
+        router.push(`/chat/${remaining[0].id}`);
+      } else {
+        setCurrentWorkspace(null);
+        router.push('/chat');
+      }
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to delete workspace:', error);
+      toast.error(error.message || 'Failed to delete workspace');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleLeaveWorkspace = async () => {
+    if (!token || !currentWorkspace) return;
+
+    setLeaving(true);
+    try {
+      await api.workspaces.leave(currentWorkspace.id, token);
+      toast.success('You have left the workspace');
+      
+      // Remove from local state and navigate away
+      const remaining = workspaces.filter(w => w.id !== currentWorkspace.id);
+      setWorkspaces(remaining);
+      
+      if (remaining.length > 0) {
+        setCurrentWorkspace(remaining[0]);
+        router.push(`/chat/${remaining[0].id}`);
+      } else {
+        setCurrentWorkspace(null);
+        router.push('/chat');
+      }
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to leave workspace:', error);
+      toast.error(error.message || 'Failed to leave workspace');
+    } finally {
+      setLeaving(false);
+    }
+  };
+
   const tabs = [
     { id: 'general', label: 'General', icon: Settings },
     { id: 'members', label: 'Members', icon: Users },
@@ -233,9 +302,19 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
                   <p className="text-sm text-muted-foreground mb-4">
                     Deleting a workspace is permanent and cannot be undone.
                   </p>
-                  <Button variant="destructive" disabled={!currentUserIsOwner}>
-                    Delete Workspace
-                  </Button>
+                  <div className="flex gap-2">
+                    {currentUserIsOwner ? (
+                      <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Workspace
+                      </Button>
+                    ) : (
+                      <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowLeaveDialog(true)}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Leave Workspace
+                      </Button>
+                    )}
+                  </div>
                   {!currentUserIsOwner && (
                     <p className="text-xs text-muted-foreground mt-2">Only the workspace owner can delete it.</p>
                   )}
@@ -513,6 +592,62 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
                 <Button variant="ghost" onClick={() => setShowBanDialog(false)}>Cancel</Button>
                 <Button variant="destructive" onClick={handleBanUser} disabled={loadingAudit}>
                   Confirm Ban
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Workspace Dialog */}
+        {showDeleteDialog && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-background rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4 animate-in fade-in zoom-in-95">
+              <h3 className="text-lg font-semibold text-destructive">Delete Workspace</h3>
+              <p className="text-sm text-muted-foreground">
+                This will permanently delete <strong>{currentWorkspace?.name}</strong> and all its channels, messages, and data. This action cannot be undone.
+              </p>
+              
+              <div className="space-y-2">
+                <Label>Type <span className="font-mono font-bold">{currentWorkspace?.name}</span> to confirm</Label>
+                <Input 
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type workspace name..."
+                  className="font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" onClick={() => { setShowDeleteDialog(false); setDeleteConfirmText(''); }}>Cancel</Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteWorkspace} 
+                  disabled={deleting || deleteConfirmText !== currentWorkspace?.name}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Permanently'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Leave Workspace Dialog */}
+        {showLeaveDialog && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-background rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4 animate-in fade-in zoom-in-95">
+              <h3 className="text-lg font-semibold">Leave Workspace</h3>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to leave <strong>{currentWorkspace?.name}</strong>? You will need to be re-invited to rejoin.
+              </p>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" onClick={() => setShowLeaveDialog(false)}>Cancel</Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleLeaveWorkspace} 
+                  disabled={leaving}
+                >
+                  {leaving ? 'Leaving...' : 'Leave Workspace'}
                 </Button>
               </div>
             </div>

@@ -225,6 +225,16 @@ export const api = {
         body: JSON.stringify(data),
         token,
       }),
+    delete: (id: string, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(`/api/workspaces/${id}`, {
+        method: 'DELETE',
+        token,
+      }),
+    leave: (id: string, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(`/api/workspaces/${id}/leave`, {
+        method: 'POST',
+        token,
+      }),
   },
   channels: {
     get: (id: string, token: string) =>

@@ -114,7 +114,7 @@ interface AppState {
   // Workspace
   currentWorkspace: Workspace | null;
   workspaces: Workspace[];
-  setCurrentWorkspace: (workspace: Workspace) => void;
+  setCurrentWorkspace: (workspace: Workspace | null) => void;
   setWorkspaces: (workspaces: Workspace[]) => void;
 
   // Channels

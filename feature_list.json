@@ -23,6 +23,7 @@
     ],
     "passes": true
   },
+  {
     "category": "functional",
     "description": "User Registration - Valid Data",
     "steps": [
@@ -834,7 +835,7 @@
       "Delete workspace",
       "Verify data cleaned up"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
