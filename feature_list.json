@@ -1,6 +1,29 @@
 [
   {
     "category": "functional",
+    "description": "Advanced Role Management - Ban User",
+    "steps": [
+      "Login as Owner",
+      "Navigate to Workspace Settings -> Members",
+      "Ban a user",
+      "Verify user status is banned",
+      "Navigate to Audit Log",
+      "Verify USER_BANNED entry"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Advanced Role Management - Audit Log",
+    "steps": [
+      "Login as Owner",
+      "Navigate to Workspace Settings -> Audit Log",
+      "Verify log entries are visible",
+      "Verify pagination works"
+    ],
+    "passes": true
+  },
+    "category": "functional",
     "description": "User Registration - Valid Data",
     "steps": [
       "Navigate to /register",
