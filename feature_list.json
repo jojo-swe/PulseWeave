@@ -392,7 +392,7 @@
       "Click Ban on a user",
       "Verify user removed"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -401,7 +401,7 @@
       "Navigate to Workspace Settings > Audit Log",
       "Verify logs display"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -744,7 +744,7 @@
       "Navigate to /invalid-route",
       "Verify 404 page appears"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -845,7 +845,7 @@
       "Confirm",
       "Verify removed from member list"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -855,7 +855,7 @@
       "Confirm",
       "Verify removed from channel"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

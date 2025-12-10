@@ -315,4 +315,49 @@ router.post('/:id/join', asyncHandler(async (req: AuthRequest, res) => {
   res.json({ success: true });
 }));
 
+/**
+ * Leave a channel.
+ */
+router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
+  const channel = await prisma.channel.findUnique({
+    where: { id: req.params.id },
+    include: { workspace: true },
+  });
+
+  if (!channel) {
+    throw Errors.notFound('Channel');
+  }
+
+  // Check if user is a member of the channel
+  const membership = await prisma.channelMember.findUnique({
+    where: {
+      userId_channelId: {
+        userId: req.userId!,
+        channelId: req.params.id,
+      },
+    },
+  });
+
+  if (!membership) {
+    throw Errors.notFound('Channel membership');
+  }
+
+  // Cannot leave the default "general" channel
+  if (channel.name === 'general') {
+    throw Errors.forbidden('Cannot leave the general channel');
+  }
+
+  // Remove channel membership
+  await prisma.channelMember.delete({
+    where: {
+      userId_channelId: {
+        userId: req.userId!,
+        channelId: req.params.id,
+      },
+    },
+  });
+
+  res.json({ success: true, message: 'You have left the channel' });
+}));
+
 export { router as channelRouter };

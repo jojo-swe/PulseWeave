@@ -261,6 +261,11 @@ export const api = {
         method: 'POST',
         token,
       }),
+    leave: (id: string, token: string) =>
+      fetchApi<{ success: boolean; message: string }>(`/api/channels/${id}/leave`, {
+        method: 'POST',
+        token,
+      }),
   },
   dm: {
     list: (workspaceId: string, token: string) =>
