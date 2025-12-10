@@ -94,3 +94,19 @@ Categories of remaining work:
 - MFA (setup and login flow)
 - Profile avatar upload
 - Threads view in sidebar
+
+Session: 2025-12-11 (continued)
+Accomplished:
+- [x] Verified Role Assignment (handleRoleChange already exists)
+- [x] Verified DND Status (StatusPicker already has DND option)
+- [x] Marked 2 more features as passing
+
+Final status: 11 failing tests remaining
+Categories:
+- Billing: 2 (subscription page, Stripe checkout)
+- Invite: 2 (generate link, join via link)
+- File: 2 (drag/drop, paste image)
+- MFA: 2 (setup, login)
+- Search: 1 (pagination)
+- Threads: 1 (sidebar view)
+- Avatar: 1 (profile upload)
