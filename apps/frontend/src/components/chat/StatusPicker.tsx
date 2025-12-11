@@ -90,24 +90,17 @@ export function StatusPicker({ onClose, position }: StatusPickerProps) {
   }, [onClose]);
 
   const handleSelect = async (status: StatusValue) => {
-    console.log('StatusPicker: handleSelect called with status:', status, 'user:', user?.id, 'loading:', loading);
-    
     if (!user) {
       console.error('StatusPicker: No user found');
       return;
     }
-    if (loading) {
-      console.log('StatusPicker: Already loading, skipping');
-      return;
-    }
+    if (loading) return;
     
     setLoading(true);
     
     try {
-      console.log('StatusPicker: Calling API to update status');
       // Update status on server (uses /api/users/me endpoint)
       await api.patch('/users/me', { status });
-      console.log('StatusPicker: API call succeeded');
       
       // Update local store (this updates both user.status and members array)
       updateMemberStatus(user.id, status);
