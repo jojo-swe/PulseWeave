@@ -36,23 +36,43 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  const search = useCallback(async (searchQuery: string) => {
+  const search = useCallback(async (searchQuery: string, cursor?: string) => {
     if (!token || !currentWorkspace || searchQuery.length < 2) {
       setResults([]);
+      setNextCursor(null);
       return;
     }
 
-    setLoading(true);
+    if (cursor) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
-      const data = await api.messages.search(currentWorkspace.id, searchQuery, token);
-      setResults(data);
+      const data = await api.messages.search(currentWorkspace.id, searchQuery, token, cursor);
+      if (cursor) {
+        setResults(prev => [...prev, ...data.messages]);
+      } else {
+        setResults(data.messages);
+      }
+      setNextCursor(data.nextCursor);
     } catch (error) {
       console.error('Search failed:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [token, currentWorkspace]);
+
+  const loadMore = useCallback(() => {
+    if (nextCursor && !loadingMore) {
+      search(query, nextCursor);
+    }
+  }, [nextCursor, loadingMore, search, query]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -151,6 +171,25 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
                   </div>
                 </button>
               ))}
+              {/* Load More Button */}
+              {nextCursor && (
+                <div className="p-4 text-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 disabled:opacity-50"
+                  >
+                    {loadingMore ? (
+                      <span className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        Loading more...
+                      </span>
+                    ) : (
+                      'Load more results'
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           ) : query.length >= 2 ? (
             <div className="p-8 text-center text-muted-foreground">

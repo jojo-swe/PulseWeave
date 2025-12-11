@@ -308,8 +308,11 @@ export const api = {
       }),
   },
   messages: {
-    search: (workspaceId: string, query: string, token: string) =>
-      fetchApi<any[]>(`/api/messages/search?workspaceId=${workspaceId}&q=${encodeURIComponent(query)}`, { token }),
+    search: (workspaceId: string, query: string, token: string, cursor?: string) =>
+      fetchApi<{ messages: any[]; nextCursor: string | null }>(
+        `/api/messages/search?workspaceId=${workspaceId}&q=${encodeURIComponent(query)}${cursor ? `&cursor=${cursor}` : ''}`,
+        { token }
+      ),
     list: (channelId: string, token: string, cursor?: string) =>
       fetchApi<{ messages: any[]; nextCursor: string | null }>(
         `/api/messages/channel/${channelId}${cursor ? `?cursor=${cursor}` : ''}`,

@@ -10,14 +10,14 @@ const router = Router();
 
 // Search messages
 router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
-  const { workspaceId, q, limit = '50' } = req.query;
+  const { workspaceId, q, limit = '50', cursor } = req.query;
 
   if (!workspaceId || typeof workspaceId !== 'string') {
     throw Errors.badRequest('Workspace ID is required');
   }
 
   if (!q || typeof q !== 'string' || q.length < 2) {
-    return res.json([]);
+    return res.json({ messages: [], nextCursor: null });
   }
 
   const take = Math.min(parseInt(limit as string), 100);
@@ -42,7 +42,9 @@ router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
         ],
       },
       // Can't search encrypted content server-side
-      isEncrypted: false, 
+      isEncrypted: false,
+      // Cursor-based pagination
+      ...(cursor && typeof cursor === 'string' ? { id: { lt: cursor } } : {}),
     },
     include: {
       user: {
@@ -62,10 +64,14 @@ router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
       },
     },
     orderBy: { createdAt: 'desc' },
-    take,
+    take: take + 1, // Fetch one extra to determine if there's more
   });
 
-  res.json(messages);
+  const hasMore = messages.length > take;
+  const results = hasMore ? messages.slice(0, take) : messages;
+  const nextCursor = hasMore ? results[results.length - 1].id : null;
+
+  res.json({ messages: results, nextCursor });
 }));
 
 // Get messages for a channel
