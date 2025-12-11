@@ -790,7 +790,7 @@
       "Enable MFA",
       "Verify QR code appears"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
