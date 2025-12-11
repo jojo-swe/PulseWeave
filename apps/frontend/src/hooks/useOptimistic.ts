@@ -151,7 +151,7 @@ export function useAsync<T, Args extends any[]>(
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update debounced value after delay
   if (timeoutRef.current) {

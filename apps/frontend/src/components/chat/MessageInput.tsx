@@ -63,7 +63,7 @@ export function MessageInput({
   const [cursorPosition, setCursorPosition] = useState(0);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mentionStartRef = useRef<number>(-1);
   const [isDragging, setIsDragging] = useState(false);
 
