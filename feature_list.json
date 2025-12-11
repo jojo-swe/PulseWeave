@@ -918,7 +918,7 @@
       "Drag file into chat area",
       "Verify upload triggers"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -927,7 +927,7 @@
       "Copy image, paste in input",
       "Verify image upload starts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

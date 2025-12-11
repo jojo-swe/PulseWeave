@@ -65,6 +65,7 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const mentionStartRef = useRef<number>(-1);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFilesSelected = useCallback((files: File[]) => {
     setAttachedFiles(prev => [...prev, ...files].slice(0, 5));
@@ -73,6 +74,47 @@ export function MessageInput({
   const handleRemoveFile = useCallback((index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  }, [isDragging]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFilesSelected(files);
+    }
+  }, [handleFilesSelected]);
+
+  // Paste handler for images
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter(item => item.type.startsWith('image/'));
+    
+    if (imageItems.length > 0) {
+      e.preventDefault();
+      const files = imageItems
+        .map(item => item.getAsFile())
+        .filter((file): file is File => file !== null);
+      
+      if (files.length > 0) {
+        handleFilesSelected(files);
+      }
+    }
+  }, [handleFilesSelected]);
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -379,11 +421,17 @@ export function MessageInput({
   ];
 
   return (
-    <div className="px-4 pb-4">
+    <div 
+      className="px-4 pb-4"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div
         className={cn(
           'rounded-xl border bg-background shadow-sm transition-colors',
-          'focus-within:border-primary focus-within:ring-1 focus-within:ring-primary'
+          'focus-within:border-primary focus-within:ring-1 focus-within:ring-primary',
+          isDragging && 'border-primary border-dashed bg-primary/5'
         )}
       >
         {/* Formatting Toolbar */}
@@ -443,6 +491,7 @@ export function MessageInput({
               value={content}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={`${placeholder} #${currentChannel?.name || 'channel'}`}
               disabled={disabled}
               rows={1}
