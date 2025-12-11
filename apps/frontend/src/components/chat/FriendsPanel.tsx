@@ -73,11 +73,11 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
     
     try {
       // Fetch friends
-      const friendsRes = await api.get<{ friends: Friend[] }>('/api/friends');
+      const friendsRes = await api.get<{ friends: Friend[] }>('/friends');
       setFriends(friendsRes.friends || []);
       
       // Fetch pending requests
-      const requestsRes = await api.get<{ requests: FriendRequest[] }>('/api/friends/requests');
+      const requestsRes = await api.get<{ requests: FriendRequest[] }>('/friends/requests');
       setRequests(requestsRes.requests || []);
     } catch (err) {
       console.error('Failed to load friends:', err);
@@ -123,7 +123,7 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
 
   const handleAcceptRequest = async (requestId: string) => {
     try {
-      await api.post(`/api/friends/request/${requestId}/accept`, {});
+      await api.post(`/friends/request/${requestId}/accept`, {});
       setRequests(prev => prev.filter(r => r.id !== requestId));
       loadFriends(); // Refresh friends list
     } catch (err) {
@@ -133,7 +133,7 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
 
   const handleDeclineRequest = async (requestId: string) => {
     try {
-      await api.post(`/api/friends/request/${requestId}/decline`, {});
+      await api.post(`/friends/request/${requestId}/decline`, {});
       setRequests(prev => prev.filter(r => r.id !== requestId));
     } catch (err) {
       console.error('Failed to decline request:', err);
@@ -146,7 +146,7 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
     setAddFriendError('');
     
     try {
-      const result = await api.post<{ message: string; status?: string }>('/api/friends/request', {
+      const result = await api.post<{ message: string; status?: string }>('/friends/request', {
         username: addFriendUsername.trim(),
       });
       
@@ -167,7 +167,7 @@ export function FriendsPanel({ onStartDM }: FriendsPanelProps) {
   const handleRemoveFriend = async (friendshipId: string) => {
     if (!confirm('Are you sure you want to remove this friend?')) return;
     try {
-      await api.delete(`/api/friends/${friendshipId}`);
+      await api.delete(`/friends/${friendshipId}`);
       setFriends(prev => prev.filter(f => f.friendshipId !== friendshipId));
     } catch (err) {
       console.error('Failed to remove friend:', err);
