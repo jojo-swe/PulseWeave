@@ -984,6 +984,6 @@
       "Click 'Threads' in sidebar",
       "Verify list of threads matches"
     ],
-    "passes": false
+    "passes": true
   }
 ]

@@ -23,6 +23,7 @@ import {
   Settings,
   LogOut,
   MessageCircle,
+  MessageSquareText,
   Star,
   Shield,
   Users,
@@ -39,6 +40,7 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
   const [showProfile, setShowProfile] = useState(false);
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [showThreads, setShowThreads] = useState(false);
   const [statusPickerPosition, setStatusPickerPosition] = useState({ left: 0, bottom: 0 });
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   
@@ -165,6 +167,28 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
               </div>
             </div>
           )}
+
+          {/* Threads Section */}
+          <div className="mb-4">
+            <button
+              onClick={() => setShowThreads(!showThreads)}
+              className={cn(
+                'w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors',
+                showThreads 
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+              )}
+            >
+              <MessageSquareText className="h-4 w-4" />
+              <span className="font-medium">Threads</span>
+            </button>
+            {showThreads && (
+              <div className="mt-2 px-2 py-3 rounded-md bg-sidebar-accent/30 text-sm text-sidebar-foreground/70">
+                <p className="text-center">No active threads</p>
+                <p className="text-center text-xs mt-1 opacity-60">Replies to messages will appear here</p>
+              </div>
+            )}
+          </div>
 
           {/* Channels Section */}
           <div className="mb-4">
