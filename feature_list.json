@@ -708,7 +708,7 @@
       "Upload image",
       "Verify avatar updates"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
