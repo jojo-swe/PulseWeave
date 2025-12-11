@@ -1,20 +1,5 @@
 import { Purchases, LogLevel } from '@revenuecat/purchases-js';
-
-/**
- * RevenueCat Configuration
- * 
- * PRODUCTION SETUP:
- * 1. Create a RevenueCat account at https://www.revenuecat.com
- * 2. Create a new project and get your Public API Key
- * 3. Set NEXT_PUBLIC_REVENUECAT_API_KEY in your .env.local file
- * 4. Configure your products in RevenueCat dashboard
- * 5. Set up entitlements for access control
- * 
- * Note: RevenueCat is primarily for mobile apps (iOS/Android).
- * For web-only subscriptions, consider using Stripe directly.
- */
-
-const REVENUECAT_API_KEY = process.env.NEXT_PUBLIC_REVENUECAT_API_KEY || '';
+import { REVENUECAT_API_KEY, IS_PRODUCTION } from '@/config/env';
 
 /**
  * Check if RevenueCat is configured.
@@ -47,7 +32,7 @@ export class RevenueCatService {
 
     try {
       // Use WARN in production, DEBUG in development
-      const logLevel = process.env.NODE_ENV === 'production' ? LogLevel.Warn : LogLevel.Debug;
+      const logLevel = IS_PRODUCTION ? LogLevel.Warn : LogLevel.Debug;
       Purchases.setLogLevel(logLevel);
       this.purchases = Purchases.configure(REVENUECAT_API_KEY, userId);
       this.isInitialized = true;

@@ -1,293 +1,206 @@
-# PulseWeave - Modern Team Communication
+# PulseWeave
 
-A modern, real-time team communication platform built as a Slack alternative. Features a beautiful dark UI, real-time messaging, emoji reactions, and more.
+A modern, secure, and scalable team communication platform built with Next.js, Express, and Socket.io.
 
-![PulseWeave](./apps/frontend/public/assets/hero-mockup.png)
+## 🚀 Quick Start
 
-## Features
+```bash
+# Install dependencies
+pnpm install
 
-- **Real-time Messaging** - Instant delivery with Socket.io
-- **Channels & DMs** - Organize conversations by topic or 1:1
-- **RBAC & Admin Panel** - Roles, permissions, audit log, user management
-- **MFA (TOTP + WebAuthn)** - Authenticator apps, YubiKey/Passkeys, backup codes
-- **LDAP / SSO** - Directory-based login with auto-sync
-- **Advanced Security** - Rate limiting, IP blocking, account lockout, HSTS, CSRF readiness, security dashboard
-- **Emoji Reactions & Typing Indicators** - Expressive, real-time UX
-- **User Presence** - Online/away/busy/offline with quick status picker
-- **Modern UI** - Dark theme, responsive, mobile-friendly
+# Generate Prisma client
+pnpm db:generate
 
-## Tech Stack
+# Start development servers (frontend + backend)
+pnpm dev
 
-### Frontend
+# Frontend: http://localhost:9797
+# Backend: http://localhost:9090
+```
 
-- **Next.js 14** - React framework with App Router
-- **TailwindCSS** - Utility-first CSS
-- **Radix UI** - Accessible component primitives
-- **Zustand** - Lightweight state management
-- **Socket.io Client** - Real-time communication
+## 📋 Prerequisites
 
-### Backend
+- Node.js 20+
+- pnpm 10+
+- PostgreSQL 14+
 
-- **Node.js + Express** - API server
-- **Socket.io** - WebSocket server
-- **Prisma** - Type-safe ORM
-- **SQLite / PostgreSQL** - Database (SQLite default, PostgreSQL for scaling)
-- **JWT** - Authentication
+## 🏗️ Project Structure
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- pnpm (recommended) or npm - (winget install -e --id pnpm.pnpm)
-
-### Installation
-
-1. **Clone and install dependencies:**
-
-   ```bash
-   cd PulseWeave
-   pnpm install
-   ```
-
-2. **Set up the database:**
-
-   ```bash
-   # Backend env
-   cp apps/backend/.env.example apps/backend/.env
-
-   # Database env (Prisma)
-   cp packages/database/.env.example packages/database/.env
-   
-   pnpm db:generate
-   pnpm db:push
-   ```
-
-3. **Start the development servers:**
-
-   ```bash
-   pnpm dev
-   ```
-
-   This starts both:
-   - Frontend: <http://localhost:9797>
-   - Backend: <http://localhost:9090>
-
-### First Time Setup (Local)
-
-1. Open <http://localhost:9797>
-2. Click **Sign up** to create an account
-3. A default workspace and `#general` channel will be created
-4. Start chatting!
-
-### Configuration Checklist
-
-- **Ports**: frontend runs on **9797**, backend on **9090**. Update any reverse proxy accordingly.
-- **Database**: SQLite by default (`packages/database/.env`). For production, switch to PostgreSQL and run `pnpm db:generate && pnpm db:push`.
-- **Email (SMTP)**: configure in `apps/backend/.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`). If left empty, the backend logs emails to console (dev-friendly).
-- **Email Verification & Password Reset**: already wired to SMTP settings above. Verify links hit `NEXT_PUBLIC_API_URL` (9090 by default).
-- **Stripe**: set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET` in `apps/backend/.env`. Webhook endpoint: `POST /api/payments/webhook` (requires raw body). Billing portal: `POST /api/payments/create-portal-session`.
-- **Sentry (optional)**: set `SENTRY_DSN` in `apps/backend/.env` to enable backend error reporting.
-- **Cookie/Analytics consent**: frontend shows a GDPR-style consent banner; analytics only initialize if consent is granted.
-- **Health / Uptime banner**: frontend polls `/health` and shows a status banner when degraded/down.
-
-### How the first admin user is created
-
-- The **first account you register** automatically becomes **workspace owner** and gets the **owner/admin role** for the default workspace.
-- Owners can create additional workspaces, assign roles, and access the Admin Panel and Security Dashboard.
-- To invite more admins later, use the Admin Panel → Users tab and change their role to **admin** or **owner** (if allowed by your policy).
-
-## Troubleshooting
-
-- **P2025 / Record to update not found (sockets)**: This happens when the browser holds a stale JWT pointing to a deleted user (e.g., after wiping the DB). Fix by logging out/clearing storage and logging in again. The server also disconnects sockets when the user record is missing.
-- **Prisma client errors**: Ensure `packages/database/.env` matches your local DB path and run `pnpm db:push`.
-- **Next.js env issues**: Restart the frontend dev server after changing `.env.local`.
-
-## Project Structure
-
-```text
+```
 PulseWeave/
 ├── apps/
-│   ├── backend/          # Express + Socket.io API
-│   │   └── src/
-│   │       ├── routes/   # REST API routes
-│   │       ├── socket/   # WebSocket handlers
-│   │       └── middleware/
-│   └── frontend/         # Next.js app
-│       └── src/
-│           ├── app/      # Pages (App Router)
-│           ├── components/
-│           ├── lib/      # Utilities
-│           └── store/    # Zustand store
+│   ├── frontend/          # Next.js 16 (Turbopack)
+│   ├── backend/           # Express + Socket.io
+│   ├── desktop/           # Electron app
+│   └── mobile/            # React Native
 ├── packages/
-│   ├── database/         # Prisma schema & client
-│   └── types/            # Shared TypeScript types
-└── package.json          # Workspace root
+│   ├── database/          # Prisma schema & migrations
+│   └── types/             # Shared TypeScript types
+└── docs/                  # Documentation
 ```
 
-> SSL/TLS setup guide: see `docs/SSL.md`.
+## 📚 Documentation
 
-## Available Scripts
+- **[Best Practices](docs/BEST_PRACTICES.md)** - Developer guidelines & standards
+- **[API Conventions](docs/API_CONVENTIONS.md)** - How to make API calls correctly
+- **[Security Checklist](docs/SECURITY_CHECKLIST.md)** - Pre-production security tasks
+- **[Quick Wins](docs/QUICK_WINS.md)** - Improvement tracker
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start all dev servers |
-| `pnpm dev:frontend` | Start frontend only |
-| `pnpm dev:backend` | Start backend only |
-| `pnpm build` | Build all packages |
-| `pnpm db:generate` | Generate Prisma client |
-| `pnpm db:push` | Push schema to database |
-| `pnpm db:studio` | Open Prisma Studio |
+## 🛠️ Development
 
-## Environment Variables
+### Available Scripts
 
-### Backend (`apps/backend/.env`)
+```bash
+# Development
+pnpm dev                   # Start all services
+pnpm dev:frontend          # Frontend only
+pnpm dev:backend           # Backend only
 
-```env
-# Core
-PORT=9090
-NODE_ENV=development
-FRONTEND_URL=http://localhost:9797
+# Building
+pnpm build                 # Build all
+pnpm typecheck             # TypeScript validation
 
-# JWT
-JWT_SECRET=change-this-in-production
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_EXPIRES_IN=30d
+# Code Quality
+pnpm lint                  # Lint frontend + backend
+pnpm lint:frontend         # Lint frontend only
+pnpm lint:backend          # Lint backend only
 
-# SSL/TLS
-SSL_ENABLED=false
-SSL_KEY_PATH=./certs/server.key
-SSL_CERT_PATH=./certs/server.crt
-SSL_CA_PATH=./certs/ca.crt
-SSL_PORT=3443
-SSL_HTTP_REDIRECT=true
-SSL_MIN_VERSION=TLSv1.2
-
-# Cookies
-COOKIE_SECRET=change-this-cookie-secret
-
-# Security (lockout & IP blocking)
-ACCOUNT_MAX_FAILED_ATTEMPTS=5
-ACCOUNT_LOCKOUT_DURATION_MINUTES=15
-LOCKOUT_PROGRESSIVE_MULTIPLIER=2
-MAX_FAILED_ATTEMPTS=10
-IP_BLOCK_DURATION_MINUTES=30
-ATTEMPT_WINDOW_MINUTES=15
-
-# Rate limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-AUTH_RATE_LIMIT_MAX=10
-
-# LDAP (optional)
-LDAP_ENABLED=false
-LDAP_URL=ldap://localhost:389
-LDAP_BIND_DN=cn=admin,dc=example,dc=com
-LDAP_BIND_PASSWORD=your-bind-password
-LDAP_SEARCH_BASE=dc=example,dc=com
-LDAP_SEARCH_FILTER=(uid={{username}})
-LDAP_USERNAME_ATTR=uid
-LDAP_EMAIL_ATTR=mail
-LDAP_DISPLAY_NAME_ATTR=cn
-LDAP_GROUP_SEARCH_BASE=ou=groups,dc=example,dc=com
-LDAP_GROUP_SEARCH_FILTER=(member={{dn}})
-LDAP_ADMIN_GROUP=cn=admins,ou=groups,dc=example,dc=com
+# Database
+pnpm db:generate           # Generate Prisma client
+pnpm db:push               # Push schema changes
+pnpm db:migrate            # Run migrations
+pnpm db:studio             # Open Prisma Studio
 ```
 
-### Database (`packages/database/.env`)
+## 🔒 Security
 
-```env
-# SQLite (default - works great for small teams)
-DATABASE_URL="file:./dev.db"
+**CRITICAL**: Before deploying to production:
 
-# PostgreSQL (for scaling 100+ users)
-# DATABASE_URL="postgresql://user:password@localhost:5432/pulseweave?schema=public"
+1. Change `JWT_SECRET` in `apps/backend/.env`
+2. Change `COOKIE_SECRET` in `apps/backend/.env`
+3. Review `docs/SECURITY_CHECKLIST.md`
+
+See detailed security requirements in [SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md).
+
+## 🧪 Code Quality
+
+This project enforces:
+
+- ✅ **TypeScript strict mode** (frontend & backend)
+- ✅ **ESLint** with recommended rules
+- ✅ **No console.log** in production code
+- ✅ **Centralized environment config**
+
+Run checks before committing:
+
+```bash
+pnpm typecheck && pnpm lint && pnpm build
 ```
 
-> **Scaling Note:** SQLite works well for teams up to ~100 users. For larger deployments or horizontal scaling, switch to PostgreSQL. See `packages/database/.env.example` for instructions.
+## 🎯 Key Features
 
-### Frontend (`apps/frontend/.env.local`)
+- **Real-time messaging** with Socket.io
+- **End-to-end encryption** for DMs
+- **Advanced role management** (Owner, Admin, Moderator, Member)
+- **Multi-factor authentication** (TOTP, WebAuthn)
+- **Rich text editor** with markdown support
+- **Thread conversations**
+- **File uploads** with S3 support
+- **Push notifications**
+- **Dark mode** with multiple themes
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:9090
+## 🔧 Environment Variables
+
+Copy `.env.example` to `.env` in each app:
+
+```bash
+# Backend
+cp apps/backend/.env.example apps/backend/.env
+
+# Generate secure secrets
+openssl rand -base64 64  # JWT_SECRET
+openssl rand -base64 32  # COOKIE_SECRET
 ```
 
-## API Endpoints
+Required variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - JWT signing secret (64+ chars)
+- `COOKIE_SECRET` - Cookie signing secret (32+ chars)
+- `NEXT_PUBLIC_API_URL` - API endpoint for frontend
 
-### Authentication
+See `.env.example` files for complete list.
 
-- `POST /api/auth/register` - Create account (local)
-- `POST /api/auth/login` - Sign in (local, MFA-aware)
-- `POST /api/auth/ldap/login` - Sign in with LDAP
-- `GET /api/auth/config` - Auth capability flags (LDAP enabled?)
-- `GET /api/auth/me` - Get current user
+## 🏛️ Architecture
 
-### MFA
+### Tech Stack
 
-- `POST /api/mfa/totp/setup` - Generate TOTP secret + QR
-- `POST /api/mfa/totp/enable` - Verify + enable TOTP
-- `POST /api/mfa/totp/disable` - Disable TOTP (password required)
-- `POST /api/mfa/webauthn/register/options` - WebAuthn registration options
-- `POST /api/mfa/webauthn/register/verify` - Complete WebAuthn registration
-- `POST /api/mfa/webauthn/authenticate/options` - WebAuthn auth options
-- `POST /api/mfa/webauthn/authenticate/verify` - Complete WebAuthn auth
-- `GET /api/mfa/webauthn/credentials` - List credentials
-- `DELETE /api/mfa/webauthn/credentials/:id` - Remove credential
+**Frontend:**
+- Next.js 16 with Turbopack
+- React 19
+- TypeScript
+- Tailwind CSS
+- Radix UI components
+- Zustand for state management
 
-### Workspaces
+**Backend:**
+- Express.js
+- Socket.io
+- Prisma ORM
+- PostgreSQL
+- JWT authentication
+- Redis (optional, for sessions)
 
-- `GET /api/workspaces` - List user's workspaces
-- `GET /api/workspaces/:id` - Get workspace details
-- `POST /api/workspaces` - Create workspace
+**Security:**
+- Helmet.js for security headers
+- Rate limiting with express-rate-limit
+- Input sanitization
+- CORS protection
+- CSRF protection
 
-### Channels
+## 📖 Developer Guide
 
-- `GET /api/channels/:id` - Get channel details
-- `POST /api/channels` - Create channel
-- `POST /api/channels/:id/join` - Join channel
+### Making API Calls
 
-### Messages
+**Always use the centralized config:**
 
-- `GET /api/messages/channel/:channelId` - Get messages
-- `POST /api/messages` - Send message
-- `PATCH /api/messages/:id` - Edit message
-- `DELETE /api/messages/:id` - Delete message
-- `POST /api/messages/:id/reactions` - Add reaction
+```typescript
+// ✅ Correct
+import { API_URL } from '@/config/env';
 
-### Admin & Security
+// ❌ Wrong - don't duplicate process.env calls
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '...';
+```
 
-- `GET /api/admin/workspaces/:id/users` - List users with roles
-- `PATCH /api/admin/workspaces/:id/users/:userId/role` - Change user role
-- `POST /api/admin/workspaces/:id/users/:userId/ban` - Ban user
-- `POST /api/admin/workspaces/:id/users/:userId/unban` - Unban user
-- `GET /api/admin/workspaces/:id/audit-log` - Audit log
-- `GET /api/security/status` - Security status (SSL, failed logins, MFA adoption)
-- `GET /api/security/locked-accounts` - Locked/disabled accounts
-- `POST /api/security/unlock-account/:userId` - Unlock account
-- `POST /api/security/block-ip` - Block an IP
-- `GET /api/security/check-ip/:ip` - Check IP block status
+See [API_CONVENTIONS.md](docs/API_CONVENTIONS.md) for details.
 
-## WebSocket Events
+### Pre-Commit Checklist
 
-### Client → Server
+- [ ] `pnpm typecheck` passes
+- [ ] `pnpm lint` passes
+- [ ] `pnpm build` succeeds
+- [ ] No `console.log` statements
+- [ ] No hardcoded secrets
+- [ ] Tests pass (when available)
 
-- `workspace:join` - Join workspace room
-- `channel:join` - Join channel room
-- `channel:leave` - Leave channel room
-- `message:send` - Send message
-- `typing:start` - Start typing indicator
-- `typing:stop` - Stop typing indicator
-- `reaction:add` - Add reaction
-- `reaction:remove` - Remove reaction
+See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
 
-### Server → Client
+## 🤝 Contributing
 
-- `message:new` - New message received
-- `message:reaction` - Reaction added/removed
-- `user:typing` - User started typing
-- `user:typing:stop` - User stopped typing
-- `user:status` - User status changed
+1. Read [BEST_PRACTICES.md](docs/BEST_PRACTICES.md)
+2. Create a feature branch
+3. Make your changes
+4. Run quality checks: `pnpm typecheck && pnpm lint && pnpm build`
+5. Submit a pull request
 
-## License
+## 📝 License
 
-GNU AGPLv3
+AGPL-3.0
+
+## 🙏 Acknowledgments
+
+Built with modern best practices prioritizing:
+1. **Security** - Secure by default
+2. **Robustness** - Type-safe and tested
+3. **Scalability** - Built to grow
+4. **UX** - Fast and intuitive
+5. **Features** - Rich functionality

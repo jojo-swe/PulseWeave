@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
+import { API_URL } from '@/config/env';
 
 interface User {
   id: string;

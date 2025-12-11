@@ -1,7 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import { useStore } from '@/store';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
+import { API_URL } from '@/config/env';
+
+const SOCKET_URL = API_URL;
 
 let socket: Socket | null = null;
 
