@@ -147,3 +147,22 @@ Categories:
 - Search: 1 (pagination) - needs infinite scroll
 - Threads: 1 (sidebar view) - needs UI
 - Avatar: 1 (profile upload) - needs file upload wiring
+
+Session: 2025-12-11 (continued - avatar & MFA)
+Accomplished:
+- [x] Implemented avatar upload in settings page
+  - [x] Added file input with camera button trigger
+  - [x] Upload handling with validation (5MB, image only)
+  - [x] Automatic profile update on successful upload
+  - [x] Loading spinner during upload
+- [x] Marked Profile - Avatar Upload as passing
+- [x] Verified MFA Setup Flow already implemented
+  - SecuritySettings.tsx has full TOTP setup with QR code
+  - Backup codes, WebAuthn support
+- [x] Marked MFA Setup Flow as passing
+
+Final status: 3 failing tests remaining
+Categories:
+- MFA Login: 1 (needs auth flow to check MFA and show OTP prompt)
+- Search Pagination: 1 (needs infinite scroll in GlobalSearch)
+- Threads View: 1 (needs sidebar link to threads list)
