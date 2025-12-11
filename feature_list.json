@@ -799,7 +799,7 @@
       "Login with MFA enabled user",
       "Verify OTP prompt"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
