@@ -129,3 +129,21 @@ Categories:
 - Search: 1 (pagination)
 - Threads: 1 (sidebar view)
 - Avatar: 1 (profile upload)
+
+Session: 2025-12-11 (quick wins)
+Accomplished:
+- [x] Verified Billing already implemented (BillingSettings component, /settings?tab=billing)
+- [x] Marked Billing Subscription Page as passing
+- [x] Marked Stripe Checkout as passing
+- [x] Implemented drag-and-drop file upload in MessageInput
+- [x] Implemented paste image support in MessageInput
+- [x] Added visual feedback for dragging (dashed border)
+- [x] Marked Drag and Drop File as passing
+- [x] Marked Paste Image as passing
+
+Final status: 5 failing tests remaining
+Categories:
+- MFA: 2 (setup, login) - needs frontend integration
+- Search: 1 (pagination) - needs infinite scroll
+- Threads: 1 (sidebar view) - needs UI
+- Avatar: 1 (profile upload) - needs file upload wiring
