@@ -373,7 +373,7 @@
       "Navigate to /settings/billing",
       "Verify pricing tiers displayed"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -382,7 +382,7 @@
       "Click Upgrade",
       "Verify redirect to Stripe/RevenueCat"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
