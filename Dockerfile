@@ -5,7 +5,7 @@
 
 # Stage 1: Base dependencies
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat || apk add --no-cache gcompat
+RUN apk add --no-cache libc6-compat openssl wget || apk add --no-cache gcompat openssl wget
 WORKDIR /app
 
 # Install pnpm
@@ -67,6 +67,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apk add --no-cache openssl wget
+
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 pulseweave
@@ -80,6 +82,8 @@ COPY --from=backend-builder /app/apps/backend/node_modules ./apps/backend/node_m
 # Copy workspace packages referenced via pnpm symlinks
 COPY --from=backend-builder /app/packages/database/package.json ./packages/database/package.json
 COPY --from=backend-builder /app/packages/database/dist ./packages/database/dist
+COPY --from=backend-builder /app/packages/database/node_modules ./packages/database/node_modules
+COPY --from=backend-builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=backend-builder /app/packages/types/package.json ./packages/types/package.json
 COPY --from=backend-builder /app/packages/types/dist ./packages/types/dist
 
@@ -93,7 +97,7 @@ EXPOSE 9090
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:9090/health/live || exit 1
 
-CMD ["node", "apps/backend/dist/index.js"]
+CMD ["sh", "-c", "if [ \"${DB_PUSH_ON_START:-true}\" = \"true\" ]; then ./packages/database/node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma; fi; node apps/backend/dist/index.js"]
 
 # Stage 6: Production frontend image
 FROM node:20-alpine AS frontend
@@ -101,6 +105,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN apk add --no-cache wget
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
