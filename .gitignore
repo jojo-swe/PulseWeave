@@ -1,6 +1,5 @@
 ### Node / pnpm
 node_modules
-pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
@@ -50,8 +49,14 @@ uploads/
 .cache
 
 # Databases
-#dev.db
+dev.db
 prod.db
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 
 # IDE
 .idea

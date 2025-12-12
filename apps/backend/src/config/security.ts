@@ -162,10 +162,10 @@ export const jwtConfig = {
   audience: 'pulseweave-api',
   
   /** Access token expiry (short-lived) */
-  accessTokenExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
+  accessTokenExpiry: process.env.JWT_ACCESS_EXPIRY || process.env.JWT_EXPIRES_IN || '15m',
   
   /** Refresh token expiry (longer-lived) */
-  refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
+  refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRY || process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   
   /** Algorithm for signing */
   algorithm: 'HS256' as const,
@@ -215,11 +215,12 @@ const defaultAllowedOrigins = [
 
 export const corsConfig = {
   /** Allowed origins for CORS */
-  allowedOrigins: [
+  allowedOrigins: Array.from(new Set([
     ...defaultAllowedOrigins,
     ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(o => o.trim()) : []),
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : []),
-  ].filter(Boolean),
+  ].filter(Boolean))),
   
   /** Allowed HTTP methods */
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -257,7 +258,7 @@ export const rateLimitConfig = {
   /** General API rate limit */
   general: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX || (isProduction ? '200' : '1000')),
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || process.env.RATE_LIMIT_MAX || (isProduction ? '200' : '1000')),
   },
   
   /** Authentication endpoints rate limit (stricter) */

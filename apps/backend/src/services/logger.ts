@@ -138,7 +138,8 @@ export function logError(
 
   // Report to Sentry
   if (Sentry) {
-    Sentry.withScope((scope) => {
+    const sentry = Sentry;
+    sentry.withScope((scope) => {
       if (context?.userId) {
         scope.setUser({ id: context.userId });
       }
@@ -159,9 +160,7 @@ export function logError(
         scope.setTag('requestId', context.requestId);
       }
 
-    if (Sentry) {
-        Sentry.captureException(errorObj);
-      }
+      sentry.captureException(errorObj);
     });
   }
 }
@@ -175,7 +174,8 @@ export function captureMessage(
   context?: LogContext
 ): void {
   if (Sentry) {
-    Sentry.withScope((scope) => {
+    const sentry = Sentry;
+    sentry.withScope((scope) => {
       if (context?.userId) {
         scope.setUser({ id: context.userId });
       }
@@ -186,9 +186,8 @@ export function captureMessage(
           }
         });
       }
-      if (Sentry) {
-        Sentry.captureMessage(message, level);
-      }
+
+      sentry.captureMessage(message, level);
     });
   }
 }

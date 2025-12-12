@@ -52,7 +52,11 @@ export class StorageService {
         bucket: AWS_S3_BUCKET,
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: generateFilename,
-        metadata: (req: any, file, cb) => {
+        metadata: (
+          req: any,
+          file: Express.Multer.File,
+          cb: (error: Error | null, metadata?: Record<string, string>) => void
+        ) => {
           cb(null, {
             fieldName: file.fieldname,
             originalName: file.originalname,

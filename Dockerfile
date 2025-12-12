@@ -5,7 +5,7 @@
 
 # Stage 1: Base dependencies
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat || apk add --no-cache gcompat
 WORKDIR /app
 
 # Install pnpm

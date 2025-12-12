@@ -4,7 +4,8 @@
  */
 
 // API Configuration
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090';
+const DEFAULT_API_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:9090';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
 
 // Third-party Services
 export const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
@@ -19,20 +20,11 @@ export const IS_DEVELOPMENT = NODE_ENV === 'development';
 
 // Validate required environment variables in production
 if (IS_PRODUCTION) {
-  const required = {
-    NEXT_PUBLIC_API_URL: API_URL,
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: STRIPE_PUBLISHABLE_KEY,
-  };
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    console.warn('⚠️  NEXT_PUBLIC_API_URL is not set. Frontend will call the API using same-origin requests (requires a reverse proxy).');
+  }
 
-  const missing = Object.entries(required)
-    .filter(([_, value]) => !value || value === 'http://localhost:9090')
-    .map(([key]) => key);
-
-  if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:', missing.join(', '));
-    if (typeof window === 'undefined') {
-      // Server-side only - don't crash browser
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    }
+  if (!STRIPE_PUBLISHABLE_KEY) {
+    console.warn('⚠️  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set. Stripe features will be disabled.');
   }
 }

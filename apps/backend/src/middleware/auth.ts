@@ -34,8 +34,8 @@ const JWT_SECRET = (() => {
 
 const JWT_ISSUER = 'pulseweave';
 const JWT_AUDIENCE = 'pulseweave-api';
-const JWT_ACCESS_EXPIRY = '1d'; // Shorter expiry for access tokens
-const JWT_REFRESH_EXPIRY = '7d';
+const JWT_ACCESS_EXPIRY: jwt.SignOptions['expiresIn'] = (process.env.JWT_ACCESS_EXPIRY || process.env.JWT_EXPIRES_IN || '1d') as jwt.SignOptions['expiresIn']; // Shorter expiry for access tokens
+const JWT_REFRESH_EXPIRY: jwt.SignOptions['expiresIn'] = (process.env.JWT_REFRESH_EXPIRY || process.env.JWT_REFRESH_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
 
 export interface AuthRequest extends Request {
   userId?: string;

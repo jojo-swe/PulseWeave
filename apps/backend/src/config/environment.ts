@@ -98,6 +98,22 @@ export function loadEnvironment(): EnvConfig {
   const warnings: SecurityWarning[] = [];
   const errors: string[] = [];
 
+  if (!process.env.JWT_ACCESS_EXPIRY && process.env.JWT_EXPIRES_IN) {
+    process.env.JWT_ACCESS_EXPIRY = process.env.JWT_EXPIRES_IN;
+  }
+
+  if (!process.env.JWT_REFRESH_EXPIRY && process.env.JWT_REFRESH_EXPIRES_IN) {
+    process.env.JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRES_IN;
+  }
+
+  if (!process.env.RATE_LIMIT_MAX_REQUESTS && process.env.RATE_LIMIT_MAX) {
+    process.env.RATE_LIMIT_MAX_REQUESTS = process.env.RATE_LIMIT_MAX;
+  }
+
+  if (!process.env.CORS_ORIGINS && process.env.ALLOWED_ORIGINS) {
+    process.env.CORS_ORIGINS = process.env.ALLOWED_ORIGINS;
+  }
+
   // Set defaults for development
   if (!process.env.JWT_SECRET) {
     if (process.env.NODE_ENV === 'production') {
