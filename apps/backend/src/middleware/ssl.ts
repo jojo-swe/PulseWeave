@@ -106,13 +106,23 @@ export function requireHttps(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
+  const shouldEnforce = process.env.SSL_ENABLED === 'true' || process.env.BEHIND_PROXY === 'true';
+  if (!shouldEnforce) {
+    return next();
+  }
+
+  if (req.path === '/health' || req.path.startsWith('/health/') || req.path === '/metrics') {
+    return next();
+  }
+
   // Check if already HTTPS
   if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
     return next();
   }
 
   // Redirect to HTTPS
-  const httpsUrl = `https://${req.hostname}${req.url}`;
+  const host = req.get('host') || req.hostname;
+  const httpsUrl = `https://${host}${req.originalUrl}`;
   res.redirect(301, httpsUrl);
 }
 

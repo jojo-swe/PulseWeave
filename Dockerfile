@@ -32,7 +32,14 @@ COPY . .
 
 # Generate Prisma client
 WORKDIR /app/packages/database
-RUN pnpm db:generate
+RUN pnpm generate
+
+# Build workspace packages needed at runtime
+WORKDIR /app/packages/types
+RUN pnpm build
+
+WORKDIR /app/packages/database
+RUN pnpm build
 
 # Build backend
 WORKDIR /app/apps/backend
@@ -65,10 +72,16 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 pulseweave
 
 # Copy built backend
-COPY --from=backend-builder /app/apps/backend/dist ./dist
-COPY --from=backend-builder /app/apps/backend/package.json ./
-COPY --from=deps /app/apps/backend/node_modules ./node_modules
-COPY --from=backend-builder /app/packages/database/node_modules/.prisma ./node_modules/.prisma
+COPY --from=backend-builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=backend-builder /app/apps/backend/package.json ./apps/backend/package.json
+COPY --from=backend-builder /app/node_modules ./node_modules
+COPY --from=backend-builder /app/apps/backend/node_modules ./apps/backend/node_modules
+
+# Copy workspace packages referenced via pnpm symlinks
+COPY --from=backend-builder /app/packages/database/package.json ./packages/database/package.json
+COPY --from=backend-builder /app/packages/database/dist ./packages/database/dist
+COPY --from=backend-builder /app/packages/types/package.json ./packages/types/package.json
+COPY --from=backend-builder /app/packages/types/dist ./packages/types/dist
 
 # Create directories
 RUN mkdir -p uploads data && chown -R pulseweave:nodejs uploads data
@@ -80,7 +93,7 @@ EXPOSE 9090
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:9090/health/live || exit 1
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "apps/backend/dist/index.js"]
 
 # Stage 6: Production frontend image
 FROM node:20-alpine AS frontend

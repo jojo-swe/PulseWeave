@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+
     "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "dev:desktop": "pnpm --filter desktop dev",
     "dev:mobile": "pnpm --filter mobile start",
-    "build": "pnpm db:generate && pnpm --filter backend build && pnpm --filter frontend build",
+    "build": "pnpm db:generate && pnpm --filter types build && pnpm --filter database build && pnpm --filter backend build && pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build",
     "build:frontend": "pnpm --filter frontend build",
+
     "build:desktop": "pnpm --filter desktop build",
     "build:desktop:win": "pnpm --filter desktop dist:win",
     "build:desktop:mac": "pnpm --filter desktop dist:mac",

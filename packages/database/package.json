@@ -1,9 +1,10 @@
 {
   "name": "@pulseweave/database",
   "version": "1.0.0",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc",
     "generate": "prisma generate",
     "push": "prisma db push",
     "studio": "prisma studio",
@@ -15,6 +16,7 @@
     "@prisma/client": "^5.7.1"
   },
   "devDependencies": {
+    "@types/node": "^20.10.5",
     "prisma": "^5.7.1",
     "typescript": "^5.3.3"
   }
