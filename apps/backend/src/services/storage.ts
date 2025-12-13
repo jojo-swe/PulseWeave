@@ -163,12 +163,41 @@ export class StorageService {
    * Get public URL for file
    */
   static getFileUrl(filename: string): string {
-    if (STORAGE_DRIVER === 's3') {
-      return `https://${AWS_S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${filename}`;
-    }
-    
-    // Local URL
     return `${API_URL}/uploads/${filename}`;
+  }
+
+  /**
+   * Gets a readable stream for a stored file.
+   * Returns null if the file does not exist or cannot be accessed.
+   */
+  static async getFileStream(filename: string): Promise<Readable | null> {
+    if (STORAGE_DRIVER === 's3' && s3Client) {
+      try {
+        const response = await s3Client.send(
+          new GetObjectCommand({
+            Bucket: AWS_S3_BUCKET,
+            Key: filename,
+          })
+        );
+
+        if (!response.Body) return null;
+        return response.Body as Readable;
+      } catch (error) {
+        console.error('S3 Stream Error:', error);
+        return null;
+      }
+    }
+
+    try {
+      const filePath = path.join(uploadsDir, filename);
+      const resolvedPath = path.resolve(filePath);
+      if (!resolvedPath.startsWith(path.resolve(uploadsDir))) return null;
+      if (!fs.existsSync(resolvedPath)) return null;
+      return fs.createReadStream(resolvedPath);
+    } catch (error) {
+      console.error('Local Stream Error:', error);
+      return null;
+    }
   }
 
   static getDriver(): StorageDriver {

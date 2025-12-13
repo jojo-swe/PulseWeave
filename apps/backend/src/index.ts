@@ -29,8 +29,9 @@ import { friendRouter } from './routes/friend';
 import { notificationRouter } from './routes/notifications';
 import { initializeRbac } from './services/rbac';
 import path from 'path';
+import { StorageService } from './services/storage';
 import { setupSocketHandlers } from './socket';
-import { authenticateToken } from './middleware/auth';
+import { authenticateToken, type AuthRequest } from './middleware/auth';
 import { 
   generalLimiter, 
   authLimiter, 
@@ -233,8 +234,78 @@ app.use('/api/preferences', authenticateToken, preferencesRouter);
 app.use('/api/friends', authenticateToken, friendRouter);
 app.use('/api/notifications', authenticateToken, notificationRouter);
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Serve uploaded files with authentication
+app.get('/uploads/:filename', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const filename = req.params.filename;
+    if (!filename || path.basename(filename) !== filename) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    const attachment = await prisma.attachment.findFirst({
+      where: {
+        url: {
+          endsWith: `/${filename}`,
+        },
+      },
+    });
+
+    if (!attachment) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const membership = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: req.userId!,
+          workspaceId: attachment.workspaceId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Cache-Control', 'private, no-store');
+
+    if (attachment.mimeType) {
+      res.setHeader('Content-Type', attachment.mimeType);
+    }
+
+    if (attachment.size != null) {
+      res.setHeader('Content-Length', String(attachment.size));
+    }
+
+    const safeFileName = (attachment.name || filename)
+      .replace(/[\r\n"]/g, '')
+      .replace(/[\\/]/g, '_');
+
+    const isInline = attachment.mimeType?.startsWith('image/');
+    const dispositionType = isInline ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${dispositionType}; filename="${encodeURIComponent(safeFileName)}"`);
+
+    const stream = await StorageService.getFileStream(filename);
+    if (!stream) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    stream.on('error', (error) => {
+      console.error('File stream error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to read file' });
+      } else {
+        res.end();
+      }
+    });
+
+    stream.pipe(res);
+  } catch (error) {
+    console.error('File download error:', error);
+    res.status(500).json({ error: 'Failed to download file' });
+  }
+});
 
 // 404 handler for undefined routes
 app.use(notFoundHandler);

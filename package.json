@@ -46,5 +46,10 @@
     "cookie-parser": "^1.4.7",
     "pnpm": "^10.24.0"
   },
+  "pnpm": {
+    "overrides": {
+      "semver@^7.0.0": "7.7.3"
+    }
+  },
   "license": "AGPL-3.0"
 }

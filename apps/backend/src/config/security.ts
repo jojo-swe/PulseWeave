@@ -18,6 +18,9 @@ export const isProduction = process.env.NODE_ENV === 'production';
 export const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 export const isTest = process.env.NODE_ENV === 'test';
 
+const shouldUseSecureCookies =
+  isProduction && (process.env.SSL_ENABLED === 'true' || process.env.BEHIND_PROXY === 'true');
+
 // =============================================================================
 // Security Validation Errors
 // =============================================================================
@@ -184,7 +187,7 @@ export const cookieConfig = {
   /** Common cookie options */
   options: {
     httpOnly: true,
-    secure: isProduction,
+    secure: shouldUseSecureCookies,
     sameSite: 'lax' as const,
     path: '/',
   },
