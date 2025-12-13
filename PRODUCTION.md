@@ -22,13 +22,35 @@ Required environment variables:
 NODE_ENV=production
 JWT_SECRET=<generated-64-char-secret>
 COOKIE_SECRET=<generated-32-char-secret>
+FRONTEND_URL=https://your-domain.com
 CORS_ORIGINS=https://your-domain.com
-SSL_ENABLED=true
 USE_DB_SESSIONS=true
+
+# TLS enforcement / secure cookies (choose one)
+SSL_ENABLED=true           # Backend terminates TLS itself
+# BEHIND_PROXY=true        # TLS terminates at a reverse proxy (recommended)
+
+# Web Push (browser notifications)
+# VAPID_PUBLIC_KEY=<generated-vapid-public-key>
+# VAPID_PRIVATE_KEY=<generated-vapid-private-key>
 
 # Database (choose one)
 DATABASE_URL="file:./data/pulseweave.db"  # SQLite (small teams)
 # DATABASE_URL="postgresql://user:password@host:5432/pulseweave"  # PostgreSQL (scaling)
+```
+
+Frontend (apps/frontend) environment variables:
+
+```env
+NODE_ENV=production
+
+# If you deploy with a reverse proxy that routes /api and /socket.io to the backend,
+# you can omit these and rely on same-origin requests.
+NEXT_PUBLIC_API_URL=https://your-domain.com
+NEXT_PUBLIC_WS_URL=wss://your-domain.com
+
+# Web Push public key (must match backend VAPID_PUBLIC_KEY)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<generated-vapid-public-key>
 ```
 
 ### 2. Database Setup
@@ -384,6 +406,9 @@ pg_dump -h localhost -U postgres pulseweave > backup.sql
 ```
 
 ### File Uploads
+
+Uploads are served through the backend via an authenticated download route (`/uploads/:filename`).
+Do not expose the uploads directory as public static content.
 
 ```bash
 # Sync uploads to S3

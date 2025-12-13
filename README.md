@@ -26,7 +26,7 @@ pnpm dev
 
 ## 🏗️ Project Structure
 
-```
+```text
 PulseWeave/
 ├── apps/
 │   ├── frontend/          # Next.js 16 (Turbopack)
@@ -45,6 +45,8 @@ PulseWeave/
 - **[API Conventions](docs/API_CONVENTIONS.md)** - How to make API calls correctly
 - **[Security Checklist](docs/SECURITY_CHECKLIST.md)** - Pre-production security tasks
 - **[Quick Wins](docs/QUICK_WINS.md)** - Improvement tracker
+- **[Production Deployment](PRODUCTION.md)** - Production deployment + hardening guide
+- **[SSL / TLS Setup](docs/SSL.md)** - HTTPS configuration for backend and frontend
 
 ## 🛠️ Development
 
@@ -79,6 +81,7 @@ pnpm db:studio             # Open Prisma Studio
 - ✅ **Dependency vulnerabilities** patched (Next.js, semver, ip)
 - ✅ **Authenticated file serving** - uploads require valid session
 - ✅ **Path traversal protection** - file paths sanitized
+- ✅ **Socket.io authorization** - channel/workspace membership enforced for messages and reactions
 - ✅ **Secure cookies** - HttpOnly, SameSite, conditional Secure flag
 
 ### Before Deploying to Production

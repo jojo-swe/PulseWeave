@@ -10,17 +10,16 @@ Cross-platform mobile client for PulseWeave built with React Native and Expo.
 ## Development
 
 ```bash
-# Install dependencies
-cd apps/mobile
+# Install dependencies (from repo root)
 pnpm install
 
 # Start Expo development server
-pnpm start
+pnpm --filter mobile start
 
 # Run on specific platform
-pnpm ios       # iOS Simulator
-pnpm android   # Android Emulator
-pnpm web       # Web browser
+pnpm --filter mobile ios       # iOS Simulator
+pnpm --filter mobile android   # Android Emulator
+pnpm --filter mobile web       # Web browser
 ```
 
 ## Building for Production
@@ -107,9 +106,24 @@ Update `app.json` for your app:
 
 ## Push Notifications
 
+### Web app (browser)
+
+The web frontend uses Web Push via VAPID keys (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) and a service worker.
+
+### Mobile app (Expo)
+
+The mobile client uses `expo-notifications`, but server-side native push delivery via the Expo Push API is not wired up yet.
+
+If you want native push notifications for mobile:
+
 1. Configure push notification credentials in EAS
 2. Update `app.json` with your notification settings
-3. Set up your backend to send push notifications via Expo Push API
+3. Implement Expo Push token registration + delivery on the backend
+
+## Security / Dependency Notes
+
+- The repo uses `pnpm.overrides` to pin React Native CLI packages to versions that do not depend on the vulnerable `ip` package.
+- If you bump Expo/RN versions, re-run `pnpm audit` and re-verify the lockfile does not re-introduce `ip`.
 
 ## Server Configuration
 
