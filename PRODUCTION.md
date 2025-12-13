@@ -47,7 +47,13 @@ NODE_ENV=production
 # If you deploy with a reverse proxy that routes /api and /socket.io to the backend,
 # you can omit these and rely on same-origin requests.
 NEXT_PUBLIC_API_URL=https://your-domain.com
-NEXT_PUBLIC_WS_URL=wss://your-domain.com
+
+# Socket.io uses the same base URL as the API.
+# If you set NEXT_PUBLIC_API_URL to https://..., Socket.io will negotiate WSS automatically.
+
+# Billing (optional)
+# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<stripe-publishable-key>
+# NEXT_PUBLIC_REVENUECAT_API_KEY=<revenuecat-public-api-key>
 
 # Web Push public key (must match backend VAPID_PUBLIC_KEY)
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=<generated-vapid-public-key>

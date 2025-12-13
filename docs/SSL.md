@@ -8,13 +8,15 @@ This guide covers enabling HTTPS for the PulseWeave backend and serving the fron
    - Use a certificate from a trusted CA (e.g., Let's Encrypt) or your corporate PKI.
    - Place files where the backend can read them, and set the env vars below.
 2. **Self-signed certificate (dev only)**
-   - Run the helper script (requires OpenSSL in PATH):
+   - Generate a localhost certificate (requires OpenSSL in PATH):
 
    ```bash
-   pnpm --filter backend tsx src/middleware/ssl.ts
+   # From repo root
+   mkdir -p apps/backend/certs
+   openssl req -x509 -newkey rsa:4096 -keyout "apps/backend/certs/server.key" -out "apps/backend/certs/server.crt" -days 365 -nodes -subj "/CN=localhost"
    ```
 
-   - This generates `./certs/server.key` and `./certs/server.crt`.
+   - This generates `apps/backend/certs/server.key` and `apps/backend/certs/server.crt`.
    - Trust the self-signed cert on your OS so the browser accepts it.
 
 ## 2) Configure environment
@@ -37,7 +39,7 @@ FRONTEND_URL=https://localhost:3000
 
 ```bash
 # From repo root
-env SSL_ENABLED=true pnpm --filter backend dev
+pnpm --filter backend dev
 ```
 
 - Server listens on `https://localhost:3443` (or your SSL_PORT).

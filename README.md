@@ -134,6 +134,7 @@ openssl rand -base64 32  # COOKIE_SECRET
 ```
 
 Required variables:
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - JWT signing secret (64+ chars)
 - `COOKIE_SECRET` - Cookie signing secret (32+ chars)
@@ -146,6 +147,7 @@ See `.env.example` files for complete list.
 ### Tech Stack
 
 **Frontend:**
+
 - Next.js 16 with Turbopack
 - React 19
 - TypeScript
@@ -154,6 +156,7 @@ See `.env.example` files for complete list.
 - Zustand for state management
 
 **Backend:**
+
 - Express.js
 - Socket.io
 - Prisma ORM
@@ -162,6 +165,7 @@ See `.env.example` files for complete list.
 - Redis (optional, for sessions)
 
 **Security:**
+
 - Helmet.js for security headers
 - Rate limiting with express-rate-limit
 - Input sanitization
@@ -175,10 +179,10 @@ See `.env.example` files for complete list.
 **Always use the centralized config:**
 
 ```typescript
-// ✅ Correct
+// Correct
 import { API_URL } from '@/config/env';
 
-// ❌ Wrong - don't duplicate process.env calls
+// Wrong - don't duplicate process.env calls
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '...';
 ```
 
@@ -210,6 +214,7 @@ AGPL-3.0
 ## 🙏 Acknowledgments
 
 Built with modern best practices prioritizing:
+
 1. **Security** - Secure by default
 2. **Robustness** - Type-safe and tested
 3. **Scalability** - Built to grow
