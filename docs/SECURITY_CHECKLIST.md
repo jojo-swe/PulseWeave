@@ -1,5 +1,40 @@
 # Security Checklist
 
+## ✅ Completed Security Remediations
+
+### Dependency Vulnerabilities (Fixed)
+- [x] **Next.js** - Upgraded from 16.0.7/16.0.8 to 16.0.10 (CVE fixes)
+- [x] **semver** - Forced v7.x to 7.7.3 via pnpm.overrides (ReDoS fix - GHSA-c2qf-rxjj-qqgw)
+- [x] **ip** - Removed by upgrading `@react-native-community/cli-*` to 12.3.7 (CVE-2024-29415)
+
+### File Upload Security (Fixed)
+- [x] **Authenticated file serving** - Replaced public static `/uploads` with authenticated endpoint
+- [x] **Path traversal protection** - Added sanitization in `StorageService.getFileStream()`
+- [x] **Workspace authorization** - File downloads require valid session + workspace membership
+- [x] **Magic byte validation** - File uploads validated by content, not just extension
+
+### Cookie Security (Fixed)
+- [x] **Secure cookie flag** - Now depends on `SSL_ENABLED` or `BEHIND_PROXY` env vars
+- [x] **HttpOnly cookies** - Enabled for auth tokens
+- [x] **SameSite=Lax** - CSRF protection via cookie settings
+
+### Socket.IO Security (Fixed)
+- [x] **JWT authentication** - All connections require valid JWT with session validation
+- [x] **Session revocation checks** - Revoked sessions rejected on socket connect
+- [x] **Channel authorization** - Message sending requires workspace + channel membership
+- [x] **Reaction authorization** - Reactions require channel access verification
+- [x] **Input validation** - Message content length limits and type checking
+
+### Remaining Low-Severity Dependencies (Mobile Dev Only)
+These are low-severity vulnerabilities in Expo SDK 50 development dependencies:
+- `cookie` (<0.7.0) - via expo-router → @remix-run/node
+- `send` (<0.19.0) - via @expo/cli
+- `nodemailer` (≤7.0.10) - DoS in address parser
+
+**Risk Assessment**: These only affect mobile development tooling, not production deployments.
+
+---
+
 ## ❌ CRITICAL - Fix Before Production
 
 ### Secrets

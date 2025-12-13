@@ -48,7 +48,9 @@
   },
   "pnpm": {
     "overrides": {
-      "semver@^7.0.0": "7.7.3"
+      "semver@^7.0.0": "7.7.3",
+      "@react-native-community/cli-hermes": "12.3.7",
+      "@react-native-community/cli-doctor": "12.3.7"
     }
   },
   "license": "AGPL-3.0"

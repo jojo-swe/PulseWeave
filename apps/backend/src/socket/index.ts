@@ -161,14 +161,54 @@ export function setupSocketHandlers(io: Server) {
     // Handle new message
     socket.on('message:send', async (data: { channelId: string; content: string; parentId?: string }) => {
       try {
+        // Input validation
+        if (!data.channelId || typeof data.channelId !== 'string') {
+          socket.emit('error', { message: 'Invalid channel ID' });
+          return;
+        }
+        if (!data.content || typeof data.content !== 'string' || data.content.trim().length === 0) {
+          socket.emit('error', { message: 'Message content required' });
+          return;
+        }
+        if (data.content.length > 4000) {
+          socket.emit('error', { message: 'Message too long (max 4000 characters)' });
+          return;
+        }
+
         const channel = await prisma.channel.findUnique({
           where: { id: data.channelId },
-          select: { workspaceId: true },
+          select: { workspaceId: true, isPrivate: true },
         });
 
         if (!channel) {
           socket.emit('error', { message: 'Channel not found' });
           return;
+        }
+
+        // SECURITY: Verify user has access to send messages in this channel
+        const workspaceMembership = await prisma.workspaceMember.findUnique({
+          where: {
+            userId_workspaceId: { userId, workspaceId: channel.workspaceId },
+          },
+        });
+
+        if (!workspaceMembership) {
+          socket.emit('error', { message: 'Not a member of this workspace' });
+          return;
+        }
+
+        // For private channels, verify channel membership
+        if (channel.isPrivate) {
+          const channelMembership = await prisma.channelMember.findUnique({
+            where: {
+              userId_channelId: { userId, channelId: data.channelId },
+            },
+          });
+
+          if (!channelMembership) {
+            socket.emit('error', { message: 'Not a member of this private channel' });
+            return;
+          }
         }
 
         const message = await prisma.message.create({
@@ -223,12 +263,50 @@ export function setupSocketHandlers(io: Server) {
     // Handle reactions
     socket.on('reaction:add', async (data: { messageId: string; emoji: string }) => {
       try {
+        // Input validation
+        if (!data.messageId || typeof data.messageId !== 'string') {
+          socket.emit('error', { message: 'Invalid message ID' });
+          return;
+        }
+        if (!data.emoji || typeof data.emoji !== 'string' || data.emoji.length > 50) {
+          socket.emit('error', { message: 'Invalid emoji' });
+          return;
+        }
+
         const message = await prisma.message.findUnique({
           where: { id: data.messageId },
-          select: { workspaceId: true, channelId: true },
+          include: { channel: { select: { workspaceId: true, isPrivate: true } } },
         });
 
-        if (!message) return;
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // SECURITY: Verify user has access to the channel
+        const workspaceMembership = await prisma.workspaceMember.findUnique({
+          where: {
+            userId_workspaceId: { userId, workspaceId: message.channel.workspaceId },
+          },
+        });
+
+        if (!workspaceMembership) {
+          socket.emit('error', { message: 'Not a member of this workspace' });
+          return;
+        }
+
+        if (message.channel.isPrivate) {
+          const channelMembership = await prisma.channelMember.findUnique({
+            where: {
+              userId_channelId: { userId, channelId: message.channelId },
+            },
+          });
+
+          if (!channelMembership) {
+            socket.emit('error', { message: 'Not a member of this private channel' });
+            return;
+          }
+        }
 
         const reaction = await prisma.reaction.upsert({
           where: {
@@ -263,6 +341,17 @@ export function setupSocketHandlers(io: Server) {
 
     socket.on('reaction:remove', async (data: { messageId: string; emoji: string }) => {
       try {
+        // Input validation
+        if (!data.messageId || typeof data.messageId !== 'string') {
+          socket.emit('error', { message: 'Invalid message ID' });
+          return;
+        }
+        if (!data.emoji || typeof data.emoji !== 'string') {
+          socket.emit('error', { message: 'Invalid emoji' });
+          return;
+        }
+
+        // Only find reactions that belong to this user (prevents removing others' reactions)
         const reaction = await prisma.reaction.findUnique({
           where: {
             messageId_userId_emoji: {

@@ -74,11 +74,19 @@ pnpm db:studio             # Open Prisma Studio
 
 ## 🔒 Security
 
-**CRITICAL**: Before deploying to production:
+### Security Hardening Completed
+
+- ✅ **Dependency vulnerabilities** patched (Next.js, semver, ip)
+- ✅ **Authenticated file serving** - uploads require valid session
+- ✅ **Path traversal protection** - file paths sanitized
+- ✅ **Secure cookies** - HttpOnly, SameSite, conditional Secure flag
+
+### Before Deploying to Production
 
 1. Change `JWT_SECRET` in `apps/backend/.env`
 2. Change `COOKIE_SECRET` in `apps/backend/.env`
-3. Review `docs/SECURITY_CHECKLIST.md`
+3. Set `SSL_ENABLED=true` or `BEHIND_PROXY=true` for secure cookies
+4. Review `docs/SECURITY_CHECKLIST.md`
 
 See detailed security requirements in [SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md).
 
