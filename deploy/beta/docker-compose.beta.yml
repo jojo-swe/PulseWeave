@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    ports: []
+    expose:
+      - '9090'
+    environment:
+      - BEHIND_PROXY=true
+      - SSL_ENABLED=false
+      - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL is required}
+      - CORS_ORIGINS=${CORS_ORIGINS:?CORS_ORIGINS is required}
+
+  frontend:
+    ports: []
+    expose:
+      - '3000'
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required}
+
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - pulseweave-network
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

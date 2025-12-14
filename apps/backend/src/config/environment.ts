@@ -30,6 +30,7 @@ const envSchema = z.object({
 
   // SSL/TLS
   SSL_ENABLED: z.string().transform((v) => v === 'true').default('false'),
+  BEHIND_PROXY: z.string().transform((v) => v === 'true').default('false'),
   SSL_KEY_PATH: z.string().optional(),
   SSL_CERT_PATH: z.string().optional(),
   SSL_CA_PATH: z.string().optional(),
@@ -168,11 +169,11 @@ export function loadEnvironment(): EnvConfig {
     }
 
     // SSL check
-    if (!config.SSL_ENABLED) {
+    if (!config.SSL_ENABLED && !config.BEHIND_PROXY) {
       warnings.push({
         level: 'warn',
         message: 'SSL is not enabled',
-        recommendation: 'Enable SSL_ENABLED=true and configure certificates',
+        recommendation: 'Enable SSL_ENABLED=true and configure certificates, or set BEHIND_PROXY=true when terminating TLS in a reverse proxy',
       });
     }
 
@@ -204,6 +205,7 @@ export function loadEnvironment(): EnvConfig {
     nodeEnv: config.NODE_ENV,
     port: config.PORT,
     sslEnabled: config.SSL_ENABLED,
+    behindProxy: config.BEHIND_PROXY,
     dbSessions: config.USE_DB_SESSIONS,
   });
 

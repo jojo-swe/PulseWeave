@@ -1,0 +1,20 @@
+{$BETA_DOMAIN} {
+  encode gzip zstd
+
+  @api path /api/*
+  reverse_proxy @api backend:9090
+
+  @health path /health*
+  reverse_proxy @health backend:9090
+
+  @metrics path /metrics
+  reverse_proxy @metrics backend:9090
+
+  @socket path /socket.io/*
+  reverse_proxy @socket backend:9090
+
+  @uploads path /uploads/*
+  reverse_proxy @uploads backend:9090
+
+  reverse_proxy frontend:3000
+}
