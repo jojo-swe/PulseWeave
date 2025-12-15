@@ -205,3 +205,12 @@ Maintenance:
 Final count: 0 failing tests
 Total features: 200+
 All commits saved to master branch
+
+Session: 2025-12-15 (Git Repo Repair)
+- [x] Fixed HTTP 408 / RPC failed error during git push
+  - Identified 500MB+ of uncompressed build artifacts (apps/desktop/release) accidentally committed
+  - Performed mixed reset to origin/master to undo accidental commits while keeping work
+  - Updated .gitignore to exclude apps/desktop/release and apps/desktop/dist
+  - Re-committed valid changes (icon resources, scripts) without the binaries
+  - Successfully pushed to origin/master
+
