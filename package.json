@@ -1,23 +1,22 @@
 {
   "name": "pulseweave",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.26.0",
   "private": true,
   "scripts": {
-
     "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
-    "dev:desktop": "pnpm --filter desktop dev",
+    "dev:desktop": "pnpm --filter pulseweave-desktop dev",
     "dev:mobile": "pnpm --filter mobile start",
     "build": "pnpm db:generate && pnpm --filter types build && pnpm --filter database build && pnpm --filter backend build && pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build",
     "build:frontend": "pnpm --filter frontend build",
-
-    "build:desktop": "pnpm --filter desktop build",
-    "build:desktop:win": "pnpm --filter desktop dist:win",
-    "build:desktop:mac": "pnpm --filter desktop dist:mac",
-    "build:desktop:linux": "pnpm --filter desktop dist:linux",
-    "build:desktop:all": "pnpm --filter desktop dist:all",
+    "build:desktop": "pnpm --filter pulseweave-desktop build",
+    "build:desktop:win": "pnpm --filter pulseweave-desktop dist:win",
+    "build:desktop:mac": "pnpm --filter pulseweave-desktop dist:mac",
+    "build:desktop:linux": "pnpm --filter pulseweave-desktop dist:linux",
+    "build:desktop:all": "pnpm --filter pulseweave-desktop dist:all",
     "build:mobile:ios": "pnpm --filter mobile build:ios",
     "build:mobile:android": "pnpm --filter mobile build:android",
     "start": "concurrently \"pnpm start:backend\" \"pnpm start:frontend\"",
@@ -43,15 +42,19 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "cookie-parser": "^1.4.7",
-    "pnpm": "^10.24.0"
+    "cookie-parser": "^1.4.7"
   },
   "pnpm": {
     "overrides": {
       "semver@^7.0.0": "7.7.3",
       "@react-native-community/cli-hermes": "12.3.7",
       "@react-native-community/cli-doctor": "12.3.7"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "electron",
+      "sharp",
+      "unrs-resolver"
+    ]
   },
   "license": "AGPL-3.0"
 }
