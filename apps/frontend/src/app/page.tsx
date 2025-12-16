@@ -22,6 +22,24 @@ import { WelcomeGuide } from '@/components/onboarding/WelcomeGuide';
 import { UserProfileModal } from '@/components/chat/UserProfileModal';
 import { cn } from '@/lib/utils';
 
+const handleAuthError = (error: any) => {
+  const errorMsg = error?.message?.toLowerCase() || '';
+  if (
+    error?.status === 401 ||
+    error?.status === 403 ||
+    errorMsg.includes('token expired') ||
+    errorMsg.includes('unauthorized') ||
+    errorMsg.includes('jwt') ||
+    errorMsg.includes('access denied') ||
+    errorMsg.includes('revoked') ||
+    errorMsg.includes('authentication')
+  ) {
+    useStore.getState().logout();
+    return true;
+  }
+  return false;
+};
+
 export default function Home() {
   const router = useRouter();
   const {
@@ -183,22 +201,8 @@ export default function Home() {
           });
         }
       } catch (error: any) {
+        if (handleAuthError(error)) return;
         console.error('Failed to load data:', error);
-        // If auth failed, redirect to login
-        // Check for common auth error messages from the backend
-        const errorMsg = error.message?.toLowerCase() || '';
-        if (
-          errorMsg.includes('401') ||
-          errorMsg.includes('403') ||
-          errorMsg.includes('token') ||
-          errorMsg.includes('access') ||
-          errorMsg.includes('revoked') ||
-          errorMsg.includes('unauthorized') ||
-          errorMsg.includes('authentication')
-        ) {
-          router.push('/login');
-          return;
-        }
       } finally {
         setLoading(false);
       }
@@ -219,6 +223,7 @@ export default function Home() {
         // Clear unread when viewing channel
         useStore.getState().clearUnread(currentChannel.id);
       } catch (error) {
+        if (handleAuthError(error)) return;
         console.error('Failed to load messages:', error);
       }
     };
@@ -242,6 +247,7 @@ export default function Home() {
         // Clear unread when viewing conversation
         useStore.getState().clearDmUnread(currentConversation.id);
       } catch (error) {
+        if (handleAuthError(error)) return;
         console.error('Failed to load DM messages:', error);
       }
     };
@@ -258,6 +264,7 @@ export default function Home() {
         const conversations = await api.dm.list(currentWorkspace.id, token || '');
         setConversations(conversations);
       } catch (error) {
+        if (handleAuthError(error)) return;
         console.error('Failed to load conversations:', error);
       }
     };

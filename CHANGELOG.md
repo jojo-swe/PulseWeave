@@ -31,3 +31,15 @@ All notable changes to the "PulseWeave" project will be documented in this file.
 
 ### Changed
 - Refactored `app_spec.txt` from a generic "Claude Clone" template to a specific "PulseWeave" SaaS specification.
+
+## [Unreleased] - 2025-12-16
+### Added
+- **UX/UI Overhaul**: Introduced 'Obsidian' design system with deep blue-black theme and vibrant electric indigo highlights.
+- **Micro-interactions**: Added spring animations to Command Palette and Message list using framer-motion.
+- **Glassmorphism**: Enhanced UI depth with refined glass panels and glowing borders.
+
+### Changed
+- Refactored global color palette variables in globals.css.
+- Updated CommandPalette and ChatArea components to support new motion engine.
+- Fixed build errors in ChatArea and CommandPalette by resolving missing dependencies and type mismatches.
+- Fixed 'Token expired' runtime handling by auto-redirecting to login when the session becomes invalid.

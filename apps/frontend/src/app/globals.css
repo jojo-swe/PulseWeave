@@ -170,12 +170,42 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@layer utilities {
+  /* Minimal Scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
-  body {
-    @apply bg-background text-foreground;
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border/50 hover:bg-border rounded-full transition-colors;
+  }
+
+  /* Glassmorphism Utilities */
+  .glass {
+    @apply bg-white/70 dark:bg-[#0f172a]/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-sm supports-[backdrop-filter]:bg-opacity-60;
+  }
+  
+  .glass-panel {
+    @apply bg-card/40 backdrop-blur-md border border-border/50;
+  }
+
+  /* Glow Effects */
+  .glow-sm {
+    box-shadow: 0 0 10px -2px hsl(var(--primary) / 0.3);
+  }
+  .glow-md {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.4);
+  }
+  .glow-lg {
+    box-shadow: 0 0 30px -10px hsl(var(--primary) / 0.5);
+  }
+  
+  /* Text Glow */
+  .text-glow {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
   }
 }
 

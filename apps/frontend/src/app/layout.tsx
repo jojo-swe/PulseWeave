@@ -68,6 +68,7 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        <div className="fixed inset-0 z-[-1] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-background to-background pointer-events-none opacity-80" />
         <Providers>{children}</Providers>
       </body>
     </html>
