@@ -29,7 +29,7 @@
 These are low-severity vulnerabilities in Expo SDK 50 development dependencies:
 - `cookie` (<0.7.0) - via expo-router → @remix-run/node
 - `send` (<0.19.0) - via @expo/cli
-- `nodemailer` (≤7.0.10) - DoS in address parser
+- `nodemailer` (≤7.0.12) - DoS in address parser
 
 **Risk Assessment**: These only affect mobile development tooling, not production deployments.
 
