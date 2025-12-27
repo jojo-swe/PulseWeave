@@ -120,9 +120,9 @@ export function requireHttps(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
-  // Redirect to HTTPS
-  const host = req.get('host') || req.hostname;
-  const httpsUrl = `https://${host}${req.originalUrl}`;
+  const rawHost = req.get('host') || '';
+  const safeHost = /^[a-zA-Z0-9.-]+(:\d+)?$/.test(rawHost) ? rawHost : req.hostname || 'localhost';
+  const httpsUrl = new URL(req.originalUrl, `https://${safeHost}`).toString();
   res.redirect(301, httpsUrl);
 }
 
