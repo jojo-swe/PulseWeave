@@ -89,7 +89,7 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
   };
 
   return (
-    <div className="flex h-full w-full flex-col text-sidebar-foreground border-r border-white/5 bg-black/10 backdrop-blur-md">
+    <div className="flex h-full w-full flex-col text-sidebar-foreground glass-sidebar">
       {/* Workspace Header */}
       <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
         <button className="flex items-center gap-2 font-semibold hover:bg-sidebar-accent rounded px-2 py-1 transition-colors">

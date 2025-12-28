@@ -87,10 +87,10 @@ export function ChatArea({
   );
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden bg-background/50 backdrop-blur-sm relative">
+    <div className="flex-1 flex h-full overflow-hidden bg-background/30 backdrop-blur-lg relative">
       <div className="flex-1 flex flex-col min-w-0">
         {/* Channel Header */}
-        <div className="h-14 px-4 border-b border-border/40 flex items-center justify-between bg-background/40 backdrop-blur-md sticky top-0 z-10">
+        <div className="h-14 px-4 border-b border-white/5 flex items-center justify-between bg-background/20 backdrop-blur-md sticky top-0 z-10 glass-header">
           <div className="flex items-center gap-2">
             {onToggleSidebar && (
               <Button variant="ghost" size="icon" className="md:hidden mr-2" onClick={onToggleSidebar}>
@@ -199,10 +199,10 @@ export function ChatArea({
                         </div>
 
                         <div
-                          className={`relative px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                          className={`relative px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
                             isCurrentUser
-                              ? "bg-primary text-primary-foreground rounded-tr-sm bg-gradient-to-br from-primary to-primary/90"
-                              : "bg-card border border-border/50 text-card-foreground rounded-tl-sm hover:border-border/80"
+                              ? "bg-primary/80 backdrop-blur-md text-primary-foreground rounded-tr-sm border border-white/10"
+                              : "glass-card rounded-tl-sm"
                           }`}
                         >
                           <p>{msg.content}</p>

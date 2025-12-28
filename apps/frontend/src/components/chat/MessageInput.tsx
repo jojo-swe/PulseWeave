@@ -429,8 +429,8 @@ export function MessageInput({
     >
       <div
         className={cn(
-          'rounded-xl border bg-background shadow-sm transition-colors',
-          'focus-within:border-primary focus-within:ring-1 focus-within:ring-primary',
+          'rounded-xl glass-card transition-colors',
+          'focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50',
           isDragging && 'border-primary border-dashed bg-primary/5'
         )}
       >

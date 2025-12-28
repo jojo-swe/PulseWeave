@@ -46,45 +46,45 @@
     --sidebar-accent: 262 50% 45%;
   }
 
-  /* Dark mode - PulseWeave Refined Theme */
+  /* Dark mode - PulseWeave Modern Glass */
   .dark {
-    /* Main Background: Rich dark with subtle blue undertone */
-    --background: 224 30% 11%;
-    --foreground: 210 40% 96%;
+    /* Main Background: Deep rich blue-black */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
 
-    /* Cards: Elevated surfaces */
-    --card: 224 28% 14%;
-    --card-foreground: 210 40% 96%;
+    /* Cards: Glassy feel */
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 224 28% 14%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    /* Primary: Vibrant violet */
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Electric Blue/Indigo */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
 
-    /* Secondary: Subtle elevated surface */
-    --secondary: 224 24% 18%;
-    --secondary-foreground: 210 40% 96%;
+    /* Secondary: Deep translucent layer */
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 224 24% 18%;
-    --muted-foreground: 215 16% 60%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    /* Accent: Soft violet glow */
-    --accent: 262 40% 22%;
-    --accent-foreground: 210 40% 96%;
+    /* Accent: Glowing blue */
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 224 20% 20%;
-    --input: 224 24% 18%;
-    --ring: 262 83% 58%;
+    --border: 217 33% 20%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
 
-    /* Sidebar: Darker glass pane */
-    --sidebar: 224 32% 10%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-accent: 262 40% 20%;
+    /* Sidebar: Translucent dark layer */
+    --sidebar: 222 47% 8%; /* Darker than background */
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-accent: 217 33% 20%;
   }
 
   /* Corporate theme - Clean, professional with muted purple */
@@ -185,11 +185,11 @@
 
   /* Glassmorphism Utilities */
   .glass {
-    @apply bg-white/70 dark:bg-[#0f172a]/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-sm supports-[backdrop-filter]:bg-opacity-60;
+    @apply bg-white/70 dark:bg-[#0f172a]/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-sm supports-[backdrop-filter]:bg-opacity-60;
   }
   
   .glass-panel {
-    @apply bg-card/40 backdrop-blur-md border border-border/50;
+    @apply bg-card/60 backdrop-blur-md border border-white/5 shadow-xl;
   }
 
   /* Glow Effects */
@@ -212,11 +212,23 @@
 /* Background image only for dark themes (class is on html element) */
 html.dark body,
 html.midnight body {
-  background-image: url('/assets/app-background.png');
-  background-size: cover;
-  background-position: center;
+  /* Using a CSS gradient as a fallback/primary background for cleanliness if image missing */
+  background: radial-gradient(circle at top left, #1a2333 0%, #0f1117 100%);
   background-attachment: fixed;
-  background-repeat: no-repeat;
+}
+html.dark body::before,
+html.midnight body::before {
+   /* Add a subtle blob or noise here if needed, but let's keep it simple for now */
+   content: '';
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100vw;
+   height: 100vh;
+   background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+               radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+   pointer-events: none;
+   z-index: -1;
 }
 
 /* Light themes use solid background */
@@ -315,62 +327,33 @@ html.corporate body {
   animation: scaleIn 0.15s ease-out;
 }
 
-/* Glassmorphism Utilities */
+/* Improved Glassmorphism Utilities */
 .glass {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.4));
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08); /* More subtle border */
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-  /* Noise Texture Overlay */
-  position: relative;
-}
-
-.glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.07;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  border-radius: inherit;
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(30, 41, 59, 0.5));
-  backdrop-filter: blur(16px); /* Stronger blur */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-  position: relative;
-  overflow: hidden; /* Ensure noise doesn't spill */
-  color: white; /* Ensure text is readable */
-}
-
-.glass-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  pointer-events: none;
+  background: rgba(30, 41, 59, 0.25);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08); /* More visible border */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 1rem; /* Rounded corners */
 }
 
 .glass-sidebar {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.8));
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  position: relative;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.glass-sidebar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  pointer-events: none;
+.glass-header {
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
 }
 
 /* Prose overrides for markdown */
