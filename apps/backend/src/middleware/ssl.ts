@@ -17,6 +17,24 @@ export interface SslConfig {
   minVersion?: string;
 }
 
+const HOST_PATTERN = /^[a-zA-Z0-9.-]+$/;
+
+function normalizeHost(value: string | undefined): string {
+  const host = (value || '').trim().replace(/:\d+$/, '').toLowerCase();
+  return HOST_PATTERN.test(host) ? host : '';
+}
+
+function pickSafeHost(rawHost: string | undefined, allowedHosts: string[], canonicalHost: string): string {
+  const normalized = normalizeHost(rawHost);
+  const safeCanonical = normalizeHost(canonicalHost) || 'localhost';
+
+  if (allowedHosts.length === 0) {
+    return safeCanonical;
+  }
+
+  return allowedHosts.includes(normalized) ? normalized : safeCanonical;
+}
+
 /**
  * Gets SSL configuration from environment variables.
  */
@@ -89,8 +107,16 @@ export function createHttpsServer(
  */
 export function createHttpRedirectServer(httpsPort: number): http.Server {
   return http.createServer((req, res) => {
-    const host = req.headers.host?.replace(/:\d+$/, '') || 'localhost';
-    const redirectUrl = `https://${host}:${httpsPort}${req.url}`;
+    const canonicalHost = process.env.CANONICAL_HOST || 'localhost';
+    const allowedHosts = (process.env.ALLOWED_REDIRECT_HOSTS || '')
+      .split(',')
+      .map((h) => normalizeHost(h))
+      .filter(Boolean);
+
+    const rawHost = req.headers.host;
+    const safeHost = pickSafeHost(rawHost, allowedHosts, canonicalHost);
+    const path = (req.url || '/').startsWith('/') ? req.url || '/' : `/${req.url || ''}`;
+    const redirectUrl = new URL(path, `https://${safeHost}:${httpsPort}`).toString();
     
     res.writeHead(301, { Location: redirectUrl });
     res.end();
@@ -123,15 +149,12 @@ export function requireHttps(req: Request, res: Response, next: NextFunction) {
   const canonicalHost = process.env.CANONICAL_HOST || 'localhost';
   const allowedHosts = (process.env.ALLOWED_REDIRECT_HOSTS || '')
     .split(',')
-    .map((h) => h.trim())
+    .map((h) => normalizeHost(h))
     .filter(Boolean);
-
-  const isValidHost = (value: string): boolean =>
-    /^[a-zA-Z0-9.-]+(:\d+)?$/.test(value) && (allowedHosts.length === 0 || allowedHosts.includes(value));
-
-  const rawHost = req.get('host') || '';
-  const safeHost = isValidHost(rawHost) ? rawHost : canonicalHost;
-  const httpsUrl = new URL(req.originalUrl, `https://${safeHost}`).toString();
+  const rawHostHeader = req.get('host') || req.headers['x-forwarded-host']?.toString();
+  const safeHost = pickSafeHost(rawHostHeader, allowedHosts, canonicalHost);
+  const path = (req.originalUrl || '/').startsWith('/') ? req.originalUrl || '/' : `/${req.originalUrl || ''}`;
+  const httpsUrl = new URL(path, `https://${safeHost}`).toString();
   res.redirect(301, httpsUrl);
 }
 

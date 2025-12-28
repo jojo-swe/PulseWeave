@@ -1,7 +1,7 @@
 ---
 description: SonarQube MCP Server usage guidelines
-globs:
 alwaysApply: true
+trigger: always_on
 ---
 
 These are some guidelines when using the SonarQube MCP server.
