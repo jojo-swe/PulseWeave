@@ -3,6 +3,7 @@ import https from 'https';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../utils/logger';
 
 /**
  * SSL/TLS Configuration.
@@ -196,13 +197,11 @@ export async function generateSelfSignedCert(outputDir: string = './certs'): Pro
 
   try {
     await execAsync(command);
-    console.log('Self-signed certificate generated successfully');
-    console.log(`Key: ${keyPath}`);
-    console.log(`Certificate: ${certPath}`);
+    logger.info('Self-signed certificate generated successfully', { keyPath, certPath });
     return true;
   } catch (error) {
-    console.error('Failed to generate self-signed certificate:', error);
-    console.log('Make sure openssl is installed and in your PATH');
+    logger.error('Failed to generate self-signed certificate', { error, outputDir });
+    logger.warn('Make sure openssl is installed and in your PATH');
     return false;
   }
 }
