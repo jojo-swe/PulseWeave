@@ -120,8 +120,17 @@ export function requireHttps(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
+  const canonicalHost = process.env.CANONICAL_HOST || 'localhost';
+  const allowedHosts = (process.env.ALLOWED_REDIRECT_HOSTS || '')
+    .split(',')
+    .map((h) => h.trim())
+    .filter(Boolean);
+
+  const isValidHost = (value: string): boolean =>
+    /^[a-zA-Z0-9.-]+(:\d+)?$/.test(value) && (allowedHosts.length === 0 || allowedHosts.includes(value));
+
   const rawHost = req.get('host') || '';
-  const safeHost = /^[a-zA-Z0-9.-]+(:\d+)?$/.test(rawHost) ? rawHost : req.hostname || 'localhost';
+  const safeHost = isValidHost(rawHost) ? rawHost : canonicalHost;
   const httpsUrl = new URL(req.originalUrl, `https://${safeHost}`).toString();
   res.redirect(301, httpsUrl);
 }
