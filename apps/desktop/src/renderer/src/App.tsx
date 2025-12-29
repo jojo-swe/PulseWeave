@@ -8,7 +8,7 @@ import { useStore } from './store';
  * Main application component.
  */
 function App(): JSX.Element {
-  const { token, serverUrl } = useStore();
+  const { token } = useStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,17 +19,17 @@ function App(): JSX.Element {
 
   if (loading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-400 text-sm">Loading PulseWeave...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading PulseWeave...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-zinc-950 text-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
       <TitleBar />
       <main className="flex-1 overflow-hidden">
         {token ? <Chat /> : <Login />}

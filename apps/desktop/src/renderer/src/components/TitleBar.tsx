@@ -25,33 +25,33 @@ export function TitleBar(): JSX.Element {
   const handleClose = () => window.api?.closeWindow();
 
   return (
-    <div className="h-10 bg-zinc-900 flex items-center justify-between select-none app-drag border-b border-zinc-800">
+    <div className="h-10 bg-secondary flex items-center justify-between select-none app-drag border-b border-border">
       {/* App title */}
       <div className="flex items-center gap-2 px-4">
         <div className="w-5 h-5 rounded bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
           <span className="text-white text-xs font-bold">P</span>
         </div>
-        <span className="text-sm font-medium text-zinc-300">PulseWeave</span>
+        <span className="text-sm font-medium text-foreground">PulseWeave</span>
       </div>
 
       {/* Window controls */}
       <div className="flex items-center app-no-drag">
         <button
           onClick={handleMinimize}
-          className="h-10 w-12 flex items-center justify-center hover:bg-zinc-700 transition-colors"
+          className="h-10 w-12 flex items-center justify-center hover:bg-accent transition-colors"
           title="Minimize"
         >
-          <Minus className="w-4 h-4 text-zinc-400" />
+          <Minus className="w-4 h-4 text-muted-foreground" />
         </button>
         <button
           onClick={handleMaximize}
-          className="h-10 w-12 flex items-center justify-center hover:bg-zinc-700 transition-colors"
+          className="h-10 w-12 flex items-center justify-center hover:bg-accent transition-colors"
           title={isMaximized ? 'Restore' : 'Maximize'}
         >
           {isMaximized ? (
-            <Copy className="w-3.5 h-3.5 text-zinc-400" />
+            <Copy className="w-3.5 h-3.5 text-muted-foreground" />
           ) : (
-            <Square className="w-3.5 h-3.5 text-zinc-400" />
+            <Square className="w-3.5 h-3.5 text-muted-foreground" />
           )}
         </button>
         <button
@@ -59,7 +59,7 @@ export function TitleBar(): JSX.Element {
           className="h-10 w-12 flex items-center justify-center hover:bg-red-600 transition-colors"
           title="Close"
         >
-          <X className="w-4 h-4 text-zinc-400" />
+          <X className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
     </div>

@@ -1,7 +1,7 @@
 {
   "name": "pulseweave",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.26.0",
+  "packageManager": "pnpm@10.26.2",
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",

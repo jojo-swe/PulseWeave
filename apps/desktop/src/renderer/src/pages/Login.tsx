@@ -52,21 +52,21 @@ export function Login(): JSX.Element {
   };
 
   return (
-    <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+    <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-background via-secondary to-background">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-4">
             <Zap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Welcome to PulseWeave</h1>
-          <p className="text-zinc-400 mt-2">Sign in to your account</p>
+          <h1 className="text-2xl font-bold text-foreground">Welcome to PulseWeave</h1>
+          <p className="text-muted-foreground mt-2">Sign in to your account</p>
         </div>
 
         {/* Server config toggle */}
         <button
           onClick={() => setShowServerConfig(!showServerConfig)}
-          className="w-full flex items-center justify-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 mb-4 transition-colors"
+          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
         >
           <Server className="w-4 h-4" />
           {showServerConfig ? 'Hide server settings' : 'Configure server'}
@@ -74,8 +74,8 @@ export function Login(): JSX.Element {
 
         {/* Server config */}
         {showServerConfig && (
-          <div className="mb-6 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
+          <div className="mb-6 p-4 rounded-xl bg-card border border-border">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Server URL
             </label>
             <div className="flex gap-2">
@@ -84,16 +84,16 @@ export function Login(): JSX.Element {
                 value={tempServerUrl}
                 onChange={(e) => setTempServerUrl(e.target.value)}
                 placeholder="http://localhost:9090"
-                className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm"
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
               />
               <button
                 onClick={handleSaveServer}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
               >
                 Save
               </button>
             </div>
-            <p className="text-xs text-zinc-500 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Current: {serverUrl}
             </p>
           </div>
@@ -108,7 +108,7 @@ export function Login(): JSX.Element {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Email
             </label>
             <input
@@ -117,12 +117,12 @@ export function Login(): JSX.Element {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Password
             </label>
             <input
@@ -131,7 +131,7 @@ export function Login(): JSX.Element {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
@@ -151,7 +151,7 @@ export function Login(): JSX.Element {
           </button>
         </form>
 
-        <p className="text-center text-zinc-500 text-sm mt-6">
+        <p className="text-center text-muted-foreground text-sm mt-6">
           Don't have an account?{' '}
           <span className="text-violet-400">Contact your admin</span>
         </p>
