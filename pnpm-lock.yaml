@@ -176,10 +176,10 @@ importers:
     dependencies:
       '@electron-toolkit/preload':
         specifier: ^3.0.0
-        version: 3.0.2(electron@28.3.3)
+        version: 3.0.2(electron@35.7.5)
       '@electron-toolkit/utils':
         specifier: ^3.0.0
-        version: 3.0.0(electron@28.3.3)
+        version: 3.0.0(electron@35.7.5)
       electron-updater:
         specifier: ^6.1.7
         version: 6.6.2
@@ -203,8 +203,8 @@ importers:
         specifier: ^10.4.16
         version: 10.4.22(postcss@8.5.6)
       electron:
-        specifier: ^28.3.3
-        version: 28.3.3
+        specifier: ^35.7.5
+        version: 35.7.5
       electron-builder:
         specifier: ^24.9.1
         version: 24.13.3(electron-builder-squirrel-windows@24.13.3)
@@ -1934,7 +1934,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {'0': node >=0.10.0}
+    engines: {node: '>=0.10.0'}
 
   '@expo/cli@0.17.13':
     resolution: {integrity: sha512-n13yxOmI3I0JidzMdFCH68tYKGDtK4XlDFk1vysZX7AIRKeDVRsSbHhma5jCla2bDt25RKmJBHA9KtzielwzAA==}
@@ -4078,9 +4078,6 @@ packages:
   '@types/node@16.9.1':
     resolution: {integrity: sha512-QpLcX9ZSsq3YYUUnD3nFDY8H7wctAhQj/TFKL8Ya8v5fMm3CFXxo8zStsLAl780ltoYoo1WvKUVGBQK+1ifr7g==}
 
-  '@types/node@18.19.130':
-    resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
-
   '@types/node@20.19.25':
     resolution: {integrity: sha512-ZsJzA5thDQMSQO788d7IocwwQbI8B5OPzmqNvpf3NY/+MHDAS759Wo0gd2WQeXYt5AAAQjzcrTVC6SKCuYgoCQ==}
 
@@ -5494,8 +5491,8 @@ packages:
       '@swc/core':
         optional: true
 
-  electron@28.3.3:
-    resolution: {integrity: sha512-ObKMLSPNhomtCOBAxFS8P2DW/4umkh72ouZUlUKzXGtYuPzgr1SYhskhFWgzAsPtUzhL2CzyV2sfbHcEW4CXqw==}
+  electron@35.7.5:
+    resolution: {integrity: sha512-dnL+JvLraKZl7iusXTVTGYs10TKfzUi30uEDTqsmTm0guN9V2tbOjTzyIZbh9n3ygUjgEYyo+igAwMRXIi3IPw==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -8995,9 +8992,6 @@ packages:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
 
-  undici-types@5.26.5:
-    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
-
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
@@ -11241,17 +11235,17 @@ snapshots:
     dependencies:
       '@types/hammerjs': 2.0.46
 
-  '@electron-toolkit/preload@3.0.2(electron@28.3.3)':
+  '@electron-toolkit/preload@3.0.2(electron@35.7.5)':
     dependencies:
-      electron: 28.3.3
+      electron: 35.7.5
 
   '@electron-toolkit/tsconfig@1.0.1(@types/node@20.19.25)':
     dependencies:
       '@types/node': 20.19.25
 
-  '@electron-toolkit/utils@3.0.0(electron@28.3.3)':
+  '@electron-toolkit/utils@3.0.0(electron@35.7.5)':
     dependencies:
-      electron: 28.3.3
+      electron: 35.7.5
 
   '@electron/asar@3.4.1':
     dependencies:
@@ -14594,10 +14588,6 @@ snapshots:
 
   '@types/node@16.9.1': {}
 
-  '@types/node@18.19.130':
-    dependencies:
-      undici-types: 5.26.5
-
   '@types/node@20.19.25':
     dependencies:
       undici-types: 6.21.0
@@ -16292,10 +16282,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@28.3.3:
+  electron@35.7.5:
     dependencies:
       '@electron/get': 2.0.3
-      '@types/node': 18.19.130
+      '@types/node': 22.19.3
       extract-zip: 2.0.1
     transitivePeerDependencies:
       - supports-color
@@ -20578,8 +20568,6 @@ snapshots:
       has-bigints: 1.1.0
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
-
-  undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
 
