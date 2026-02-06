@@ -14,6 +14,7 @@ declare global {
       onUpdateAvailable: (callback: (info: any) => void) => void;
       onUpdateDownloaded: (callback: (info: any) => void) => void;
       onUpdateError: (callback: (error: string) => void) => void;
+      setBadgeCount: (count: number) => void;
       platform: string;
     };
   }

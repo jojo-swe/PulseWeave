@@ -131,11 +131,6 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   app.setAppUserModelId('com.pulseweave.desktop');
 
-  // Open DevTools in development
-  if (isDev) {
-    mainWindow?.webContents.openDevTools();
-  }
-
   // IPC handlers
   ipcMain.on('minimize-window', () => {
     mainWindow?.minimize();
@@ -158,7 +153,34 @@ app.whenReady().then(() => {
   });
 
   ipcMain.on('show-notification', (_, { title, body }) => {
-    new Notification({ title, body }).show();
+    const notification = new Notification({ title, body });
+    notification.on('click', () => {
+      mainWindow?.show();
+      mainWindow?.focus();
+    });
+    notification.show();
+  });
+
+  ipcMain.on('set-badge-count', (_, count: number) => {
+    // macOS dock badge
+    if (process.platform === 'darwin') {
+      app.setBadgeCount(count);
+    }
+    // Update tray tooltip
+    if (tray) {
+      tray.setToolTip(count > 0 ? `PulseWeave (${count} unread)` : 'PulseWeave');
+    }
+    // Windows: overlay icon on taskbar
+    if (process.platform === 'win32' && mainWindow) {
+      if (count > 0) {
+        mainWindow.setOverlayIcon(
+          nativeImage.createFromDataURL(createBadgeDataUrl(count)),
+          `${count} unread`
+        );
+      } else {
+        mainWindow.setOverlayIcon(null, '');
+      }
+    }
   });
 
   ipcMain.on('check-for-updates', () => {
@@ -172,6 +194,11 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   setupAutoUpdater();
+
+  // Open DevTools in development (after window is created)
+  if (isDev) {
+    mainWindow?.webContents.openDevTools();
+  }
 
   // Check for updates on startup (production only)
   if (!isDev) {
@@ -196,3 +223,17 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
 });
+
+/**
+ * Create a tiny badge data URL for the Windows taskbar overlay.
+ */
+function createBadgeDataUrl(count: number): string {
+  const size = 16;
+  const text = count > 9 ? '9+' : String(count);
+  // Simple SVG badge
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <circle cx="8" cy="8" r="8" fill="#ef4444"/>
+    <text x="8" y="12" text-anchor="middle" fill="white" font-size="10" font-family="sans-serif" font-weight="bold">${text}</text>
+  </svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}

@@ -29,6 +29,9 @@ const api = {
     ipcRenderer.on('update-error', (_, error) => callback(error));
   },
 
+  // Badge count for tray/taskbar
+  setBadgeCount: (count: number) => ipcRenderer.send('set-badge-count', count),
+
   // Platform info
   platform: process.platform,
 };

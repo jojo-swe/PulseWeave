@@ -2,18 +2,21 @@ import { useState, useEffect } from 'react';
 import { TitleBar } from './components/TitleBar';
 import { Login } from './pages/Login';
 import { Chat } from './pages/Chat';
+import { WorkspaceSelector } from './pages/WorkspaceSelector';
 import { useStore } from './store';
+
+export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
 /**
  * Main application component.
  */
 function App(): JSX.Element {
-  const { token } = useStore();
+  const { token, currentWorkspace } = useStore();
   const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
 
   useEffect(() => {
-    // Check if we have a stored token
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(timer);
   }, []);
 
@@ -28,11 +31,17 @@ function App(): JSX.Element {
     );
   }
 
+  const renderPage = () => {
+    if (!token) return <Login />;
+    if (!currentWorkspace) return <WorkspaceSelector />;
+    return <Chat connectionStatus={connectionStatus} onConnectionChange={setConnectionStatus} />;
+  };
+
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
-      <TitleBar />
+      <TitleBar connectionStatus={connectionStatus} />
       <main className="flex-1 overflow-hidden">
-        {token ? <Chat /> : <Login />}
+        {renderPage()}
       </main>
     </div>
   );
