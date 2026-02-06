@@ -214,8 +214,24 @@ export const useStore = create<AppState>()(
         }).catch(() => {
           // Ignore errors - we're logging out anyway
         });
-        // Clear local state
-        set({ token: null, user: null, currentWorkspace: null, currentChannel: null });
+        // Clear local state (all workspace-specific data to prevent stale data leaks between sessions)
+        set({
+          token: null,
+          user: null,
+          currentWorkspace: null,
+          currentChannel: null,
+          channels: [],
+          messages: [],
+          members: [],
+          conversations: [],
+          currentConversation: null,
+          directMessages: [],
+          unreadCounts: {},
+          dmUnreadCounts: {},
+          categories: [],
+          scheduledMessages: [],
+          activeThread: null,
+        });
         // Redirect to login
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
