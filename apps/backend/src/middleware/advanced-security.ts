@@ -289,7 +289,9 @@ export function validateRequestSignature(secret: string, maxAgeSeconds: number =
       secret
     );
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    const sigBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expectedSignature);
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
       return res.status(401).json({ error: 'Invalid request signature' });
     }
 
@@ -416,7 +418,10 @@ export function validateCsrfToken(sessionId: string, token: string): boolean {
     return false;
   }
   
-  return crypto.timingSafeEqual(Buffer.from(stored.token), Buffer.from(token));
+  const storedBuf = Buffer.from(stored.token);
+  const tokenBuf = Buffer.from(token);
+  if (storedBuf.length !== tokenBuf.length) return false;
+  return crypto.timingSafeEqual(storedBuf, tokenBuf);
 }
 
 /**

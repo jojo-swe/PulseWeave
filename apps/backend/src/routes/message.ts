@@ -137,10 +137,34 @@ router.get('/channel/:channelId', asyncHandler(async (req: AuthRequest, res) => 
 router.get('/:id/replies', asyncHandler(async (req: AuthRequest, res) => {
   const parentMessage = await prisma.message.findUnique({
     where: { id: req.params.id },
+    include: { channel: { select: { id: true, workspaceId: true, isPrivate: true } } },
   });
 
   if (!parentMessage) {
     throw Errors.notFound('Message');
+  }
+
+  // SECURITY: Verify user has access to the channel
+  const channel = parentMessage.channel;
+  const workspaceMembership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: { userId: req.userId!, workspaceId: channel.workspaceId },
+    },
+  });
+
+  if (!workspaceMembership) {
+    throw Errors.notFound('Message');
+  }
+
+  if (channel.isPrivate) {
+    const channelMembership = await prisma.channelMember.findUnique({
+      where: {
+        userId_channelId: { userId: req.userId!, channelId: channel.id },
+      },
+    });
+    if (!channelMembership) {
+      throw Errors.notFound('Message');
+    }
   }
 
   const replies = await prisma.message.findMany({

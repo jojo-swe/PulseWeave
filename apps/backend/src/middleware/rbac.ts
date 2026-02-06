@@ -109,8 +109,6 @@ export function requireRole(
     if (!userRole || !roles.includes(userRole)) {
       return res.status(403).json({ 
         error: 'Role not authorized', 
-        requiredRoles: roles,
-        currentRole: userRole,
       });
     }
 

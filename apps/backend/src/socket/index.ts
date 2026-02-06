@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@pulseweave/database';
 import { JWT_SECRET } from '../middleware/auth';
+import { sanitizeInput } from '../middleware/security';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -211,9 +212,16 @@ export function setupSocketHandlers(io: Server) {
           }
         }
 
+        // SECURITY: Sanitize content — socket events bypass Express middleware
+        const sanitizedContent = sanitizeInput(data.content.trim());
+        if (!sanitizedContent || sanitizedContent.length === 0) {
+          socket.emit('error', { message: 'Message content required' });
+          return;
+        }
+
         const message = await prisma.message.create({
           data: {
-            content: data.content,
+            content: sanitizedContent,
             channelId: data.channelId,
             workspaceId: channel.workspaceId,
             userId,

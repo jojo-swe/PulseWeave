@@ -329,7 +329,6 @@ router.post('/login', async (req, res) => {
       
       return res.status(401).json({ 
         error: 'Invalid credentials',
-        remainingAttempts: 5 - lockResult.failedAttempts,
       });
     }
 
@@ -1068,16 +1067,16 @@ router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
         ipAddress: true,
         createdAt: true,
         lastActiveAt: true,
-        tokenId: true,
+        tokenId: true, // needed for isCurrent comparison, stripped before response
       },
       orderBy: { lastActiveAt: 'desc' },
     });
 
-    // Mark current session
-    const currentTokenId = req.tokenId; // We'll need to add this to AuthRequest
-    const sessionsWithCurrent = sessions.map((session) => ({
+    // Mark current session, then strip tokenId before sending to client
+    const currentTokenId = req.tokenId;
+    const sessionsWithCurrent = sessions.map(({ tokenId, ...session }) => ({
       ...session,
-      isCurrent: session.tokenId === currentTokenId,
+      isCurrent: tokenId === currentTokenId,
       // Parse device info for display
       device: parseDeviceInfo(session.deviceInfo),
     }));

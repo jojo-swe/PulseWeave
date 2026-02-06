@@ -228,7 +228,10 @@ app.use('/api/webhooks', authenticateToken, webhookRouter);
 app.use('/api/apikeys', authenticateToken, apiKeyRouter);
 app.use('/api/integrations', authenticateToken, integrationRouter);
 app.use('/api/external', externalRouter); // External API (uses API key auth)
-app.use('/api/hooks', webhookRouter); // Incoming webhooks (no auth - uses token)
+// SECURITY: The webhookRouter's public incoming endpoint is at '/hooks/:token'.
+// Mount the full router at '/api' so it becomes '/api/hooks/:token'.
+// All management routes inside webhookRouter have their own authenticateToken guards.
+app.use('/api', webhookRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/preferences', authenticateToken, preferencesRouter);
 app.use('/api/friends', authenticateToken, friendRouter);

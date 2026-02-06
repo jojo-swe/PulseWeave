@@ -2,40 +2,17 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '@pulseweave/database';
+import { jwtConfig } from '../config/security';
 
 /**
- * JWT configuration with secure defaults.
- * SECURITY: In production, JWT_SECRET must be set and be at least 32 characters.
+ * SECURITY: All JWT configuration is centralized in config/security.ts.
+ * Do NOT define separate secrets or expiry values here.
  */
-const JWT_SECRET = (() => {
-  const secret = process.env.JWT_SECRET;
-  
-  // In production, require a proper secret
-  if (process.env.NODE_ENV === 'production') {
-    if (!secret) {
-      throw new Error('CRITICAL: JWT_SECRET environment variable must be set in production');
-    }
-    if (secret.length < 32) {
-      throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters in production');
-    }
-    if (secret.includes('change-in-production') || secret.includes('default') || secret.includes('secret')) {
-      throw new Error('CRITICAL: JWT_SECRET appears to be a default value. Set a secure random secret.');
-    }
-  }
-  
-  // In development, allow fallback but warn
-  if (!secret) {
-    console.warn('⚠️  WARNING: JWT_SECRET not set. Using insecure default. DO NOT USE IN PRODUCTION!');
-    return 'pulseweave-dev-only-secret-do-not-use-in-production';
-  }
-  
-  return secret;
-})();
-
-const JWT_ISSUER = 'pulseweave';
-const JWT_AUDIENCE = 'pulseweave-api';
-const JWT_ACCESS_EXPIRY: jwt.SignOptions['expiresIn'] = (process.env.JWT_ACCESS_EXPIRY || process.env.JWT_EXPIRES_IN || '1d') as jwt.SignOptions['expiresIn']; // Shorter expiry for access tokens
-const JWT_REFRESH_EXPIRY: jwt.SignOptions['expiresIn'] = (process.env.JWT_REFRESH_EXPIRY || process.env.JWT_REFRESH_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
+const JWT_SECRET = jwtConfig.secret;
+const JWT_ISSUER = jwtConfig.issuer;
+const JWT_AUDIENCE = jwtConfig.audience;
+const JWT_ACCESS_EXPIRY: jwt.SignOptions['expiresIn'] = jwtConfig.accessTokenExpiry as jwt.SignOptions['expiresIn'];
+const JWT_REFRESH_EXPIRY: jwt.SignOptions['expiresIn'] = jwtConfig.refreshTokenExpiry as jwt.SignOptions['expiresIn'];
 
 export interface AuthRequest extends Request {
   userId?: string;
