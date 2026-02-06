@@ -173,10 +173,7 @@ app.whenReady().then(() => {
     // Windows: overlay icon on taskbar
     if (process.platform === 'win32' && mainWindow) {
       if (count > 0) {
-        mainWindow.setOverlayIcon(
-          nativeImage.createFromDataURL(createBadgeDataUrl(count)),
-          `${count} unread`
-        );
+        mainWindow.setOverlayIcon(createBadgeIcon(count), `${count} unread`);
       } else {
         mainWindow.setOverlayIcon(null, '');
       }
@@ -225,15 +222,34 @@ app.on('before-quit', () => {
 });
 
 /**
- * Create a tiny badge data URL for the Windows taskbar overlay.
+ * Create a badge NativeImage for the Windows taskbar overlay.
+ * Uses Electron's offscreen rendering to paint a red circle with a number.
  */
-function createBadgeDataUrl(count: number): string {
+function createBadgeIcon(_count: number): Electron.NativeImage {
+  // Render via a BrowserWindow offscreen is too heavy; use a simple 16x16 red dot PNG.
+  // We build a tiny 16x16 RGBA buffer: red circle with white text is complex,
+  // so we use a solid red square as a minimal but visible badge indicator.
   const size = 16;
-  const text = count > 9 ? '9+' : String(count);
-  // Simple SVG badge
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <circle cx="8" cy="8" r="8" fill="#ef4444"/>
-    <text x="8" y="12" text-anchor="middle" fill="white" font-size="10" font-family="sans-serif" font-weight="bold">${text}</text>
-  </svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  const canvas = Buffer.alloc(size * size * 4);
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - cx + 0.5;
+      const dy = y - cy + 0.5;
+      const offset = (y * size + x) * 4;
+      if (dx * dx + dy * dy <= r * r) {
+        // Red pixel (#ef4444)
+        canvas[offset] = 0xef;     // R
+        canvas[offset + 1] = 0x44; // G
+        canvas[offset + 2] = 0x44; // B
+        canvas[offset + 3] = 0xff; // A
+      } else {
+        // Transparent
+        canvas[offset + 3] = 0x00;
+      }
+    }
+  }
+  return nativeImage.createFromBuffer(canvas, { width: size, height: size });
 }

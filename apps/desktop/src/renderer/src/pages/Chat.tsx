@@ -4,8 +4,6 @@ import { useStore } from '../store';
 import { io, Socket } from 'socket.io-client';
 import type { ConnectionStatus } from '../App';
 
-let socket: Socket | null = null;
-
 interface ChatProps {
   connectionStatus: ConnectionStatus;
   onConnectionChange: (status: ConnectionStatus) => void;
@@ -67,6 +65,7 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const currentChannelRef = useRef(currentChannel);
   const channelsRef = useRef(channels);
   const badgeCountRef = useRef(0);
@@ -86,7 +85,11 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
         const res = await fetch(`${serverUrl}/api/workspaces/${currentWorkspace.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error('Failed to load workspace');
+        if (!res.ok) {
+          let msg = `Failed to load workspace (${res.status})`;
+          try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+          throw new Error(msg);
+        }
         const data = await res.json();
 
         setChannels(data.channels || []);
@@ -110,20 +113,21 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
 
     onConnectionChange('connecting');
 
-    socket = io(serverUrl, {
+    const socket = io(serverUrl, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
     });
+    socketRef.current = socket;
 
     socket.on('connect', () => {
       onConnectionChange('connected');
-      socket?.emit('workspace:join', currentWorkspace.id);
+      socket.emit('workspace:join', currentWorkspace.id);
       // Rejoin current channel on reconnect
       if (currentChannelRef.current) {
-        socket?.emit('channel:join', currentChannelRef.current.id);
+        socket.emit('channel:join', currentChannelRef.current.id);
       }
     });
 
@@ -163,8 +167,8 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
     });
 
     return () => {
-      socket?.disconnect();
-      socket = null;
+      socket.disconnect();
+      socketRef.current = null;
       onConnectionChange('disconnected');
     };
   }, [token, currentWorkspace?.id, serverUrl]);
@@ -178,10 +182,14 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
         const res = await fetch(`${serverUrl}/api/messages/channel/${currentChannel.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error('Failed to load messages');
+        if (!res.ok) {
+          let msg = `Failed to load messages (${res.status})`;
+          try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+          throw new Error(msg);
+        }
         const data = await res.json();
         setMessages(data.messages || []);
-        socket?.emit('channel:join', currentChannel.id);
+        socketRef.current?.emit('channel:join', currentChannel.id);
       } catch (err) {
         console.error('Failed to load messages:', err);
       }
@@ -234,11 +242,11 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
   }, [channels, currentChannel]);
 
   const emitTyping = useCallback(() => {
-    if (!currentChannel || !socket) return;
-    socket.emit('typing:start', { channelId: currentChannel.id });
+    if (!currentChannel || !socketRef.current) return;
+    socketRef.current.emit('typing:start', { channelId: currentChannel.id });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socket?.emit('typing:stop', { channelId: currentChannel.id });
+      socketRef.current?.emit('typing:stop', { channelId: currentChannel.id });
     }, 2000);
   }, [currentChannel]);
 
@@ -254,8 +262,9 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
         body: JSON.stringify({ channelId: currentChannel.id, content }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to send');
+        let msg = `Failed to send (${res.status})`;
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+        throw new Error(msg);
       }
     } catch (err: any) {
       // Put message back on failure
@@ -272,12 +281,12 @@ export function Chat({ onConnectionChange }: ChatProps): JSX.Element {
   };
 
   const handleLogout = () => {
-    socket?.disconnect();
+    socketRef.current?.disconnect();
     logout();
   };
 
   const handleSwitchWorkspace = () => {
-    socket?.disconnect();
+    socketRef.current?.disconnect();
     setCurrentWorkspace(null);
   };
 

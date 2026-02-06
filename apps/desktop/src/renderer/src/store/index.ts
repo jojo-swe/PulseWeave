@@ -81,11 +81,15 @@ export const useStore = create<Store>()(
       token: null,
       user: null,
       setAuth: (token, user) => set({ token, user }),
-      logout: () => set({ token: null, user: null, currentWorkspace: null, channels: [], currentChannel: null, messages: [] }),
+      logout: () => set({ token: null, user: null, currentWorkspace: null, channels: [], currentChannel: null, messages: [], members: [] }),
 
       // Workspace
       currentWorkspace: null,
-      setCurrentWorkspace: (workspace) => set({ currentWorkspace: workspace }),
+      setCurrentWorkspace: (workspace) => set({
+        currentWorkspace: workspace,
+        // Clear workspace-specific state when switching away
+        ...(workspace === null ? { channels: [], currentChannel: null, messages: [], members: [] } : {}),
+      }),
 
       // Channels
       channels: [],

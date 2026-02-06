@@ -30,7 +30,11 @@ export function WorkspaceSelector(): JSX.Element {
       const res = await fetch(`${serverUrl}/api/workspaces`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to load workspaces');
+      if (!res.ok) {
+        let msg = `Failed to load workspaces (${res.status})`;
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+        throw new Error(msg);
+      }
       const data = await res.json();
       setWorkspaces(data.workspaces || data || []);
     } catch (err: any) {
@@ -61,8 +65,9 @@ export function WorkspaceSelector(): JSX.Element {
         body: JSON.stringify({ name: newName.trim(), slug }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to create workspace');
+        let msg = `Failed to create workspace (${res.status})`;
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+        throw new Error(msg);
       }
       const ws = await res.json();
       handleSelect(ws);
@@ -84,8 +89,9 @@ export function WorkspaceSelector(): JSX.Element {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to join workspace');
+        let msg = `Failed to join workspace (${res.status})`;
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+        throw new Error(msg);
       }
       const ws = await res.json();
       handleSelect(ws.workspace || ws);

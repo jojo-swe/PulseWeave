@@ -57,8 +57,8 @@ export function TitleBar({ connectionStatus }: TitleBarProps): JSX.Element {
         <span className="text-sm font-medium text-foreground">
           {currentWorkspace ? currentWorkspace.name : 'PulseWeave'}
         </span>
-        {/* Connection indicator */}
-        {token && (
+        {/* Connection indicator — only show when a workspace is active (Chat is mounted) */}
+        {token && currentWorkspace && (
           <div className="flex items-center gap-1.5 ml-1" title={STATUS_LABELS[connectionStatus]}>
             <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[connectionStatus]}`} />
             {connectionStatus !== 'connected' && (

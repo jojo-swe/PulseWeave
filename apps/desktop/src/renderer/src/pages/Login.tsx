@@ -26,11 +26,18 @@ export function Login(): JSX.Element {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        let errorMsg = `Login failed (${response.status})`;
+        try {
+          const errData = await response.json();
+          if (errData.error) errorMsg = errData.error;
+        } catch {
+          // Non-JSON response (e.g. 502 HTML page) — use default message
+        }
+        throw new Error(errorMsg);
       }
+
+      const data = await response.json();
 
       setAuth(data.token, data.user);
       if (data.workspace) {
