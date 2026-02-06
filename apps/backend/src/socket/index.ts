@@ -247,17 +247,12 @@ export function setupSocketHandlers(io: Server) {
       }
     });
 
-    // Handle typing indicator
-    socket.on('typing:start', async (channelId: string) => {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { username: true },
-      });
-
+    // Handle typing indicator (use cached username to avoid DB query per keystroke)
+    socket.on('typing:start', (channelId: string) => {
       socket.to(`channel:${channelId}`).emit('user:typing', {
         channelId,
         userId,
-        username: user?.username,
+        username: user.username,
       });
     });
 

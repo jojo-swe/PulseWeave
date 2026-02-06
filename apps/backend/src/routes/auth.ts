@@ -558,9 +558,9 @@ router.post('/refresh', async (req, res) => {
     setAuthCookies(res, newToken, newRefreshToken);
 
     res.json({
-      success: true
-      // token: newToken,
-      // refreshToken: newRefreshToken,
+      success: true,
+      token: newToken,
+      refreshToken: newRefreshToken,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

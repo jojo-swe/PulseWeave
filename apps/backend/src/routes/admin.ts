@@ -354,13 +354,25 @@ router.post(
         ? new Date(Date.now() + duration * 60 * 60 * 1000)
         : new Date('2099-12-31'); // Permanent
 
-      // Update user
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          isActive: false,
-          lockedUntil,
-        },
+      // Remove user from workspace (workspace-scoped ban)
+      // NOTE: Previously this set isActive=false on the User model which
+      // deactivated the account GLOBALLY across all workspaces. A workspace
+      // admin should only be able to ban from their own workspace.
+      await prisma.$transaction(async (tx) => {
+        // Remove from all channels in this workspace
+        await tx.channelMember.deleteMany({
+          where: {
+            userId,
+            channel: { workspaceId },
+          },
+        });
+
+        // Remove workspace membership
+        await tx.workspaceMember.delete({
+          where: {
+            userId_workspaceId: { userId, workspaceId },
+          },
+        });
       });
 
       // Log the action
@@ -377,7 +389,7 @@ router.post(
         },
       });
 
-      res.json({ success: true, message: 'User banned successfully' });
+      res.json({ success: true, message: 'User banned from workspace' });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });

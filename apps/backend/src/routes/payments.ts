@@ -44,15 +44,24 @@ function isAllowedRedirectUrl(url: string): boolean {
 }
 
 /**
- * Get Stripe client lazily to avoid initialization errors when key is missing.
+ * Get Stripe client lazily (singleton) to avoid initialization errors when key is missing
+ * and to avoid creating a new instance on every request.
  */
+let stripeInstance: Stripe | null = null;
+let stripeChecked = false;
+
 function getStripeClient(): Stripe | null {
+  if (stripeChecked) return stripeInstance;
+
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
     console.warn('STRIPE_SECRET_KEY not configured - payments disabled');
+    stripeChecked = true;
     return null;
   }
-  return new Stripe(secretKey);
+  stripeInstance = new Stripe(secretKey);
+  stripeChecked = true;
+  return stripeInstance;
 }
 
 const createCheckoutSchema = z.object({
