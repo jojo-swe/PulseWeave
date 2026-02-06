@@ -14,9 +14,19 @@ const nextConfig = {
     unoptimized: process.env.NEXT_OUTPUT_MODE === 'export',
     remotePatterns: [
       {
+        // Allow images from your own API (uploads, avatars)
         protocol: 'https',
-        hostname: '**',
+        hostname: new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090').hostname,
       },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      // Add more trusted image sources as needed
     ],
   },
   

@@ -97,7 +97,7 @@ EXPOSE 9090
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:9090/health/live || exit 1
 
-CMD ["sh", "-c", "if [ \"${DB_PUSH_ON_START:-true}\" = \"true\" ]; then ./packages/database/node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma; fi; node apps/backend/dist/index.js"]
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-true}\" = \"true\" ]; then ./packages/database/node_modules/.bin/prisma migrate deploy --schema packages/database/prisma/schema.prisma 2>/dev/null || ./packages/database/node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma --accept-data-loss=false; fi; node apps/backend/dist/index.js"]
 
 # Stage 6: Production frontend image
 FROM node:20-alpine AS frontend

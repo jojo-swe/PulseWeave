@@ -56,6 +56,7 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
 import { setupGracefulShutdown, checkDatabaseHealth } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
+import { initErrorReporting } from './services/logger';
 import { 
   getHealthStatus, 
   getLivenessStatus, 
@@ -107,7 +108,10 @@ const io = new Server(httpServer, {
 // =============================================================================
 
 // Trust proxy for rate limiting behind reverse proxy
-app.set('trust proxy', 1);
+// SECURITY: Only enable when actually behind a proxy, otherwise X-Forwarded-For can be spoofed
+if (process.env.BEHIND_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
 
 // Request logging (first, to log all requests)
 app.use(requestLogger);
@@ -165,6 +169,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Session-ID', 'X-Signature', 'X-Timestamp', 'X-Workspace-ID'],
   exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset', 'X-CSRF-Token'],
 }));
+
+// IMPORTANT: Stripe webhook must receive the raw body for signature verification.
+// Mount it BEFORE the JSON body parser.
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Body parsing with size limits
 app.use(express.json({ limit: '1mb' }));
@@ -325,6 +333,9 @@ const protocol = sslOptions ? 'https' : 'http';
 // Verify database connection before starting
 async function startServer(): Promise<void> {
   try {
+    // Initialize error reporting (Sentry) if configured
+    await initErrorReporting();
+
     // Test database connection
     logger.info('Connecting to database...');
     await prisma.$connect();

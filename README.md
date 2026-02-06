@@ -83,13 +83,27 @@ pnpm db:studio             # Open Prisma Studio
 - ✅ **Path traversal protection** - file paths sanitized
 - ✅ **Socket.io authorization** - channel/workspace membership enforced for messages and reactions
 - ✅ **Secure cookies** - HttpOnly, SameSite, conditional Secure flag
+- ✅ **Centralized JWT config** - single source of truth for secrets and token expiry
+- ✅ **WebSocket XSS protection** - message content sanitized in socket handlers
+- ✅ **Timing-safe comparisons** - buffer length checks prevent crashes
+- ✅ **Thread reply access control** - private channel membership verified
+- ✅ **No info leaks** - session tokenIds, remaining attempts, and role names stripped from responses
+- ✅ **Stripe webhook integrity** - raw body preserved for signature verification
+- ✅ **Sentry error reporting** - initialized at startup when DSN configured
+- ✅ **Restricted image origins** - Next.js image proxy limited to trusted domains
+- ✅ **Safe 404 page** - no `javascript:` protocol usage
+- ✅ **Conditional trust proxy** - only enabled when `BEHIND_PROXY=true`
+- ✅ **Production migrations** - Dockerfile uses `prisma migrate deploy`
 
 ### Before Deploying to Production
 
-1. Change `JWT_SECRET` in `apps/backend/.env`
-2. Change `COOKIE_SECRET` in `apps/backend/.env`
-3. Set `SSL_ENABLED=true` or `BEHIND_PROXY=true` for secure cookies
-4. Review `docs/SECURITY_CHECKLIST.md`
+1. Set `JWT_SECRET` (64+ random chars) and `COOKIE_SECRET` (32+ random chars)
+2. Set `BEHIND_PROXY=true` if behind a reverse proxy (Caddy, Nginx)
+3. Set `SSL_ENABLED=true` if terminating TLS at the backend
+4. Set `SENTRY_DSN` for error reporting (optional but recommended)
+5. Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` if billing is enabled
+6. Configure `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` for transactional emails
+7. Review `docs/SECURITY_CHECKLIST.md`
 
 See detailed security requirements in [SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md).
 
