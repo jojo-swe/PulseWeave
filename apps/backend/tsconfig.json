@@ -9,8 +9,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["node"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.spec.ts", "vitest.config.ts"]
 }
