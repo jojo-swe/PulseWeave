@@ -1,6 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 
+vi.mock('../utils/logger', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+import { logger } from '../utils/logger';
 import { logSecurityEvent, sanitizeBody, sanitizeInput, sanitizePlainText, validateEnvironment } from './security';
 
 describe('middleware/security', () => {
@@ -61,22 +71,24 @@ describe('middleware/security', () => {
     process.env.DATABASE_URL = 'postgres://example';
     delete process.env.JWT_SECRET;
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const loggerWarn = vi.mocked(logger.warn);
 
     expect(() => validateEnvironment()).not.toThrow();
-    expect(warnSpy).toHaveBeenCalled();
+    expect(loggerWarn).toHaveBeenCalled();
   });
 
-  it('logSecurityEvent writes structured JSON to console', () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  it('logSecurityEvent writes structured event via logger', () => {
+    const loggerInfo = vi.mocked(logger.info);
 
     logSecurityEvent('LOGIN_FAILED', { ip: '1.2.3.4' });
 
-    const callArg = String(logSpy.mock.calls[0]?.[0]);
-    const parsed = JSON.parse(callArg) as { type: string; event: string; ip: string };
-
-    expect(parsed.type).toBe('SECURITY_EVENT');
-    expect(parsed.event).toBe('LOGIN_FAILED');
-    expect(parsed.ip).toBe('1.2.3.4');
+    expect(loggerInfo).toHaveBeenCalledWith(
+      'Security event',
+      expect.objectContaining({
+        type: 'SECURITY_EVENT',
+        event: 'LOGIN_FAILED',
+        ip: '1.2.3.4',
+      }),
+    );
   });
 });
