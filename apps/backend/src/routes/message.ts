@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate, paginationSchema, idParamsSchema } from '../middleware/validate';
 import { NotificationService } from '../services/notifications';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -243,7 +244,7 @@ router.post('/', validate(createMessageSchema), asyncHandler(async (req: AuthReq
   // Using setImmediate to not block the response
   setImmediate(() => {
     NotificationService.notifyNewMessage(message, channel).catch(err => 
-      console.error('Failed to send notifications:', err)
+      logger.error('Failed to send notifications:', { error: String(err) })
     );
   });
 

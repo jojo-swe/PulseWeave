@@ -2,15 +2,19 @@ import webpush from 'web-push';
 import { prisma } from '@pulseweave/database';
 import { logger } from '../utils/logger';
 
-// VAPID keys should be in environment variables
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY || 'BAOcikxVSXADQjF9KPhx-AfJ3HxPVmKF5J6vFVnGj7ynr4Yt8isWprctA2O7kaA6NWprqXMst9blsgODbZg8aHc';
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY || 'lSZ0kXbVJeaKhb6gzWHxR-ZwwQGqhlsIeEiaSyoDg0s';
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY || '';
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY || '';
+const vapidConfigured = publicVapidKey.length > 0 && privateVapidKey.length > 0;
 
-webpush.setVapidDetails(
-  'mailto:support@pulseweave.com',
-  publicVapidKey,
-  privateVapidKey
-);
+if (vapidConfigured) {
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_CONTACT_EMAIL || 'support@pulseweave.com'}`,
+    publicVapidKey,
+    privateVapidKey
+  );
+} else {
+  logger.warn('VAPID keys not configured — push notifications are disabled. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to enable.');
+}
 
 export class NotificationService {
   /**
@@ -23,7 +27,7 @@ export class NotificationService {
         where: { userId },
       });
 
-      if (subscriptions.length === 0) {
+      if (subscriptions.length === 0 || !vapidConfigured) {
         return;
       }
 

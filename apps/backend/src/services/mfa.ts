@@ -3,6 +3,7 @@ import * as QRCode from 'qrcode';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@pulseweave/database';
+import { logger } from '../utils/logger';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -61,7 +62,7 @@ function cleanupChallenges(): void {
   }
   
   if (removed > 0) {
-    console.log(`[ChallengeStore] Cleaned up ${removed} expired challenges, ${challengeStore.size} remaining`);
+    logger.debug(`[ChallengeStore] Cleaned up ${removed} expired challenges, ${challengeStore.size} remaining`);
   }
 }
 
@@ -387,7 +388,7 @@ export async function verifyWebAuthnRegistration(
 
     return { success: true };
   } catch (error) {
-    console.error('WebAuthn registration error:', error);
+    logger.error('WebAuthn registration error:', { error: String(error) });
     return { success: false, error: 'Registration failed' };
   }
 }
@@ -483,7 +484,7 @@ export async function verifyWebAuthnAuthentication(
 
     return { success: true };
   } catch (error) {
-    console.error('WebAuthn authentication error:', error);
+    logger.error('WebAuthn authentication error:', { error: String(error) });
     return { success: false, error: 'Authentication failed' };
   }
 }

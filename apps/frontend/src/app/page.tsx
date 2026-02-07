@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { api } from '@/lib/api';
-import { connectSocket, joinWorkspace, joinChannel, getSocket, startTyping } from '@/lib/socket';
-import { requestNotificationPermission, notifyNewMessage, playNotificationSound } from '@/lib/notifications';
 import { Sidebar } from '@/components/chat/Sidebar';
 import { ChatArea } from '@/components/chat/ChatArea';
 import { CommandPalette } from '@/components/chat/CommandPalette';
@@ -21,53 +19,29 @@ import { BottomNavigation } from '@/components/chat/BottomNavigation';
 import { WelcomeGuide } from '@/components/onboarding/WelcomeGuide';
 import { UserProfileModal } from '@/components/chat/UserProfileModal';
 import { cn } from '@/lib/utils';
-
-const handleAuthError = (error: any) => {
-  const errorMsg = error?.message?.toLowerCase() || '';
-  if (
-    error?.status === 401 ||
-    error?.status === 403 ||
-    errorMsg.includes('token expired') ||
-    errorMsg.includes('unauthorized') ||
-    errorMsg.includes('jwt') ||
-    errorMsg.includes('access denied') ||
-    errorMsg.includes('revoked') ||
-    errorMsg.includes('authentication')
-  ) {
-    useStore.getState().logout();
-    return true;
-  }
-  return false;
-};
+import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { useSocketEvents } from '@/hooks/useSocketEvents';
+import { useChannelMessages, useDmMessages, useMessageActions } from '@/hooks/useMessages';
 
 export default function Home() {
   const router = useRouter();
-  const {
-    token,
-    user,
-    currentWorkspace,
-    currentChannel,
-    setCurrentWorkspace,
-    setChannels,
-    setMembers,
-    setMessages,
-    addMessage,
-    setCurrentChannel,
-    setUserTyping,
-    clearUserTyping,
-    sidebarOpen,
-    toggleSidebar,
-    // DM state
-    currentConversation,
-    setConversations,
-    addConversation,
-    setCurrentConversation,
-    setDirectMessages,
-    addDirectMessage,
-  } = useStore();
+  const { user, token, currentWorkspace, sidebarOpen, toggleSidebar } = useStore();
 
-  const [loading, setLoading] = useState(true);
-  const [hydrated, setHydrated] = useState(false);
+  const { loading } = useAuthCheck();
+  useSocketEvents();
+  useChannelMessages();
+  useDmMessages();
+
+  const {
+    handleSendMessage,
+    handleStartDM,
+    handleTyping,
+    handleReaction,
+    handleEditMessage,
+    handleDeleteMessage,
+    handleSendReply,
+  } = useMessageActions();
+
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
@@ -78,17 +52,14 @@ export default function Home() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K or Cmd+K - Open command palette
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setCommandPaletteOpen(prev => !prev);
       }
-      // Ctrl+Shift+F - Open global search
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'f') {
         e.preventDefault();
         setSearchOpen(prev => !prev);
       }
-      // Ctrl+/ - Open keyboard shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key === '/') {
         e.preventDefault();
         setShortcutsOpen(prev => !prev);
@@ -99,273 +70,17 @@ export default function Home() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Wait for Zustand to hydrate from localStorage
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  // Request notification permission on mount
-  useEffect(() => {
-    requestNotificationPermission();
-  }, []);
-
-  // Check auth and load initial data
-  useEffect(() => {
-    // Wait for hydration before checking auth
-    if (!hydrated) return;
-    
-    const checkAuthAndLoadData = async () => {
-      try {
-        // Verify session via /auth/me (uses cookies automatically with credentials: 'include')
-        const userData = await api.get<any>('/auth/me');
-        
-        // If we get here, user is authenticated
-        if (!userData) {
-          router.push('/login');
-          return;
-        }
-
-        // Update user in store if needed
-        if (!user || user.id !== userData.id) {
-          useStore.getState().setUser(userData);
-        }
-
-        // Load workspaces
-        const workspaces = await api.workspaces.list(token || '');
-        if (workspaces.length > 0) {
-          const workspace = await api.workspaces.get(workspaces[0].id, token || '');
-          setCurrentWorkspace(workspace);
-          setChannels(workspace.channels);
-          setMembers(workspace.members);
-
-          // Auto-select first channel
-          if (workspace.channels.length > 0 && !currentChannel) {
-            setCurrentChannel(workspace.channels[0]);
-          }
-
-          // Connect socket (token will be sent via cookies)
-          const socket = connectSocket(token || '');
-          joinWorkspace(workspace.id);
-
-          // Socket event listeners
-          socket.on('message:new', (message: any) => {
-            addMessage(message);
-            // Handle messages from other users
-            const state = useStore.getState();
-            if (message.userId !== state.user?.id) {
-              // Increment unread if message is for a different channel
-              if (message.channelId !== state.currentChannel?.id) {
-                state.incrementUnread(message.channelId);
-              }
-              // Show notification and play sound
-              const channel = state.channels.find(c => c.id === message.channelId);
-              if (channel) {
-                playNotificationSound();
-                notifyNewMessage(
-                  message.user.displayName,
-                  channel.name,
-                  message.content
-                );
-              }
-            }
-          });
-
-          // Listen for DM messages
-          socket.on('dm:message', (message: any) => {
-            const state = useStore.getState();
-            if (state.currentConversation?.id === message.conversationId) {
-              addDirectMessage(message);
-            }
-            // Handle messages from other users
-            if (message.userId !== state.user?.id) {
-              if (message.conversationId !== state.currentConversation?.id) {
-                state.incrementDmUnread(message.conversationId);
-              }
-              playNotificationSound();
-              notifyNewMessage(
-                message.user.displayName,
-                'Direct Message',
-                message.content
-              );
-            }
-          });
-
-          // Note: user:status listener is registered in socket.ts to avoid race conditions
-
-          socket.on('user:typing', ({ channelId, userId, username }: any) => {
-            setUserTyping(channelId, userId, username);
-          });
-
-          socket.on('user:typing:stop', ({ channelId, userId }: any) => {
-            clearUserTyping(channelId, userId);
-          });
-        }
-      } catch (error: any) {
-        if (handleAuthError(error)) return;
-        console.error('Failed to load data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthAndLoadData();
-  }, [router, hydrated]);
-
-  // Load messages when channel changes
-  useEffect(() => {
-    if (!user || !currentChannel) return;
-
-    const loadMessages = async () => {
-      try {
-        const { messages } = await api.messages.list(currentChannel.id, token || '');
-        setMessages(messages);
-        joinChannel(currentChannel.id);
-        // Clear unread when viewing channel
-        useStore.getState().clearUnread(currentChannel.id);
-      } catch (error) {
-        if (handleAuthError(error)) return;
-        console.error('Failed to load messages:', error);
-      }
-    };
-
-    loadMessages();
-  }, [currentChannel, user, setMessages]);
-
-  // Load DM messages when conversation changes
-  useEffect(() => {
-    if (!user || !currentConversation) return;
-
-    const loadDmMessages = async () => {
-      try {
-        const { messages } = await api.dm.getMessages(currentConversation.id, token || '');
-        setDirectMessages(messages);
-        // Join DM room for real-time updates
-        const socket = getSocket();
-        if (socket) {
-          socket.emit('dm:join', currentConversation.id);
-        }
-        // Clear unread when viewing conversation
-        useStore.getState().clearDmUnread(currentConversation.id);
-      } catch (error) {
-        if (handleAuthError(error)) return;
-        console.error('Failed to load DM messages:', error);
-      }
-    };
-
-    loadDmMessages();
-  }, [currentConversation, user, setDirectMessages]);
-
-  // Load conversations on workspace load
-  useEffect(() => {
-    if (!user || !currentWorkspace) return;
-
-    const loadConversations = async () => {
-      try {
-        const conversations = await api.dm.list(currentWorkspace.id, token || '');
-        setConversations(conversations);
-      } catch (error) {
-        if (handleAuthError(error)) return;
-        console.error('Failed to load conversations:', error);
-      }
-    };
-
-    loadConversations();
-  }, [currentWorkspace, user, setConversations]);
-
-  const handleSendMessage = async (content: string) => {
-    // Handle DM messages
-    if (currentConversation) {
-      if (!token) return;
-      try {
-        const message = await api.dm.sendMessage(currentConversation.id, content, token);
-        addDirectMessage(message);
-      } catch (error) {
-        console.error('Failed to send DM:', error);
-      }
-      return;
-    }
-
-    // Handle channel messages
-    if (!token || !currentChannel) return;
-
-    try {
-      const message = await api.messages.create(
-        { channelId: currentChannel.id, content },
-        token
-      );
-      addMessage(message);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    }
-  };
-
-  const handleStartDM = async (userId: string) => {
+  const handleCreateChannel = useCallback(async (name: string, description: string, isPrivate: boolean) => {
     if (!token || !currentWorkspace) return;
-
-    try {
-      const conversation = await api.dm.start(currentWorkspace.id, userId, token);
-      // Add to conversations if not already there
-      addConversation(conversation);
-      // Switch to this conversation
-      setCurrentConversation(conversation);
-    } catch (error) {
-      console.error('Failed to start DM:', error);
-    }
-  };
-
-  const handleTyping = () => {
-    if (currentChannel) {
-      startTyping(currentChannel.id);
-    }
-  };
-
-  const handleReaction = async (messageId: string, emoji: string) => {
-    if (!token || !user) return;
-    
-    // Optimistically update the UI
-    useStore.getState().addReaction(messageId, emoji, user.id, user.username);
-    
-    try {
-      await api.messages.addReaction(messageId, emoji, token);
-    } catch (error) {
-      console.error('Failed to add reaction:', error);
-      // Rollback on error
-      useStore.getState().removeReaction(messageId, emoji, user.id);
-    }
-  };
-
-  const handleEditMessage = async (messageId: string, content: string) => {
-    if (!token) return;
-    try {
-      await api.messages.update(messageId, content, token);
-      useStore.getState().updateMessage(messageId, content);
-    } catch (error) {
-      console.error('Failed to edit message:', error);
-    }
-  };
-
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!token) return;
-    try {
-      await api.messages.delete(messageId, token);
-      useStore.getState().deleteMessage(messageId);
-    } catch (error) {
-      console.error('Failed to delete message:', error);
-    }
-  };
-
-  const handleSendReply = async (content: string, parentId: string) => {
-    if (!token || !currentChannel) return;
-    try {
-      const message = await api.messages.create(
-        { channelId: currentChannel.id, content, parentId },
-        token
-      );
-      addMessage(message);
-    } catch (error) {
-      console.error('Failed to send reply:', error);
-    }
-  };
+    const channel = await api.channels.create({
+      workspaceId: currentWorkspace.id,
+      name,
+      description: description || undefined,
+      isPrivate,
+    }, token);
+    useStore.getState().addChannel(channel);
+    useStore.getState().setCurrentChannel(channel);
+  }, [token, currentWorkspace]);
 
   if (loading) {
     return (
@@ -492,17 +207,7 @@ export default function Home() {
           <Portal>
             <CreateChannelModal
               onClose={() => setCreateChannelOpen(false)}
-              onCreate={async (name, description, isPrivate) => {
-                if (!token || !currentWorkspace) return;
-                const channel = await api.channels.create({
-                  workspaceId: currentWorkspace.id,
-                  name,
-                  description: description || undefined,
-                  isPrivate,
-                }, token);
-                useStore.getState().addChannel(channel);
-                useStore.getState().setCurrentChannel(channel);
-              }}
+              onCreate={handleCreateChannel}
             />
           </Portal>
         )}

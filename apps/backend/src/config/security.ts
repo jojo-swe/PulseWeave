@@ -9,6 +9,7 @@
  */
 
 import crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 // =============================================================================
 // Environment Detection
@@ -99,12 +100,12 @@ export function validateSecurityConfig(): SecurityValidationResult {
 
   // Log results
   for (const warning of warnings) {
-    console.warn(`⚠️  ${warning}`);
+    logger.warn(warning);
   }
 
   if (errors.length > 0) {
     for (const error of errors) {
-      console.error(`❌ ${error}`);
+      logger.error(error);
     }
     if (isProduction) {
       throw new Error(`Security validation failed:\n${errors.join('\n')}`);

@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-desktop-windows:
+    name: Desktop — Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build desktop app
+        run: pnpm --filter pulseweave-desktop build
+
+      - name: Package for Windows
+        run: pnpm --filter pulseweave-desktop dist:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.msi
+          retention-days: 5
+
+  build-desktop-macos:
+    name: Desktop — macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build desktop app
+        run: pnpm --filter pulseweave-desktop build
+
+      - name: Package for macOS
+        run: pnpm --filter pulseweave-desktop dist:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+          retention-days: 5
+
+  build-desktop-linux:
+    name: Desktop — Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build desktop app
+        run: pnpm --filter pulseweave-desktop build
+
+      - name: Package for Linux
+        run: pnpm --filter pulseweave-desktop dist:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/*.rpm
+          retention-days: 5
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-desktop-windows, build-desktop-macos, build-desktop-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find release-artifacts -type f | head -50
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          cat > release-notes.md << 'EOF'
+          ## PulseWeave $TAG
+
+          ### Downloads
+
+          | Platform | File | Description |
+          |----------|------|-------------|
+          | **Windows** | `.exe` (NSIS) | Installer (x64 & x86) |
+          | **Windows** | `.exe` (Portable) | No install needed (x64) |
+          | **macOS** | `.dmg` | Disk image (Intel & Apple Silicon) |
+          | **macOS** | `.zip` | Compressed app (Intel & Apple Silicon) |
+          | **Linux** | `.AppImage` | Universal package (x64) |
+          | **Linux** | `.deb` | Debian/Ubuntu package (x64) |
+          | **Linux** | `.rpm` | Fedora/RHEL package (x64) |
+
+          ### ⚠️ Disclaimer
+
+          PulseWeave is free and open-source software provided **"AS IS"**, without warranty of any kind. Use it entirely at your own risk. See [DISCLAIMER.md](https://github.com/${{ github.repository }}/blob/main/DISCLAIMER.md) for full terms.
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/...${TAG}
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: PulseWeave ${{ github.ref_name }}
+          body_path: release-notes.md
+          draft: true
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
+          files: release-artifacts/**/*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

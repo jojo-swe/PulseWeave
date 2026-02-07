@@ -2,6 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { prisma } from '@pulseweave/database';
 import { AuthRequest } from './auth';
+import { logger } from '../utils/logger';
 
 // Rate Limits per Minute
 const TIER_LIMITS = {
@@ -79,7 +80,7 @@ function cleanupTierCache(): number {
 setInterval(() => {
   const removed = cleanupTierCache();
   if (removed > 0) {
-    console.log(`[TierCache] Cleaned up ${removed} expired entries, ${tierCache.size} remaining`);
+    logger.debug(`[TierCache] Cleaned up ${removed} expired entries, ${tierCache.size} remaining`);
   }
 }, 5 * 60 * 1000);
 

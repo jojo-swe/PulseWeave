@@ -10,7 +10,7 @@ const router = Router();
 // Get VAPID Public Key
 router.get('/vapid-key', authenticateToken, (req, res) => {
   res.json({
-    publicKey: process.env.VAPID_PUBLIC_KEY || 'BAOcikxVSXADQjF9KPhx-AfJ3HxPVmKF5J6vFVnGj7ynr4Yt8isWprctA2O7kaA6NWprqXMst9blsgODbZg8aHc'
+    publicKey: process.env.VAPID_PUBLIC_KEY || ''
   });
 });
 

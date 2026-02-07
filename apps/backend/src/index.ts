@@ -71,7 +71,7 @@ import {
 // Validate all security configuration before starting the server
 const securityValidation = validateSecurityConfig();
 if (!securityValidation.valid && securityConfig.isProduction) {
-  console.error('❌ Security validation failed. Server cannot start in production with invalid configuration.');
+  logger.error('Security validation failed. Server cannot start in production with invalid configuration.');
   process.exit(1);
 }
 
@@ -292,7 +292,7 @@ app.get('/uploads/:filename', authenticateToken, async (req: AuthRequest, res) =
     }
 
     stream.on('error', (error) => {
-      console.error('File stream error:', error);
+      logger.error('File stream error:', { error: String(error) });
       if (!res.headersSent) {
         res.status(500).json({ error: 'Failed to read file' });
       } else {
@@ -302,7 +302,7 @@ app.get('/uploads/:filename', authenticateToken, async (req: AuthRequest, res) =
 
     stream.pipe(res);
   } catch (error) {
-    console.error('File download error:', error);
+    logger.error('File download error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to download file' });
   }
 });

@@ -7,6 +7,7 @@ import { prisma } from '@pulseweave/database';
 import { verifyTotpToken, verifyBackupCode } from '../services/mfa';
 import { generateToken, generateRefreshToken, verifyRefreshToken, revokeToken, authenticateToken, AuthRequest, JWT_SECRET } from '../middleware/auth';
 import { logSecurityEvent } from '../middleware/security';
+import { logger } from '../utils/logger';
 import { cookieConfig } from '../config/security';
 import { 
   isLdapEnabled, 
@@ -227,7 +228,7 @@ router.post('/register', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Register error:', error);
+    logger.error('Register error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -406,7 +407,7 @@ router.post('/login', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Login error:', error);
+    logger.error('Login error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -430,7 +431,7 @@ router.post('/mfa/verify', async (req, res) => {
       const decoded = jwt.verify(mfaToken, JWT_SECRET) as { userId: string };
       userId = decoded.userId;
     } catch (err) {
-      console.error('MFA token verification failed:', err);
+      logger.error('MFA token verification failed:', { error: String(err) });
       return res.status(401).json({ error: 'Invalid or expired MFA token' });
     }
 
@@ -516,7 +517,7 @@ router.post('/mfa/verify', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('MFA verify error:', error);
+    logger.error('MFA verify error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -567,7 +568,7 @@ router.post('/refresh', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Refresh error:', error);
+    logger.error('Refresh error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -600,7 +601,7 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -649,7 +650,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
       workspace: workspaceMemberships[0]?.workspace || null,
     });
   } catch (error) {
-    console.error('Get me error:', error);
+    logger.error('Get me error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -676,7 +677,7 @@ router.get('/config', async (req, res) => {
       localAuth: true,
     });
   } catch (error) {
-    console.error('Get auth config error:', error);
+    logger.error('Get auth config error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -747,7 +748,7 @@ router.post('/ldap/login', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('LDAP login error:', error);
+    logger.error('LDAP login error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -760,7 +761,7 @@ router.post('/ldap/test', authenticateToken, async (req: AuthRequest, res) => {
     const result = await testLdapConnection();
     res.json(result);
   } catch (error) {
-    console.error('LDAP test error:', error);
+    logger.error('LDAP test error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -817,7 +818,7 @@ router.post('/send-verification', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Send verification error:', error);
+    logger.error('Send verification error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -882,7 +883,7 @@ router.post('/verify-email', async (req, res) => {
 
     res.json({ message: 'Email verified successfully!' });
   } catch (error) {
-    console.error('Verify email error:', error);
+    logger.error('Verify email error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -952,7 +953,7 @@ router.post('/forgot-password', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Forgot password error:', error);
+    logger.error('Forgot password error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1021,7 +1022,7 @@ router.post('/reset-password', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Reset password error:', error);
+    logger.error('Reset password error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1042,7 +1043,7 @@ router.get('/verification-status', authenticateToken, async (req: AuthRequest, r
 
     res.json({ isVerified: user.isVerified, email: user.email });
   } catch (error) {
-    console.error('Verification status error:', error);
+    logger.error('Verification status error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1084,7 +1085,7 @@ router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
 
     res.json({ sessions: sessionsWithCurrent });
   } catch (error) {
-    console.error('Get sessions error:', error);
+    logger.error('Get sessions error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1130,7 +1131,7 @@ router.delete('/sessions/:sessionId', authenticateToken, async (req: AuthRequest
 
     res.json({ message: 'Session revoked successfully' });
   } catch (error) {
-    console.error('Revoke session error:', error);
+    logger.error('Revoke session error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1168,7 +1169,7 @@ router.post('/sessions/revoke-all', authenticateToken, async (req: AuthRequest, 
 
     res.json({ message: `${result.count} session(s) revoked successfully` });
   } catch (error) {
-    console.error('Revoke all sessions error:', error);
+    logger.error('Revoke all sessions error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });

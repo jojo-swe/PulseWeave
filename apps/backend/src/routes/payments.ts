@@ -5,6 +5,7 @@ import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
+import { logger } from '../utils/logger';
 
 // Plan mapping from Stripe price IDs to plan names
 // PRODUCTION: Update these with your actual Stripe price IDs
@@ -49,7 +50,7 @@ function isAllowedRedirectUrl(url: string): boolean {
 function getStripeClient(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
-    console.warn('STRIPE_SECRET_KEY not configured - payments disabled');
+    logger.warn('STRIPE_SECRET_KEY not configured - payments disabled');
     return null;
   }
   return new Stripe(secretKey);
@@ -122,7 +123,7 @@ router.post(
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET not configured');
+      logger.error('STRIPE_WEBHOOK_SECRET not configured');
       throw Errors.internal('Webhook not configured');
     }
 
@@ -137,7 +138,7 @@ router.post(
       // Verify webhook signature
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      logger.error('Webhook signature verification failed:', { error: String(err) });
       throw Errors.badRequest('Invalid webhook signature');
     }
 
@@ -146,7 +147,7 @@ router.post(
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId || session.client_reference_id;
-        console.log(`[Stripe] Checkout completed for user: ${userId}`);
+        logger.info(`[Stripe] Checkout completed for user: ${userId}`);
         
         if (userId && session.customer && session.subscription) {
           // Create or update subscription record
@@ -172,7 +173,7 @@ router.post(
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] Subscription ${event.type === 'customer.subscription.created' ? 'created' : 'updated'}: ${subscription.id}, status: ${subscription.status}`);
+        logger.info(`[Stripe] Subscription ${event.type === 'customer.subscription.created' ? 'created' : 'updated'}: ${subscription.id}, status: ${subscription.status}`);
         
         // Find user by Stripe customer ID
         const existingSub = await prisma.subscription.findFirst({
@@ -201,7 +202,7 @@ router.post(
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] Subscription cancelled: ${subscription.id}`);
+        logger.info(`[Stripe] Subscription cancelled: ${subscription.id}`);
         
         // Mark subscription as canceled
         await prisma.subscription.updateMany({
@@ -216,7 +217,7 @@ router.post(
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
+        logger.info(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
         
         // Update subscription status to active if it was past_due
         if ((invoice as any).subscription) {
@@ -233,7 +234,7 @@ router.post(
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[Stripe] Payment failed for invoice: ${invoice.id}`);
+        logger.info(`[Stripe] Payment failed for invoice: ${invoice.id}`);
         
         // Mark subscription as past_due
         if ((invoice as any).subscription) {
@@ -246,7 +247,7 @@ router.post(
       }
 
       default:
-        console.log(`[Stripe] Unhandled event type: ${event.type}`);
+        logger.debug(`[Stripe] Unhandled event type: ${event.type}`);
     }
 
     // Return 200 to acknowledge receipt

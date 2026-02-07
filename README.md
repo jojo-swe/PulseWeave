@@ -207,6 +207,10 @@ See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
 4. Run quality checks: `pnpm typecheck && pnpm lint && pnpm build`
 5. Submit a pull request
 
+## ⚠️ Disclaimer
+
+**PulseWeave is free and open-source software provided "AS IS", without warranty of any kind. Use it entirely at your own risk.** The authors and contributors accept no responsibility or liability for any damages, data loss, security incidents, or other consequences arising from the use of this software. By using PulseWeave, you agree to the full terms in **[DISCLAIMER.md](DISCLAIMER.md)**.
+
 ## 📝 License
 
 AGPL-3.0

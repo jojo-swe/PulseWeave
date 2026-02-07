@@ -1,0 +1,160 @@
+import type { User, Workspace, Channel, Message, Conversation, DirectMessage, ChannelCategory, ScheduledMessage } from '@/store/types';
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  workspace: Workspace;
+}
+
+export interface WorkspaceDetail extends Workspace {
+  channels: Channel[];
+  members: Array<{ user: User; role: string }>;
+}
+
+export interface WorkspaceJoinInfo {
+  id: string;
+  name: string;
+  slug: string;
+  iconUrl?: string;
+  memberCount: number;
+  isMember: boolean;
+}
+
+export interface WorkspaceJoinResult {
+  success: boolean;
+  message: string;
+  workspace: Workspace;
+  alreadyMember: boolean;
+}
+
+export interface PaginatedMessages {
+  messages: Message[];
+  nextCursor: string | null;
+}
+
+export interface PaginatedDmMessages {
+  messages: DirectMessage[];
+  nextCursor: string | null;
+}
+
+export interface SuccessResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface UploadResult {
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+}
+
+export interface WebhookTestResult {
+  success: boolean;
+  statusCode?: number;
+  response?: string;
+  error?: string;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedUsers {
+  users: User[];
+  pagination: PaginationInfo;
+}
+
+export interface PaginatedAuditLog {
+  logs: AuditLogEntry[];
+  pagination: PaginationInfo;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  userId: string;
+  targetId?: string;
+  details?: Record<string, unknown>;
+  createdAt: string;
+  user?: { id: string; username: string; displayName: string };
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhookId: string;
+  event: string;
+  statusCode?: number;
+  success: boolean;
+  error?: string;
+  createdAt: string;
+}
+
+export interface PaginatedDeliveries {
+  deliveries: WebhookDelivery[];
+  pagination: PaginationInfo;
+}
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  isActive: boolean;
+  secret?: string;
+  headers?: Record<string, string>;
+  createdAt: string;
+}
+
+export interface IncomingWebhook {
+  id: string;
+  name: string;
+  token: string;
+  channelId?: string;
+  allowedIps?: string[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key?: string;
+  scopes: string[];
+  isActive: boolean;
+  expiresAt?: string;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+export interface Integration {
+  id: string;
+  type: string;
+  name: string;
+  config: Record<string, unknown>;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface IntegrationTypes {
+  [key: string]: {
+    name: string;
+    description: string;
+    configSchema: Record<string, unknown>;
+  };
+}
+
+export type {
+  User,
+  Workspace,
+  Channel,
+  Message,
+  Conversation,
+  DirectMessage,
+  ChannelCategory,
+  ScheduledMessage,
+};

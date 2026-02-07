@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requirePermission, requireAdmin } from '../middleware/rbac';
+import { logger } from '../utils/logger';
 import { PERMISSIONS } from '../services/rbac';
 import {
   isIpBlocked,
@@ -94,7 +95,7 @@ router.get('/status', authenticateToken, requireAdmin((req) => req.query.workspa
       recentSecurityEvents: recentEvents,
     });
   } catch (error) {
-    console.error('Get security status error:', error);
+    logger.error('Get security status error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to get security status' });
   }
 }));
@@ -143,7 +144,7 @@ router.post('/block-ip', authenticateToken, requireAdmin, async (req: AuthReques
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Block IP error:', error);
+    logger.error('Block IP error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to block IP' });
   }
 });
@@ -163,7 +164,7 @@ router.get('/check-ip/:ip', authenticateToken, async (req: AuthRequest, res) => 
       blockedUntil: status.until,
     });
   } catch (error) {
-    console.error('Check IP error:', error);
+    logger.error('Check IP error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to check IP status' });
   }
 });
@@ -201,7 +202,7 @@ router.get('/locked-accounts', authenticateToken, requireAdmin((req) => req.quer
 
     res.json(lockedAccounts);
   } catch (error) {
-    console.error('Get locked accounts error:', error);
+    logger.error('Get locked accounts error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to get locked accounts' });
   }
 });
@@ -237,7 +238,7 @@ router.post('/unlock-account/:userId', authenticateToken, requireAdmin, async (r
 
     res.json({ success: true, message: 'Account unlocked' });
   } catch (error) {
-    console.error('Unlock account error:', error);
+    logger.error('Unlock account error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to unlock account' });
   }
 });
@@ -320,7 +321,7 @@ router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, r
       },
     });
   } catch (error) {
-    console.error('Get audit log error:', error);
+    logger.error('Get audit log error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to get audit log' });
   }
 });
@@ -379,7 +380,7 @@ router.get('/summary', authenticateToken, requireAdmin, async (req: AuthRequest,
       },
     });
   } catch (error) {
-    console.error('Get summary error:', error);
+    logger.error('Get summary error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to get security summary' });
   }
 });

@@ -5,6 +5,7 @@ import multerS3 from 'multer-s3';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 
 export type StorageDriver = 'local' | 's3';
 
@@ -87,7 +88,7 @@ export class StorageService {
         }));
         return true;
       } catch (error) {
-        console.error('S3 Delete Error:', error);
+        logger.error('S3 Delete Error:', { error: String(error) });
         return false;
       }
     }
@@ -106,7 +107,7 @@ export class StorageService {
         return true;
       }
     } catch (error) {
-      console.error('Local Delete Error:', error);
+      logger.error('Local Delete Error:', { error: String(error) });
     }
     return false;
   }
@@ -134,7 +135,7 @@ export class StorageService {
         }
         return Buffer.concat(chunks);
       } catch (error) {
-        console.error('S3 Read Error:', error);
+        logger.error('S3 Read Error:', { error: String(error) });
         return null;
       }
     }
@@ -154,7 +155,7 @@ export class StorageService {
       fs.closeSync(fd);
       return buffer.slice(0, bytesRead);
     } catch (error) {
-      console.error('Local Read Error:', error);
+      logger.error('Local Read Error:', { error: String(error) });
       return null;
     }
   }
@@ -183,7 +184,7 @@ export class StorageService {
         if (!response.Body) return null;
         return response.Body as Readable;
       } catch (error) {
-        console.error('S3 Stream Error:', error);
+        logger.error('S3 Stream Error:', { error: String(error) });
         return null;
       }
     }
@@ -195,7 +196,7 @@ export class StorageService {
       if (!fs.existsSync(resolvedPath)) return null;
       return fs.createReadStream(resolvedPath);
     } catch (error) {
-      console.error('Local Stream Error:', error);
+      logger.error('Local Stream Error:', { error: String(error) });
       return null;
     }
   }

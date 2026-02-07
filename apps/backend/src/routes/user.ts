@@ -5,6 +5,7 @@ import { prisma } from '@pulseweave/database';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -192,7 +193,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error('Get user error:', error);
+    logger.error('Get user error:', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });

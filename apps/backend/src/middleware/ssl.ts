@@ -64,12 +64,12 @@ export function loadSslCertificates(config: SslConfig): https.ServerOptions | nu
     const certPath = path.resolve(config.certPath);
 
     if (!fs.existsSync(keyPath)) {
-      console.error(`SSL key file not found: ${keyPath}`);
+      logger.error(`SSL key file not found: ${keyPath}`);
       return null;
     }
 
     if (!fs.existsSync(certPath)) {
-      console.error(`SSL certificate file not found: ${certPath}`);
+      logger.error(`SSL certificate file not found: ${certPath}`);
       return null;
     }
 
@@ -88,7 +88,7 @@ export function loadSslCertificates(config: SslConfig): https.ServerOptions | nu
 
     return options;
   } catch (error) {
-    console.error('Failed to load SSL certificates:', error);
+    logger.error('Failed to load SSL certificates:', { error: String(error) });
     return null;
   }
 }

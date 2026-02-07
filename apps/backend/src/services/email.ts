@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { logger } from '../utils/logger';
 
 // Note: Environment config is accessed lazily to avoid loading before app init
 
@@ -6,7 +7,7 @@ import nodemailer from 'nodemailer';
 const createTransporter = () => {
   // In development, use ethereal or console logging
   if (process.env.NODE_ENV !== 'production' && !process.env.SMTP_HOST) {
-    console.log('[Email] Development mode: emails will be logged to console');
+    logger.info('[Email] Development mode: emails will be logged to console');
     return null;
   }
 
@@ -49,12 +50,11 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 
   if (!transport) {
     // Development fallback: log to console
-    console.log('='.repeat(60));
-    console.log('[Email] Would send email:');
-    console.log(`  To: ${options.to}`);
-    console.log(`  Subject: ${options.subject}`);
-    console.log(`  Body: ${options.text || options.html.substring(0, 200)}...`);
-    console.log('='.repeat(60));
+    logger.info('[Email] Would send email:', {
+      to: options.to,
+      subject: options.subject,
+      preview: (options.text || options.html.substring(0, 200)) + '...',
+    });
     return true;
   }
 
@@ -68,7 +68,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     });
     return true;
   } catch (error) {
-    console.error('[Email] Failed to send email:', error);
+    logger.error('[Email] Failed to send email:', { error: String(error) });
     return false;
   }
 }

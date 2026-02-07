@@ -7,6 +7,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireAdmin, requireOwner, requirePermission } from '../middleware/rbac';
 import { assignRole, getUserPermissions, PERMISSIONS } from '../services/rbac';
 import { asyncHandler, Errors } from '../middleware/error-handler';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -169,7 +170,7 @@ router.get(
         permissions,
       });
     } catch (error) {
-      console.error('Get user error:', error);
+      logger.error('Get user error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to get user' });
     }
   }
@@ -241,7 +242,7 @@ router.patch(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Update user role error:', error);
+      logger.error('Update user role error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to update user role' });
     }
   }
@@ -308,7 +309,7 @@ router.delete(
 
       res.json({ success: true, message: 'User removed from workspace' });
     } catch (error) {
-      console.error('Remove user error:', error);
+      logger.error('Remove user error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to remove user' });
     }
   }
@@ -382,7 +383,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Ban user error:', error);
+      logger.error('Ban user error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to ban user' });
     }
   }
@@ -424,7 +425,7 @@ router.post(
 
       res.json({ success: true, message: 'User unbanned successfully' });
     } catch (error) {
-      console.error('Unban user error:', error);
+      logger.error('Unban user error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to unban user' });
     }
   }
@@ -501,7 +502,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Create user error:', error);
+      logger.error('Create user error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to create user' });
     }
   }
@@ -563,7 +564,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Reset password error:', error);
+      logger.error('Reset password error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to reset password' });
     }
   }
@@ -613,7 +614,7 @@ router.delete(
 
       res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
-      console.error('Delete user error:', error);
+      logger.error('Delete user error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to delete user' });
     }
   }
@@ -646,7 +647,7 @@ router.get('/roles', authenticateToken, async (req: AuthRequest, res) => {
       }))
     );
   } catch (error) {
-    console.error('List roles error:', error);
+    logger.error('List roles error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to list roles' });
   }
 });
@@ -671,7 +672,7 @@ router.get('/permissions', authenticateToken, async (req: AuthRequest, res) => {
 
     res.json({ permissions, grouped });
   } catch (error) {
-    console.error('List permissions error:', error);
+    logger.error('List permissions error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to list permissions' });
   }
 });
@@ -748,7 +749,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Get audit log error:', error);
+      logger.error('Get audit log error:', { error: String(error) });
       res.status(500).json({ error: 'Failed to get audit log' });
     }
   }

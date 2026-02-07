@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '@pulseweave/database';
 import { slowDown } from 'express-slow-down';
 import hpp from 'hpp';
+import { logger } from '../utils/logger';
 
 // ============================================================================
 // IP-based Security
@@ -44,7 +45,7 @@ function cleanupSecurityCaches(): void {
   }
 
   if (blockedRemoved > 0 || attemptsRemoved > 0) {
-    console.log(`[SecurityCache] Cleaned up ${blockedRemoved} blocked IPs, ${attemptsRemoved} failed attempts`);
+    logger.debug(`[SecurityCache] Cleaned up ${blockedRemoved} blocked IPs, ${attemptsRemoved} failed attempts`);
   }
 }
 
@@ -96,7 +97,7 @@ export function blockIp(ip: string, reason: string, durationMinutes?: number): v
   const until = new Date(Date.now() + duration * 60 * 1000);
   
   blockedIps.set(ip, { until, reason });
-  console.warn(`IP blocked: ${ip} - Reason: ${reason} - Until: ${until.toISOString()}`);
+  logger.warn(`IP blocked: ${ip} - Reason: ${reason} - Until: ${until.toISOString()}`);
 }
 
 /**
@@ -376,7 +377,7 @@ function cleanupCsrfTokens(): void {
   }
   
   if (removed > 0) {
-    console.log(`[CsrfTokens] Cleaned up ${removed} expired tokens, ${csrfTokens.size} remaining`);
+    logger.debug(`[CsrfTokens] Cleaned up ${removed} expired tokens, ${csrfTokens.size} remaining`);
   }
 }
 
@@ -501,16 +502,16 @@ export async function logSecurityAudit(
       },
     });
   } catch (error) {
-    console.error('Failed to log security audit:', error);
+    logger.error('Failed to log security audit:', { error: String(error) });
   }
 
   // Also log to console for immediate visibility
-  console.log(JSON.stringify({
+  logger.info('Security audit event', {
     type: 'SECURITY_AUDIT',
     timestamp: new Date().toISOString(),
     event,
     ...details,
-  }));
+  });
 }
 
 /**
@@ -533,7 +534,7 @@ export function requestAuditMiddleware(req: Request, res: Response, next: NextFu
 
     // Log errors and suspicious activity
     if (res.statusCode >= 400) {
-      console.warn(JSON.stringify({ type: 'REQUEST_ERROR', ...logEntry }));
+      logger.warn('Request error', { type: 'REQUEST_ERROR', ...logEntry });
     }
   });
 
@@ -562,7 +563,7 @@ export async function isPasswordCompromised(password: string): Promise<{
     });
 
     if (!response.ok) {
-      console.error('HIBP API error:', response.status);
+      logger.error('HIBP API error:', { status: response.status });
       return { compromised: false }; // Fail open to not block users
     }
 
@@ -578,7 +579,7 @@ export async function isPasswordCompromised(password: string): Promise<{
 
     return { compromised: false };
   } catch (error) {
-    console.error('Password breach check failed:', error);
+    logger.error('Password breach check failed:', { error: String(error) });
     return { compromised: false }; // Fail open
   }
 }

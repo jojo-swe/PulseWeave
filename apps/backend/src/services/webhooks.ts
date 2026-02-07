@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '@pulseweave/database';
+import { logger } from '../utils/logger';
 
 /**
  * Available webhook events.
@@ -123,7 +124,7 @@ export async function dispatchWebhookEvent(
       matchingWebhooks.map((webhook) => deliverWebhook(webhook, payload))
     );
   } catch (error) {
-    console.error('Error dispatching webhook event:', error);
+    logger.error('Error dispatching webhook event:', { error: String(error) });
   }
 }
 

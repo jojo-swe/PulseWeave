@@ -1,5 +1,6 @@
 import { Client, SearchOptions } from 'ldapts';
 import { prisma } from '@pulseweave/database';
+import { logger } from '../utils/logger';
 
 /**
  * LDAP configuration from environment variables.
@@ -97,7 +98,7 @@ export async function authenticateLdap(
     const { searchEntries } = await client.search(LDAP_CONFIG.searchBase, searchOptions);
 
     if (searchEntries.length === 0) {
-      console.log(`LDAP: User not found: ${username}`);
+      logger.info(`LDAP: User not found: ${username}`);
       return null;
     }
 
@@ -113,7 +114,7 @@ export async function authenticateLdap(
       await userClient.bind(userDN, password);
       await userClient.unbind();
     } catch (bindError) {
-      console.log(`LDAP: Invalid password for user: ${username}`);
+      logger.info(`LDAP: Invalid password for user: ${username}`);
       return null;
     }
 
@@ -132,7 +133,7 @@ export async function authenticateLdap(
 
     return userAttributes;
   } catch (error) {
-    console.error('LDAP authentication error:', error);
+    logger.error('LDAP authentication error:', { error: String(error) });
     throw new Error('LDAP authentication failed');
   } finally {
     try {
@@ -170,7 +171,7 @@ async function getUserGroups(userDN: string): Promise<string[]> {
       groups.push(entry.dn);
     }
   } catch (error) {
-    console.error('LDAP group search error:', error);
+    logger.error('LDAP group search error:', { error: String(error) });
   } finally {
     try {
       await client.unbind();
@@ -369,7 +370,7 @@ export async function searchLdapUsers(query: string): Promise<LdapUserAttributes
       });
     }
   } catch (error) {
-    console.error('LDAP search error:', error);
+    logger.error('LDAP search error:', { error: String(error) });
   } finally {
     try {
       await client.unbind();

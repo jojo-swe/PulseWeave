@@ -132,8 +132,8 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "pulseweave",
-      "repo": "pulseweave-desktop"
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "PulseWeave"
     }
   }
 }

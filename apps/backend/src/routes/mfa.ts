@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 import {
   generateTotpSecret,
   verifyTotpToken,
@@ -50,7 +51,7 @@ router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
       webauthnCredentials,
     });
   } catch (error) {
-    console.error('Get MFA status error:', error);
+    logger.error('Get MFA status error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to get MFA status' });
   }
 });
@@ -82,7 +83,7 @@ router.post('/totp/setup', authenticateToken, async (req: AuthRequest, res) => {
     // Store temporarily - will be confirmed on enable
     res.json({ secret, qrCodeDataUrl });
   } catch (error) {
-    console.error('TOTP setup error:', error);
+    logger.error('TOTP setup error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to setup TOTP' });
   }
 });
@@ -114,7 +115,7 @@ router.post('/totp/enable', authenticateToken, async (req: AuthRequest, res) => 
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Enable TOTP error:', error);
+    logger.error('Enable TOTP error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to enable TOTP' });
   }
 });
@@ -141,7 +142,7 @@ router.post('/totp/disable', authenticateToken, async (req: AuthRequest, res) =>
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Disable TOTP error:', error);
+    logger.error('Disable TOTP error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to disable TOTP' });
   }
 });
@@ -177,7 +178,7 @@ router.post('/totp/verify', authenticateToken, async (req: AuthRequest, res) => 
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Verify TOTP error:', error);
+    logger.error('Verify TOTP error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to verify TOTP' });
   }
 });
@@ -208,7 +209,7 @@ router.post('/backup/verify', authenticateToken, async (req: AuthRequest, res) =
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Verify backup code error:', error);
+    logger.error('Verify backup code error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to verify backup code' });
   }
 });
@@ -239,7 +240,7 @@ router.post('/backup/regenerate', authenticateToken, async (req: AuthRequest, re
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Regenerate backup codes error:', error);
+    logger.error('Regenerate backup codes error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to regenerate backup codes' });
   }
 });
@@ -256,7 +257,7 @@ router.post('/webauthn/register/options', authenticateToken, async (req: AuthReq
     const options = await generateWebAuthnRegistrationOptions(req.userId!);
     res.json(options);
   } catch (error) {
-    console.error('WebAuthn registration options error:', error);
+    logger.error('WebAuthn registration options error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to generate registration options' });
   }
 });
@@ -288,7 +289,7 @@ router.post('/webauthn/register/verify', authenticateToken, async (req: AuthRequ
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('WebAuthn registration verify error:', error);
+    logger.error('WebAuthn registration verify error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to register security key' });
   }
 });
@@ -304,7 +305,7 @@ router.post('/webauthn/authenticate/options', authenticateToken, async (req: Aut
     if (error.message === 'No WebAuthn credentials found') {
       return res.status(400).json({ error: 'No security keys registered' });
     }
-    console.error('WebAuthn authentication options error:', error);
+    logger.error('WebAuthn authentication options error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to generate authentication options' });
   }
 });
@@ -331,7 +332,7 @@ router.post('/webauthn/authenticate/verify', authenticateToken, async (req: Auth
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('WebAuthn authentication verify error:', error);
+    logger.error('WebAuthn authentication verify error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to authenticate with security key' });
   }
 });
@@ -344,7 +345,7 @@ router.get('/webauthn/credentials', authenticateToken, async (req: AuthRequest, 
     const credentials = await getWebAuthnCredentials(req.userId!);
     res.json(credentials);
   } catch (error) {
-    console.error('Get WebAuthn credentials error:', error);
+    logger.error('Get WebAuthn credentials error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to get security keys' });
   }
 });
@@ -372,7 +373,7 @@ router.patch('/webauthn/credentials/:credentialId', authenticateToken, async (re
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Rename WebAuthn credential error:', error);
+    logger.error('Rename WebAuthn credential error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to rename security key' });
   }
 });
@@ -392,7 +393,7 @@ router.delete('/webauthn/credentials/:credentialId', authenticateToken, async (r
 
     res.json({ success: true, message: 'Security key removed' });
   } catch (error) {
-    console.error('Delete WebAuthn credential error:', error);
+    logger.error('Delete WebAuthn credential error:', { error: String(error) });
     res.status(500).json({ error: 'Failed to remove security key' });
   }
 });
