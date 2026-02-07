@@ -105,29 +105,35 @@ export interface Webhook {
   url: string;
   events: string[];
   isActive: boolean;
-  secret?: string;
+  secret: string | null;
   headers?: Record<string, string>;
   createdAt: string;
+  _count?: { deliveries: number };
 }
 
 export interface IncomingWebhook {
   id: string;
   name: string;
   token: string;
-  channelId?: string;
+  webhookUrl: string;
+  channelId: string | null;
+  channel: { id: string; name: string } | null;
   allowedIps?: string[];
   isActive: boolean;
-  createdAt: string;
+  usageCount: number;
+  lastUsedAt: string | null;
+  createdAt?: string;
 }
 
 export interface ApiKey {
   id: string;
   name: string;
+  keyPrefix: string;
   key?: string;
   scopes: string[];
   isActive: boolean;
-  expiresAt?: string;
-  lastUsedAt?: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
   createdAt: string;
 }
 
@@ -137,7 +143,10 @@ export interface Integration {
   name: string;
   config: Record<string, unknown>;
   isActive: boolean;
-  createdAt: string;
+  status: string;
+  lastSyncAt: string | null;
+  typeInfo?: unknown;
+  createdAt?: string;
 }
 
 export interface IntegrationTypes {
