@@ -1,7 +1,12 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
-import { VariableSizeList as List } from 'react-window';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+// react-window v2 ships different API than @types/react-window v1
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { List: RWList, useDynamicRowHeight } = require('react-window') as {
+  List: any;
+  useDynamicRowHeight: (opts: { defaultRowHeight: number }) => any;
+};
 import { useStore } from '@/store';
 import { cn, formatMessageTime, formatMessageDate, getInitials, generateAvatarColor } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,8 +33,21 @@ type RowItem =
   | { type: 'date'; date: string }
   | { type: 'message'; message: any; showHeader: boolean; isOwn: boolean };
 
-const ESTIMATED_ROW_HEIGHT = 60;
-const DATE_SEPARATOR_HEIGHT = 48;
+const DEFAULT_ROW_HEIGHT = 52;
+
+function DateSeparatorRow({ index, style, date }: { index: number; style: React.CSSProperties; date: string }) {
+  return (
+    <div style={style} data-index={index}>
+      <div className="flex items-center gap-4 my-3 px-2">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs font-medium text-muted-foreground px-2 py-1 bg-background border rounded-full">
+          {date}
+        </span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+    </div>
+  );
+}
 
 export function VirtualizedMessageList({
   onReaction,
@@ -38,15 +56,10 @@ export function VirtualizedMessageList({
   onOpenThread,
   onPin,
   isLoadingMore,
-  hasMore,
-  onLoadMore,
 }: VirtualizedMessageListProps) {
   const { messages, user, currentChannel, token } = useStore();
-  const listRef = useRef<List>(null);
-  const outerRef = useRef<HTMLDivElement>(null);
-  const sizeMap = useRef<Record<number, number>>({});
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(400);
+  const listRef = useRef<any>(null);
+  const dynamicRowHeight = useDynamicRowHeight({ defaultRowHeight: DEFAULT_ROW_HEIGHT });
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -54,79 +67,42 @@ export function VirtualizedMessageList({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pinningId, setPinningId] = useState<string | null>(null);
 
-  // Build flat list of renderable rows (date separators + messages)
-  const rows: RowItem[] = [];
-  let prevDate = '';
-  let prevUserId = '';
-  let prevTime = 0;
+  const rows: RowItem[] = useMemo(() => {
+    const result: RowItem[] = [];
+    let prevDate = '';
+    let prevUserId = '';
+    let prevTime = 0;
 
-  messages.forEach((message) => {
-    const messageDate = formatMessageDate(message.createdAt);
-    if (messageDate !== prevDate) {
-      rows.push({ type: 'date', date: messageDate });
-      prevDate = messageDate;
-      prevUserId = '';
-      prevTime = 0;
-    }
-
-    const msgTime = new Date(message.createdAt).getTime();
-    const showHeader =
-      prevUserId !== message.userId || msgTime - prevTime > 5 * 60 * 1000;
-
-    rows.push({
-      type: 'message',
-      message,
-      showHeader,
-      isOwn: message.userId === user?.id,
-    });
-
-    prevUserId = message.userId;
-    prevTime = msgTime;
-  });
-
-  // Measure container height
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerHeight(entry.contentRect.height);
+    messages.forEach((message) => {
+      const messageDate = formatMessageDate(message.createdAt);
+      if (messageDate !== prevDate) {
+        result.push({ type: 'date', date: messageDate });
+        prevDate = messageDate;
+        prevUserId = '';
+        prevTime = 0;
       }
+
+      const msgTime = new Date(message.createdAt).getTime();
+      const showHeader = prevUserId !== message.userId || msgTime - prevTime > 5 * 60 * 1000;
+
+      result.push({ type: 'message', message, showHeader, isOwn: message.userId === user?.id });
+      prevUserId = message.userId;
+      prevTime = msgTime;
     });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
-  // Scroll to bottom when new messages arrive
+    return result;
+  }, [messages, user?.id]);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
-    if (listRef.current && rows.length > 0) {
-      listRef.current.scrollToItem(rows.length - 1, 'end');
+    if (rows.length > 0) {
+      try {
+        listRef.current?.scrollToRow({ index: rows.length - 1, align: 'end' });
+      } catch {
+        // Ignore if not mounted
+      }
     }
-  }, [messages.length]);
-
-  // Reset size cache when messages change
-  useEffect(() => {
-    sizeMap.current = {};
-    listRef.current?.resetAfterIndex(0);
-  }, [currentChannel?.id]);
-
-  const getItemSize = (index: number) => {
-    return sizeMap.current[index] || (rows[index]?.type === 'date' ? DATE_SEPARATOR_HEIGHT : ESTIMATED_ROW_HEIGHT);
-  };
-
-  const setRowHeight = useCallback((index: number, height: number) => {
-    if (sizeMap.current[index] !== height) {
-      sizeMap.current[index] = height;
-      listRef.current?.resetAfterIndex(index, false);
-    }
-  }, []);
-
-  // Infinite scroll: detect scroll to top
-  const handleScroll = useCallback(({ scrollOffset }: { scrollOffset: number }) => {
-    if (scrollOffset < 100 && hasMore && !isLoadingMore) {
-      onLoadMore?.();
-    }
-  }, [hasMore, isLoadingMore, onLoadMore]);
+  }, [messages.length, listRef, rows.length]);
 
   const handlePin = async (messageId: string) => {
     if (!token) return;
@@ -141,33 +117,32 @@ export function VirtualizedMessageList({
     }
   };
 
-  const handleStartEdit = (msg: { id: string; content: string }) => {
+  const handleStartEdit = useCallback((msg: { id: string; content: string }) => {
     setEditingId(msg.id);
     setEditContent(msg.content);
-  };
+  }, []);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     if (editingId && editContent.trim()) {
       onEdit?.(editingId, editContent.trim());
     }
     setEditingId(null);
     setEditContent('');
-  };
+  }, [editingId, editContent, onEdit]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingId(null);
     setEditContent('');
-  };
+  }, []);
 
-  const handleCopy = async (content: string, messageId: string) => {
+  const handleCopy = useCallback(async (content: string, messageId: string) => {
     await navigator.clipboard.writeText(content);
     setCopiedId(messageId);
     setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, []);
 
-  const quickReactions = ['👍', '❤️', '😂', '🎉', '🚀', '👀'];
+  const quickReactions = ['👍', '❤️', '😂'];
 
-  // Empty state
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center px-4">
@@ -192,29 +167,11 @@ export function VirtualizedMessageList({
     );
   }
 
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const rowRef = useRef<HTMLDivElement>(null);
+  const MessageRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const item = rows[index];
 
-    useEffect(() => {
-      if (rowRef.current) {
-        const height = rowRef.current.getBoundingClientRect().height;
-        setRowHeight(index, height);
-      }
-    }, [index]);
-
     if (item.type === 'date') {
-      return (
-        <div style={style}>
-          <div ref={rowRef} className="flex items-center gap-4 my-3 px-2">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs font-medium text-muted-foreground px-2 py-1 bg-background border rounded-full">
-              {item.date}
-            </span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-        </div>
-      );
+      return <DateSeparatorRow index={index} style={style} date={item.date} />;
     }
 
     const { message, showHeader, isOwn } = item;
@@ -232,9 +189,8 @@ export function VirtualizedMessageList({
     );
 
     return (
-      <div style={style}>
+      <div style={style} data-index={index}>
         <div
-          ref={rowRef}
           className={cn(
             'group relative flex gap-3 px-4 py-1 rounded-lg hover:bg-accent/50 transition-colors',
             !showHeader && 'pl-16'
@@ -313,7 +269,7 @@ export function VirtualizedMessageList({
           {/* Hover actions */}
           <div className="absolute right-2 top-0 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <div className="flex items-center gap-0.5 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-0.5">
-              {quickReactions.slice(0, 3).map((emoji) => (
+              {quickReactions.map((emoji) => (
                 <Button key={emoji} variant="ghost" size="icon" className="h-7 w-7 hover:bg-gray-700" onClick={() => onReaction?.(message.id, emoji)}>
                   {emoji}
                 </Button>
@@ -323,7 +279,7 @@ export function VirtualizedMessageList({
                   <Smile className="h-4 w-4" />
                 </Button>
                 {emojiPickerMessageId === message.id && (
-                  <div className="absolute right-0 top-full mt-1">
+                  <div className="absolute right-0 top-full mt-1 z-50">
                     <EmojiPicker onSelect={(e) => { onReaction?.(message.id, e); setEmojiPickerMessageId(null); }} onClose={() => setEmojiPickerMessageId(null)} />
                   </div>
                 )}
@@ -334,7 +290,7 @@ export function VirtualizedMessageList({
               <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-gray-700" onClick={() => handleCopy(message.content, message.id)}>
                 {copiedId === message.id ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-gray-700" onClick={() => handlePin(message.id)} disabled={pinningId === message.id} title="Pin message">
+              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-gray-700" onClick={() => handlePin(message.id)} disabled={pinningId === message.id} title="Pin">
                 <Pin className="h-4 w-4" />
               </Button>
               {isOwn && (
@@ -355,24 +311,20 @@ export function VirtualizedMessageList({
   };
 
   return (
-    <div ref={containerRef} className="flex-1 min-h-0">
+    <div className="flex-1 min-h-0 relative">
       {isLoadingMore && (
-        <div className="flex justify-center py-2">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       )}
-      <List
-        ref={listRef}
-        outerRef={outerRef}
-        height={containerHeight}
-        itemCount={rows.length}
-        itemSize={getItemSize}
-        estimatedItemSize={ESTIMATED_ROW_HEIGHT}
-        width="100%"
-        onScroll={handleScroll}
-      >
-        {Row}
-      </List>
+      <RWList
+        listRef={listRef}
+        rowCount={rows.length}
+        rowHeight={dynamicRowHeight}
+        rowComponent={MessageRow}
+        overscanCount={5}
+        defaultHeight={600}
+      />
     </div>
   );
 }
