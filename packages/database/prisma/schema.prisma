@@ -369,10 +369,12 @@ model Channel {
 }
 
 model ChannelMember {
-  id        String   @id @default(cuid())
-  userId    String
-  channelId String
-  joinedAt  DateTime @default(now())
+  id               String   @id @default(cuid())
+  userId           String
+  channelId        String
+  joinedAt         DateTime @default(now())
+  lastReadAt       DateTime @default(now())
+  lastReadMessageId String?
 
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

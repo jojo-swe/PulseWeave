@@ -360,4 +360,73 @@ router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
   res.json({ success: true, message: 'You have left the channel' });
 }));
 
+/**
+ * Mark a channel as read (update lastReadAt and lastReadMessageId).
+ */
+router.post('/:id/read', asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.userId) throw Errors.unauthorized();
+
+  const { messageId } = req.body;
+
+  const membership = await prisma.channelMember.findUnique({
+    where: {
+      userId_channelId: {
+        userId: req.userId,
+        channelId: req.params.id,
+      },
+    },
+  });
+
+  if (!membership) {
+    throw Errors.notFound('Channel membership');
+  }
+
+  await prisma.channelMember.update({
+    where: { id: membership.id },
+    data: {
+      lastReadAt: new Date(),
+      lastReadMessageId: messageId || null,
+    },
+  });
+
+  res.json({ success: true });
+}));
+
+/**
+ * Get unread message counts for all channels in a workspace.
+ */
+router.get('/unread/:workspaceId', asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.userId) throw Errors.unauthorized();
+
+  const { workspaceId } = req.params;
+
+  const memberships = await prisma.channelMember.findMany({
+    where: {
+      userId: req.userId,
+      channel: { workspaceId },
+    },
+    select: {
+      channelId: true,
+      lastReadAt: true,
+    },
+  });
+
+  const unreadCounts: Record<string, number> = {};
+
+  for (const membership of memberships) {
+    const count = await prisma.message.count({
+      where: {
+        channelId: membership.channelId,
+        createdAt: { gt: membership.lastReadAt },
+        userId: { not: req.userId },
+      },
+    });
+    if (count > 0) {
+      unreadCounts[membership.channelId] = count;
+    }
+  }
+
+  res.json(unreadCounts);
+}));
+
 export { router as channelRouter };

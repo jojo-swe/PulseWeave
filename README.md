@@ -1,6 +1,6 @@
 # PulseWeave
 
-A modern, secure, and scalable team communication platform built with Next.js, Express, and Socket.io.
+A modern, secure, and scalable team communication platform built with Next.js, Express, and Socket.io. PulseWeave ships as an open-source core (AGPLv3) with an optional commercial cloud offering.
 
 ## 🚀 Quick Start
 
@@ -11,42 +11,105 @@ pnpm install
 # Generate Prisma client
 pnpm db:generate
 
+# Push schema to the dev database
+pnpm db:push
+
 # Start development servers (frontend + backend)
 pnpm dev
 
 # Frontend: http://localhost:9797
-# Backend: http://localhost:9090
+# Backend:  http://localhost:9090
 ```
 
 ## 📋 Prerequisites
 
 - Node.js 20+
 - pnpm 10+
-- PostgreSQL 14+
+- SQLite (default for dev) or PostgreSQL 14+ (production)
 
 ## 🏗️ Project Structure
 
 ```text
 PulseWeave/
 ├── apps/
-│   ├── frontend/          # Next.js 16 (Turbopack)
-│   ├── backend/           # Express + Socket.io
-│   ├── desktop/           # Electron app
-│   └── mobile/            # React Native
+│   ├── frontend/          # Next.js 16 (Turbopack) — React 19, Tailwind, Zustand
+│   ├── backend/           # Express + Socket.io — REST API & real-time layer
+│   ├── desktop/           # Electron wrapper
+│   └── mobile/            # React Native (placeholder)
 ├── packages/
-│   ├── database/          # Prisma schema & migrations
+│   ├── database/          # Prisma schema, migrations, seed
 │   └── types/             # Shared TypeScript types
-└── docs/                  # Documentation
+├── docs/                  # Extended documentation
+└── marketing/             # Landing / marketing page
 ```
+
+## 🎯 Features
+
+### Messaging
+- **Real-time channels** — public and private, with Socket.io
+- **Direct messages** — 1-on-1 and group conversations
+- **Threads** — reply to any message in-context
+- **Message search** — full-text search with sanitized queries
+- **Reactions** — emoji reactions on messages
+- **Scheduled messages** — compose now, send later
+- **File attachments** — images, documents, and media with S3-compatible storage
+- **Rich text** — Markdown support in the editor
+
+### Workspace Management
+- **Multi-workspace** — create and switch between workspaces
+- **Invite links** — generate links with optional expiry and usage limits; revoke at any time
+- **Channel categories** — organize channels into collapsible groups
+- **Starred channels** — pin frequently used channels to the top of the sidebar
+- **Read receipts** — per-channel unread counts with real-time updates
+- **Audit log** — track workspace-level actions
+
+### Roles & Permissions
+- **Granular RBAC** — Owner, Admin, Moderator, Member roles
+- **Permission system** — fine-grained permissions mapped to roles
+- **Member management** — promote, demote, remove, ban/unban users
+
+### Authentication & Security
+- **JWT authentication** with session management and token revocation
+- **Multi-factor authentication** — TOTP and WebAuthn/Passkey support
+- **Email verification** and password reset flows
+- **Rate limiting** — per-route and global limits
+- **Input sanitization** — SQL injection detection, HTML sanitization, search query cleaning
+- **Helmet.js** security headers, CORS, CSRF protection
+- **Secure cookies** — HttpOnly, SameSite, conditional Secure flag
+- **Socket.io authorization** — workspace and channel membership enforced
+
+### Integrations
+- **Webhooks** — outgoing (event notifications) and incoming (external data)
+- **API keys** — scoped keys for programmatic access
+- **Pre-built connectors** — n8n, Zapier, Slack, Discord integration models
+- **Push notifications** — Web Push subscription support
+
+### User Experience
+- **Presence indicators** — online, away, do-not-disturb, offline
+- **Custom status** — set a status message visible to teammates
+- **Typing indicators** — real-time, debounced
+- **Dark mode** with theme toggle
+- **Command palette** — Ctrl+K quick navigation
+- **Keyboard shortcuts** — full shortcut reference panel
+- **Responsive design** — mobile-friendly sidebar and bottom navigation
+- **Friends system** — send/accept/reject friend requests
+
+### Developer Experience
+- **Health checks** — `/health`, `/health/live`, `/health/ready` for Kubernetes
+- **Prometheus metrics** — `/metrics` endpoint
+- **Structured logging** — JSON-based logger with levels
+- **Graceful shutdown** — clean connection draining
+- **Environment validation** — Zod-based config with production safety checks
+- **Docker support** — `docker compose up` for containerized deployment
 
 ## 📚 Documentation
 
-- **[Best Practices](docs/BEST_PRACTICES.md)** - Developer guidelines & standards
-- **[API Conventions](docs/API_CONVENTIONS.md)** - How to make API calls correctly
-- **[Security Checklist](docs/SECURITY_CHECKLIST.md)** - Pre-production security tasks
-- **[Quick Wins](docs/QUICK_WINS.md)** - Improvement tracker
-- **[Production Deployment](PRODUCTION.md)** - Production deployment + hardening guide
-- **[SSL / TLS Setup](docs/SSL.md)** - HTTPS configuration for backend and frontend
+- **[Best Practices](docs/BEST_PRACTICES.md)** — Developer guidelines & standards
+- **[API Conventions](docs/API_CONVENTIONS.md)** — How to make API calls correctly
+- **[Security Checklist](docs/SECURITY_CHECKLIST.md)** — Pre-production security tasks
+- **[Quick Wins](docs/QUICK_WINS.md)** — Improvement tracker
+- **[Production Deployment](PRODUCTION.md)** — Production deployment + hardening guide
+- **[SSL / TLS Setup](docs/SSL.md)** — HTTPS configuration for backend and frontend
 
 ## 🛠️ Development
 
@@ -54,150 +117,169 @@ PulseWeave/
 
 ```bash
 # Development
-pnpm dev                   # Start all services
-pnpm dev:frontend          # Frontend only
-pnpm dev:backend           # Backend only
+pnpm dev                   # Start frontend + backend
+pnpm dev:frontend          # Frontend only (port 9797)
+pnpm dev:backend           # Backend only  (port 9090)
+pnpm dev:desktop           # Electron app
 
 # Building
-pnpm build                 # Build all
-pnpm typecheck             # TypeScript validation
+pnpm build                 # Build all packages and apps
+pnpm build:frontend        # Frontend only
+pnpm build:backend         # Backend only
+pnpm build:desktop         # Electron app
 
 # Code Quality
 pnpm lint                  # Lint frontend + backend
-pnpm lint:frontend         # Lint frontend only
-pnpm lint:backend          # Lint backend only
+pnpm typecheck             # TypeScript validation (via build)
+
+# Testing
+pnpm --filter backend test          # Run backend tests (Vitest)
+pnpm --filter backend test -- --run # Run once without watch
 
 # Database
 pnpm db:generate           # Generate Prisma client
-pnpm db:push               # Push schema changes
-pnpm db:migrate            # Run migrations
-pnpm db:studio             # Open Prisma Studio
+pnpm db:push               # Push schema to dev database
+pnpm db:migrate            # Run migrations (production)
+pnpm db:studio             # Open Prisma Studio GUI
+
+# Docker
+pnpm docker:build          # Build containers
+pnpm docker:up             # Start containers
+pnpm docker:down           # Stop containers
+pnpm docker:logs           # Tail logs
 ```
 
-## 🔒 Security
+## 🏛️ Architecture
 
-### Security Hardening Completed
+### Tech Stack
 
-- ✅ **Dependency vulnerabilities** patched (Next.js, semver, ip)
-- ✅ **Authenticated file serving** - uploads require valid session
-- ✅ **Path traversal protection** - file paths sanitized
-- ✅ **Socket.io authorization** - channel/workspace membership enforced for messages and reactions
-- ✅ **Secure cookies** - HttpOnly, SameSite, conditional Secure flag
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Next.js 16 (Turbopack), React 19, TypeScript, Tailwind CSS, Radix UI, Zustand, Socket.io Client |
+| **Backend** | Express.js, Socket.io, TypeScript, Zod validation, Vitest |
+| **Database** | Prisma ORM, SQLite (dev) / PostgreSQL (prod) |
+| **Auth** | JWT with session store, TOTP, WebAuthn |
+| **Security** | Helmet.js, express-rate-limit, CORS, CSRF, input sanitization |
+| **Infra** | Docker Compose, health probes, Prometheus metrics, graceful shutdown |
 
-### Before Deploying to Production
+### Data Model (key entities)
 
-1. Change `JWT_SECRET` in `apps/backend/.env`
-2. Change `COOKIE_SECRET` in `apps/backend/.env`
-3. Set `SSL_ENABLED=true` or `BEHIND_PROXY=true` for secure cookies
-4. Review `docs/SECURITY_CHECKLIST.md`
-
-See detailed security requirements in [SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md).
-
-## 🧪 Code Quality
-
-This project enforces:
-
-- ✅ **TypeScript strict mode** (frontend & backend)
-- ✅ **ESLint** with recommended rules
-- ✅ **No console.log** in production code
-- ✅ **Centralized environment config**
-
-Run checks before committing:
-
-```bash
-pnpm typecheck && pnpm lint && pnpm build
+```text
+User ─┬─ WorkspaceMember ── Workspace
+      ├─ ChannelMember ──── Channel ── Message ── Reaction
+      ├─ ConversationMember ── Conversation ── DirectMessage
+      ├─ Session / WebAuthnCredential
+      ├─ InviteLink
+      ├─ Friendship
+      └─ Subscription
 ```
 
-## 🎯 Key Features
+### Real-Time Architecture
 
-- **Real-time messaging** with Socket.io
-- **End-to-end encryption** for DMs
-- **Advanced role management** (Owner, Admin, Moderator, Member)
-- **Multi-factor authentication** (TOTP, WebAuthn)
-- **Rich text editor** with markdown support
-- **Thread conversations**
-- **File uploads** with S3 support
-- **Push notifications**
-- **Dark mode** with multiple themes
+```text
+Client (Socket.io) ──► Backend Socket Layer
+                          ├─ Auth middleware (JWT + session validation)
+                          ├─ Presence tracking (online/away/dnd/offline)
+                          ├─ Channel message broadcast
+                          ├─ DM message delivery
+                          ├─ Typing indicators (debounced)
+                          └─ Reaction sync
+```
 
 ## 🔧 Environment Variables
 
 Copy `.env.example` to `.env` in each app:
 
 ```bash
-# Backend
 cp apps/backend/.env.example apps/backend/.env
+```
 
-# Generate secure secrets
+**Required:**
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Database connection string |
+| `JWT_SECRET` | JWT signing secret (64+ chars) |
+| `COOKIE_SECRET` | Cookie signing secret (32+ chars) |
+
+**Optional:**
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | API URL for frontend (omit for same-origin proxy) |
+| `SSL_ENABLED` | Enable HTTPS (`true` / `false`) |
+| `BEHIND_PROXY` | Trust proxy headers for secure cookies |
+| `USE_DB_SESSIONS` | Database-backed sessions (`true` / `false`) |
+| `STRIPE_SECRET_KEY` | Stripe billing integration |
+
+Generate secure secrets:
+
+```bash
 openssl rand -base64 64  # JWT_SECRET
 openssl rand -base64 32  # COOKIE_SECRET
 ```
 
-Required variables:
+See `.env.example` files for the complete list.
 
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - JWT signing secret (64+ chars)
-- `COOKIE_SECRET` - Cookie signing secret (32+ chars)
-- `NEXT_PUBLIC_API_URL` - API endpoint for frontend
+## 🔒 Security
 
-See `.env.example` files for complete list.
+### Hardening Completed
 
-## 🏛️ Architecture
+- ✅ Dependency vulnerabilities patched
+- ✅ Authenticated file serving with path traversal protection
+- ✅ Socket.io authorization for channels, workspaces, and reactions
+- ✅ Secure cookies (HttpOnly, SameSite, conditional Secure)
+- ✅ Rate limiting on auth and API routes
+- ✅ Input sanitization (SQL injection detection, HTML cleaning, search query sanitization)
+- ✅ Environment validation with production safety checks
 
-### Tech Stack
+### Before Deploying to Production
 
-**Frontend:**
+1. Set strong `JWT_SECRET` and `COOKIE_SECRET`
+2. Set `SSL_ENABLED=true` or `BEHIND_PROXY=true`
+3. Switch `DATABASE_URL` to PostgreSQL
+4. Review [SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md)
+5. Review [PRODUCTION.md](PRODUCTION.md)
 
-- Next.js 16 with Turbopack
-- React 19
-- TypeScript
-- Tailwind CSS
-- Radix UI components
-- Zustand for state management
+## 🧪 Testing
 
-**Backend:**
+The backend has a comprehensive test suite using **Vitest**:
 
-- Express.js
-- Socket.io
-- Prisma ORM
-- PostgreSQL
-- JWT authentication
-- Redis (optional, for sessions)
+```bash
+pnpm --filter backend test -- --run
+```
 
-**Security:**
-
-- Helmet.js for security headers
-- Rate limiting with express-rate-limit
-- Input sanitization
-- CORS protection
-- CSRF protection
+Coverage includes:
+- Authentication middleware (JWT verification, session validation)
+- Advanced security middleware (rate limiting, brute force protection)
+- RBAC and permission enforcement
+- Socket authentication and presence tracking
+- Input validation and sanitization
+- Health checks and graceful shutdown
+- Environment configuration validation
+- Encryption services
+- Error handling
 
 ## 📖 Developer Guide
 
 ### Making API Calls
 
-**Always use the centralized config:**
+Always use the centralized config:
 
 ```typescript
-// Correct
 import { API_URL } from '@/config/env';
-
-// Wrong - don't duplicate process.env calls
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '...';
 ```
 
 See [API_CONVENTIONS.md](docs/API_CONVENTIONS.md) for details.
 
 ### Pre-Commit Checklist
 
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
-- [ ] No `console.log` statements
-- [ ] No hardcoded secrets
-- [ ] Tests pass (when available)
+```bash
+pnpm typecheck && pnpm lint && pnpm build
+pnpm --filter backend test -- --run
+```
 
-See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
+See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for the full checklist.
 
 ## 🤝 Contributing
 
@@ -205,7 +287,8 @@ See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
 2. Create a feature branch
 3. Make your changes
 4. Run quality checks: `pnpm typecheck && pnpm lint && pnpm build`
-5. Submit a pull request
+5. Run tests: `pnpm --filter backend test -- --run`
+6. Submit a pull request
 
 ## ⚠️ Disclaimer
 
@@ -214,13 +297,3 @@ See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
 ## 📝 License
 
 AGPL-3.0
-
-## 🙏 Acknowledgments
-
-Built with modern best practices prioritizing:
-
-1. **Security** - Secure by default
-2. **Robustness** - Type-safe and tested
-3. **Scalability** - Built to grow
-4. **UX** - Fast and intuitive
-5. **Features** - Rich functionality

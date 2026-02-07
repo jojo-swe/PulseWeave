@@ -42,6 +42,7 @@ export function useAuthCheck(): AuthCheckResult {
     setMembers,
     setCurrentChannel,
     setConversations,
+    setUnreadCounts,
   } = useStore();
 
   const [loading, setLoading] = useState(true);
@@ -80,6 +81,9 @@ export function useAuthCheck(): AuthCheckResult {
 
           const conversations = await api.dm.list(workspace.id, token || '');
           setConversations(conversations);
+
+          const unreadCounts = await api.channels.getUnreadCounts(workspace.id, token || '');
+          setUnreadCounts(unreadCounts);
         }
       } catch (error: any) {
         if (handleAuthError(error)) return;

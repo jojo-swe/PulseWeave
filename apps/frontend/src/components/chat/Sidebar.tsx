@@ -127,7 +127,10 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                       <button
                         onClick={() => {
                           setCurrentChannel(channel);
-                          if (unreadCount > 0) clearUnread(channel.id);
+                          if (unreadCount > 0) {
+                            clearUnread(channel.id);
+                            if (token) api.channels.markRead(channel.id, token).catch(() => {});
+                          }
                           if (window.innerWidth < 1024 && onToggle) onToggle();
                         }}
                         className={cn(
@@ -228,7 +231,10 @@ export function Sidebar({ onCreateChannel, onToggle, onStartDM }: SidebarProps) 
                     <button
                       onClick={() => {
                         setCurrentChannel(channel);
-                        if (unreadCount > 0) clearUnread(channel.id);
+                        if (unreadCount > 0) {
+                          clearUnread(channel.id);
+                          if (token) api.channels.markRead(channel.id, token).catch(() => {});
+                        }
                         if (window.innerWidth < 1024 && onToggle) onToggle();
                       }}
                       className={cn(

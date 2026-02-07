@@ -331,6 +331,14 @@ export const api = {
         method: 'POST',
         token,
       }),
+    markRead: (channelId: string, token: string, messageId?: string) =>
+      fetchApi<SuccessResponse>(`/api/channels/${channelId}/read`, {
+        method: 'POST',
+        body: JSON.stringify({ messageId }),
+        token,
+      }),
+    getUnreadCounts: (workspaceId: string, token: string) =>
+      fetchApi<Record<string, number>>(`/api/channels/unread/${workspaceId}`, { token }),
   },
   dm: {
     list: (workspaceId: string, token: string) =>

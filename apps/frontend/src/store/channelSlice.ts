@@ -19,6 +19,11 @@ export interface ChannelSlice {
   starredChannels: Set<string>;
   toggleStarChannel: (channelId: string) => void;
   isChannelStarred: (channelId: string) => boolean;
+
+  unreadCounts: Record<string, number>;
+  setUnreadCounts: (counts: Record<string, number>) => void;
+  incrementUnread: (channelId: string) => void;
+  clearUnread: (channelId: string) => void;
 }
 
 export const createChannelSlice: StateCreator<AppState, [], [], ChannelSlice> = (set, get) => ({
@@ -61,4 +66,19 @@ export const createChannelSlice: StateCreator<AppState, [], [], ChannelSlice> = 
       return { starredChannels: newStarred };
     }),
   isChannelStarred: (channelId) => get().starredChannels.has(channelId),
+
+  unreadCounts: {},
+  setUnreadCounts: (counts) => set({ unreadCounts: counts }),
+  incrementUnread: (channelId) =>
+    set((state) => ({
+      unreadCounts: {
+        ...state.unreadCounts,
+        [channelId]: (state.unreadCounts[channelId] || 0) + 1,
+      },
+    })),
+  clearUnread: (channelId) =>
+    set((state) => {
+      const { [channelId]: _, ...rest } = state.unreadCounts;
+      return { unreadCounts: rest };
+    }),
 });
