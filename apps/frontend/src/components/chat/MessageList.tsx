@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '@/store';
 import { cn, formatMessageTime, formatMessageDate, getInitials, generateAvatarColor } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,9 +17,14 @@ interface MessageListProps {
   onDelete?: (messageId: string) => void;
   onOpenThread?: (message: any) => void;
   onPin?: (messageId: string) => void;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => Promise<void>;
 }
 
-export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin }: MessageListProps) {
+const SCROLL_THRESHOLD = 100;
+
+export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin, isLoadingMore, hasMore, onLoadMore }: MessageListProps) {
   const { messages, user, currentChannel, token } = useStore();
   const [pinningId, setPinningId] = useState<string | null>(null);
 
@@ -37,14 +42,38 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin 
     }
   };
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [emojiPickerMessageId, setEmojiPickerMessageId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isNearBottom]);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setIsNearBottom(distanceFromBottom < SCROLL_THRESHOLD);
+
+    if (container.scrollTop < SCROLL_THRESHOLD && hasMore && !isLoadingMore) {
+      const prevScrollHeight = container.scrollHeight;
+      onLoadMore?.().then(() => {
+        requestAnimationFrame(() => {
+          if (scrollContainerRef.current) {
+            const newScrollHeight = scrollContainerRef.current.scrollHeight;
+            scrollContainerRef.current.scrollTop = newScrollHeight - prevScrollHeight;
+          }
+        });
+      });
+    }
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   // Group messages by date
   const groupedMessages: { date: string; messages: typeof messages }[] = [];
@@ -120,8 +149,13 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin 
   }
 
   return (
-    <ScrollArea className="flex-1 px-4">
+    <ScrollArea className="flex-1 px-4" ref={scrollContainerRef} onScrollCapture={handleScroll}>
       <div className="py-4 space-y-4">
+        {isLoadingMore && (
+          <div className="flex justify-center py-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        )}
         {groupedMessages.map((group) => (
           <div key={group.date}>
             {/* Date Separator */}

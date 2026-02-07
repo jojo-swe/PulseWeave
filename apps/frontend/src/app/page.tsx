@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { useSocketEvents } from '@/hooks/useSocketEvents';
 import { useChannelMessages, useDmMessages, useMessageActions } from '@/hooks/useMessages';
+import { useMessagePagination } from '@/hooks/usePagination';
 
 export default function Home() {
   const router = useRouter();
@@ -29,7 +30,8 @@ export default function Home() {
 
   const { loading } = useAuthCheck();
   useSocketEvents();
-  useChannelMessages();
+  const pagination = useMessagePagination();
+  useChannelMessages(pagination.setCursor);
   useDmMessages();
 
   const {
@@ -154,6 +156,9 @@ export default function Home() {
               onDeleteMessage={handleDeleteMessage}
               onToggleSidebar={toggleSidebar}
               onSendReply={handleSendReply}
+              isLoadingMore={pagination.isLoadingMore}
+              hasMore={pagination.hasMore}
+              onLoadMore={pagination.loadMore}
             />
           </div>
         </div>

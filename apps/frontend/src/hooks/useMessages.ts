@@ -8,7 +8,9 @@ import { handleAuthError } from './useAuthCheck';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export function useChannelMessages(): void {
+export function useChannelMessages(
+  setCursor?: (cursor: string | null) => void,
+): void {
   const { user, currentChannel, token, setMessages } = useStore();
 
   useEffect(() => {
@@ -16,8 +18,9 @@ export function useChannelMessages(): void {
 
     const loadMessages = async () => {
       try {
-        const { messages } = await api.messages.list(currentChannel.id, token || '');
+        const { messages, nextCursor } = await api.messages.list(currentChannel.id, token || '');
         setMessages(messages);
+        setCursor?.(nextCursor);
         joinChannel(currentChannel.id);
         useStore.getState().clearUnread(currentChannel.id);
       } catch (error) {
@@ -27,7 +30,7 @@ export function useChannelMessages(): void {
     };
 
     loadMessages();
-  }, [currentChannel, user, setMessages, token]);
+  }, [currentChannel, user, setMessages, token, setCursor]);
 }
 
 export function useDmMessages(): void {

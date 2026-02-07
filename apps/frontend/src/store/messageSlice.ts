@@ -5,6 +5,7 @@ import type { AppState } from './index';
 export interface MessageSlice {
   messages: Message[];
   setMessages: (messages: Message[]) => void;
+  prependMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
   updateMessage: (id: string, content: string) => void;
   deleteMessage: (id: string) => void;
@@ -23,6 +24,12 @@ export interface MessageSlice {
 export const createMessageSlice: StateCreator<AppState, [], [], MessageSlice> = (set) => ({
   messages: [],
   setMessages: (messages) => set({ messages }),
+  prependMessages: (messages) =>
+    set((state) => {
+      const existingIds = new Set(state.messages.map((m) => m.id));
+      const newMessages = messages.filter((m) => !existingIds.has(m.id));
+      return { messages: [...newMessages, ...state.messages] };
+    }),
   addMessage: (message) =>
     set((state) => {
       const exists = state.messages.some((m) => m.id === message.id);

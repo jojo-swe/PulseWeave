@@ -78,11 +78,34 @@ export function sendMessage(channelId: string, content: string, parentId?: strin
   socket?.emit('message:send', { channelId, content, parentId });
 }
 
+const TYPING_DEBOUNCE_MS = 2000;
+let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastTypingChannel: string | null = null;
+
 export function startTyping(channelId: string): void {
-  socket?.emit('typing:start', channelId);
+  if (lastTypingChannel !== channelId) {
+    // Channel changed — emit immediately
+    socket?.emit('typing:start', channelId);
+    lastTypingChannel = channelId;
+  } else if (!typingTimeout) {
+    // First keystroke or after debounce expired — emit
+    socket?.emit('typing:start', channelId);
+  }
+
+  // Reset the auto-stop timer on every call
+  if (typingTimeout) clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    socket?.emit('typing:stop', channelId);
+    typingTimeout = null;
+  }, TYPING_DEBOUNCE_MS);
 }
 
 export function stopTyping(channelId: string): void {
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+    typingTimeout = null;
+  }
+  lastTypingChannel = null;
   socket?.emit('typing:stop', channelId);
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Channel, Message } from "@pulseweave/types";
@@ -28,7 +28,13 @@ interface ChatAreaProps {
   onEditMessage?: (messageId: string, content: string) => Promise<void>;
   onDeleteMessage?: (messageId: string) => Promise<void>;
   onToggleSidebar?: () => void;
+  // Pagination
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => Promise<void>;
 }
+
+const SCROLL_THRESHOLD = 100;
 
 export function ChatArea({
   onSendMessage,
@@ -38,6 +44,9 @@ export function ChatArea({
   onEditMessage,
   onDeleteMessage,
   onToggleSidebar,
+  isLoadingMore,
+  hasMore,
+  onLoadMore,
 }: ChatAreaProps) {
   const currentUser = useStore((state) => state.user);
   const currentChannel = useStore((state) => state.currentChannel);
@@ -46,17 +55,45 @@ export function ChatArea({
   const channelTypingUsers: string[] = []; 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeThread, setActiveThread] = useState<Message | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
 
-  // Auto-scroll to bottom of messages
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
+  // Auto-scroll only when near bottom (smart scroll - Phase 3.4)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (isNearBottom) {
+      scrollToBottom();
+    }
+  }, [messages, isNearBottom, scrollToBottom]);
+
+  // Detect scroll position for infinite scroll and smart auto-scroll
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Check if near bottom for smart auto-scroll
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setIsNearBottom(distanceFromBottom < SCROLL_THRESHOLD);
+
+    // Load more when scrolled near top
+    if (container.scrollTop < SCROLL_THRESHOLD && hasMore && !isLoadingMore) {
+      const prevScrollHeight = container.scrollHeight;
+      onLoadMore?.().then(() => {
+        // Preserve scroll position after prepending messages
+        requestAnimationFrame(() => {
+          if (scrollContainerRef.current) {
+            const newScrollHeight = scrollContainerRef.current.scrollHeight;
+            scrollContainerRef.current.scrollTop = newScrollHeight - prevScrollHeight;
+          }
+        });
+      });
+    }
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   if (!currentChannel) {
     return (
@@ -123,7 +160,17 @@ export function ChatArea({
         </div>
 
         {/* Messages List - Fixed scrolling container */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 scrollbar-thin">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 scrollbar-thin"
+        >
+          {/* Loading indicator for older messages */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-2">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
           <AnimatePresence initial={false}>
             {groupedMessages.map((group) => (
               <motion.div
