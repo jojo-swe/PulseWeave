@@ -26,6 +26,8 @@ import type {
   ApiKey,
   Integration,
   IntegrationTypes,
+  InviteLink,
+  InviteInfo,
 } from './api-types';
 
 interface FetchOptions extends RequestInit {
@@ -235,6 +237,28 @@ export const api = {
       }),
     me: (token: string) =>
       fetchApi<User>('/api/auth/me', { token }),
+  },
+  invites: {
+    create: (data: { workspaceId: string; maxUses?: number; expiresInHours?: number }, token: string) =>
+      fetchApi<InviteLink>('/api/invites', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    list: (workspaceId: string, token: string) =>
+      fetchApi<InviteLink[]>(`/api/invites/workspace/${workspaceId}`, { token }),
+    revoke: (inviteId: string, token: string) =>
+      fetchApi<SuccessResponse>(`/api/invites/${inviteId}`, {
+        method: 'DELETE',
+        token,
+      }),
+    getInfo: (code: string, token?: string) =>
+      fetchApi<InviteInfo>(`/api/invites/info/${code}`, { token }),
+    use: (code: string, token: string) =>
+      fetchApi<WorkspaceJoinResult>(`/api/invites/use/${code}`, {
+        method: 'POST',
+        token,
+      }),
   },
   workspaces: {
     list: (token: string) =>

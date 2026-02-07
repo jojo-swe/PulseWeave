@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { api } from '@/lib/api';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, Copy, Check, Users, Settings, Link2, Trash2, ShieldAlert, Ban, RotateCcw, Clock, LogOut } from 'lucide-react';
+import { X, Copy, Check, Users, Settings, Link2, Trash2, ShieldAlert, Ban, RotateCcw, LogOut, Plus, Loader2 } from 'lucide-react';
 import { cn, getInitials, generateAvatarColor } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 
@@ -46,7 +46,71 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
   const [leaving, setLeaving] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const inviteLink = `${window.location.origin}/join/${currentWorkspace?.slug}`;
+  // Invite Links State
+  const [inviteLinks, setInviteLinks] = useState<any[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [inviteMaxUses, setInviteMaxUses] = useState<string>('');
+  const [inviteExpiry, setInviteExpiry] = useState<string>('168'); // 7 days default
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+
+  const fetchInviteLinks = useCallback(async () => {
+    if (!token || !currentWorkspace) return;
+    setLoadingInvites(true);
+    try {
+      const links = await api.invites.list(currentWorkspace.id, token);
+      setInviteLinks(links);
+    } catch (error) {
+      console.error('Failed to fetch invite links:', error);
+    } finally {
+      setLoadingInvites(false);
+    }
+  }, [token, currentWorkspace]);
+
+  useEffect(() => {
+    if (activeTab === 'invite' && inviteLinks.length === 0 && !loadingInvites) {
+      fetchInviteLinks();
+    }
+  }, [activeTab, inviteLinks.length, loadingInvites, fetchInviteLinks]);
+
+  const handleCreateInvite = async () => {
+    if (!token || !currentWorkspace) return;
+    setCreatingInvite(true);
+    try {
+      const data: { workspaceId: string; maxUses?: number; expiresInHours?: number } = {
+        workspaceId: currentWorkspace.id,
+      };
+      if (inviteMaxUses) data.maxUses = parseInt(inviteMaxUses);
+      if (inviteExpiry) data.expiresInHours = parseInt(inviteExpiry);
+
+      const invite = await api.invites.create(data, token);
+      setInviteLinks(prev => [invite, ...prev]);
+      toast.success('Invite link created');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create invite');
+    } finally {
+      setCreatingInvite(false);
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    if (!token) return;
+    try {
+      await api.invites.revoke(inviteId, token);
+      setInviteLinks(prev => prev.map(i => i.id === inviteId ? { ...i, isRevoked: true } : i));
+      toast.success('Invite link revoked');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to revoke invite');
+    }
+  };
+
+  const copyInviteCode = (code: string, inviteId: string) => {
+    const link = `${globalThis.location.origin}/join/${currentWorkspace?.slug}?invite=${code}`;
+    navigator.clipboard.writeText(link);
+    setCopiedInviteId(inviteId);
+    toast.success('Invite link copied');
+    setTimeout(() => setCopiedInviteId(null), 2000);
+  };
 
   const handleSave = async () => {
     if (!token || !currentWorkspace || !name.trim()) return;
@@ -65,8 +129,9 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
     }
   };
 
-  const copyInviteLink = () => {
-    navigator.clipboard.writeText(inviteLink);
+  const copySlugLink = () => {
+    const slugLink = `${globalThis.location.origin}/join/${currentWorkspace?.slug}`;
+    navigator.clipboard.writeText(slugLink);
     setCopied(true);
     toast.success('Invite link copied');
     setTimeout(() => setCopied(false), 2000);
@@ -428,47 +493,142 @@ export function WorkspaceSettingsModal({ onClose }: WorkspaceSettingsModalProps)
 
             {activeTab === 'invite' && (
               <div className="space-y-6">
+                {/* Quick Share Link */}
                 <div>
-                  <h3 className="font-medium mb-2">Invite Link</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Share this link to invite people to your workspace.
+                  <h3 className="font-medium mb-2">Quick Share Link</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Anyone with this link can join your workspace.
                   </p>
-                  
                   <div className="flex gap-2">
                     <Input
-                      value={inviteLink}
+                      value={`${globalThis.location.origin}/join/${currentWorkspace?.slug}`}
                       readOnly
                       className="font-mono text-sm"
                     />
-                    <Button onClick={copyInviteLink} variant="outline" className="shrink-0">
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy
-                        </>
-                      )}
+                    <Button onClick={copySlugLink} variant="outline" className="shrink-0">
+                      {copied ? <><Check className="h-4 w-4 mr-2" />Copied</> : <><Copy className="h-4 w-4 mr-2" />Copy</>}
                     </Button>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <h3 className="font-medium mb-2">Invite by Email</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Send email invitations to specific people.
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      type="email"
-                      placeholder="colleague@company.com"
-                      className="flex-1"
-                    />
-                    <Button>Send Invite</Button>
+                {/* Create Invite Link */}
+                {(currentUserIsOwner || canManageMembers) && (
+                  <div className="pt-4 border-t">
+                    <h3 className="font-medium mb-2">Create Invite Link</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Generate a link with optional expiry and usage limits.
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      <div className="flex-1">
+                        <Label htmlFor="invite-expiry" className="text-xs text-muted-foreground">Expires after</Label>
+                        <select
+                          id="invite-expiry"
+                          value={inviteExpiry}
+                          onChange={(e) => setInviteExpiry(e.target.value)}
+                          className="w-full mt-1 h-9 rounded-md border bg-background px-3 text-sm"
+                        >
+                          <option value="1">1 hour</option>
+                          <option value="24">24 hours</option>
+                          <option value="168">7 days</option>
+                          <option value="720">30 days</option>
+                          <option value="">Never</option>
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor="invite-max-uses" className="text-xs text-muted-foreground">Max uses</Label>
+                        <select
+                          id="invite-max-uses"
+                          value={inviteMaxUses}
+                          onChange={(e) => setInviteMaxUses(e.target.value)}
+                          className="w-full mt-1 h-9 rounded-md border bg-background px-3 text-sm"
+                        >
+                          <option value="">Unlimited</option>
+                          <option value="1">1 use</option>
+                          <option value="5">5 uses</option>
+                          <option value="10">10 uses</option>
+                          <option value="25">25 uses</option>
+                          <option value="50">50 uses</option>
+                          <option value="100">100 uses</option>
+                        </select>
+                      </div>
+                    </div>
+                    <Button onClick={handleCreateInvite} disabled={creatingInvite} className="w-full">
+                      {creatingInvite ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                      Generate Invite Link
+                    </Button>
                   </div>
+                )}
+
+                {/* Active Invite Links */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium">Invite Links</h3>
+                    <Button variant="ghost" size="sm" onClick={fetchInviteLinks} disabled={loadingInvites}>
+                      <RotateCcw className={cn('h-3 w-3', loadingInvites && 'animate-spin')} />
+                    </Button>
+                  </div>
+                  {loadingInvites && inviteLinks.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground text-sm">Loading...</div>
+                  ) : inviteLinks.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground text-sm">No invite links created yet</div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {inviteLinks.map((invite) => {
+                        const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                        const isMaxed = invite.maxUses && invite.useCount >= invite.maxUses;
+                        const isActive = !invite.isRevoked && !isExpired && !isMaxed;
+                        return (
+                          <div
+                            key={invite.id}
+                            className={cn(
+                              'flex items-center gap-3 p-3 rounded-lg border text-sm',
+                              isActive ? 'bg-background' : 'bg-muted/50 opacity-60'
+                            )}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <code className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{invite.code}</code>
+                                {invite.isRevoked && <span className="text-xs text-destructive font-medium">Revoked</span>}
+                                {isExpired && !invite.isRevoked && <span className="text-xs text-yellow-500 font-medium">Expired</span>}
+                                {isMaxed && !invite.isRevoked && !isExpired && <span className="text-xs text-yellow-500 font-medium">Max uses reached</span>}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1 flex gap-3">
+                                <span>{invite.useCount}{invite.maxUses ? `/${invite.maxUses}` : ''} uses</span>
+                                {invite.expiresAt && (
+                                  <span>Expires {new Date(invite.expiresAt).toLocaleDateString()}</span>
+                                )}
+                                <span>by {invite.createdBy?.displayName}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              {isActive && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => copyInviteCode(invite.code, invite.id)}
+                                  title="Copy invite link"
+                                >
+                                  {copiedInviteId === invite.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                </Button>
+                              )}
+                              {isActive && (currentUserIsOwner || canManageMembers) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => handleRevokeInvite(invite.id)}
+                                  title="Revoke invite"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

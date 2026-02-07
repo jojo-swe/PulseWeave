@@ -170,6 +170,35 @@ export interface IntegrationTypes {
   };
 }
 
+export interface InviteLink {
+  id: string;
+  code: string;
+  workspaceId: string;
+  createdById: string;
+  maxUses: number | null;
+  useCount: number;
+  expiresAt: string | null;
+  isRevoked: boolean;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    username: string;
+    displayName: string;
+  };
+}
+
+export interface InviteInfo {
+  code: string;
+  workspace: {
+    id: string;
+    name: string;
+    slug: string;
+    iconUrl?: string;
+    memberCount: number;
+  };
+  isMember: boolean;
+}
+
 export type {
   User,
   Workspace,

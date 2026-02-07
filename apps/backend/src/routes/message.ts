@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate, paginationSchema, idParamsSchema } from '../middleware/validate';
 import { NotificationService } from '../services/notifications';
+import { sanitizeSearchQuery } from '../services/validation';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -21,18 +22,21 @@ router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
     return res.json({ messages: [], nextCursor: null });
   }
 
+  const sanitizedQuery = sanitizeSearchQuery(q);
+  if (sanitizedQuery.length < 2) {
+    return res.json({ messages: [], nextCursor: null });
+  }
+
   const take = Math.min(parseInt(limit as string), 100);
 
-  // TODO: Search Implementation (Elastic/PgVector)
-  // For now, we use simple database LIKE matching as a "Lite" version.
-  // In a production Postgres setup, this should be replaced with:
-  // 1. PgVector for semantic search
-  // 2. Full Text Search (tsvector) for keyword search
+  // For production Postgres, replace with tsvector/tsquery or PgVector.
+  // SQLite: Prisma `contains` with `mode: insensitive` is not supported,
+  // but SQLite LIKE is case-insensitive for ASCII by default.
   const messages = await prisma.message.findMany({
     where: {
       workspaceId,
       content: {
-        contains: q,
+        contains: sanitizedQuery,
       },
       // Access control: User must be able to see the channel
       channel: {

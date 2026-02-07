@@ -76,6 +76,7 @@ model User {
   friendRequestsReceived Friendship[]      @relation("FriendRequestsReceived")
   subscription         Subscription?
   pushSubscriptions    PushSubscription[]
+  createdInvites       InviteLink[]        @relation("InviteCreator")
 
   @@map("users")
 }
@@ -279,6 +280,7 @@ model Workspace {
   incomingWebhooks IncomingWebhook[]
   integrations     Integration[]
   auditLogs        AuditLog[]
+  inviteLinks      InviteLink[]
 
   @@map("workspaces")
 }
@@ -302,6 +304,26 @@ model WorkspaceMember {
   @@index([workspaceId]) // For listing workspace members
   @@index([userId])      // For listing user's workspaces
   @@map("workspace_members")
+}
+
+model InviteLink {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  workspaceId String
+  createdById String
+  maxUses     Int?      // null = unlimited
+  useCount    Int       @default(0)
+  expiresAt   DateTime? // null = never expires
+  isRevoked   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([code])
+  @@map("invite_links")
 }
 
 model ChannelCategory {
