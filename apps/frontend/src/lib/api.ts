@@ -13,6 +13,7 @@ import type {
   WorkspaceJoinInfo,
   WorkspaceJoinResult,
   PaginatedMessages,
+  PaginatedSearchResults,
   PaginatedDmMessages,
   SuccessResponse,
   UploadResult,
@@ -336,7 +337,7 @@ export const api = {
   },
   messages: {
     search: (workspaceId: string, query: string, token: string, cursor?: string) =>
-      fetchApi<PaginatedMessages>(
+      fetchApi<PaginatedSearchResults>(
         `/api/messages/search?workspaceId=${workspaceId}&q=${encodeURIComponent(query)}${cursor ? `&cursor=${cursor}` : ''}`,
         { token }
       ),

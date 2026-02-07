@@ -32,6 +32,19 @@ export interface PaginatedMessages {
   nextCursor: string | null;
 }
 
+export interface SearchResultMessage extends Message {
+  channel: {
+    id: string;
+    name: string;
+    isPrivate: boolean;
+  };
+}
+
+export interface PaginatedSearchResults {
+  messages: SearchResultMessage[];
+  nextCursor: string | null;
+}
+
 export interface PaginatedDmMessages {
   messages: DirectMessage[];
   nextCursor: string | null;
@@ -145,7 +158,7 @@ export interface Integration {
   isActive: boolean;
   status: string;
   lastSyncAt: string | null;
-  typeInfo?: unknown;
+  typeInfo: unknown;
   createdAt?: string;
 }
 
