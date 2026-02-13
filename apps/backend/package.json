@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.947.0",
+    "@aws-sdk/client-s3": "^3.989.0",
     "@pulseweave/database": "workspace:*",
     "@pulseweave/types": "workspace:*",
     "@sentry/node": "^8.47.0",
@@ -20,7 +20,7 @@
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
+    "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "express-slow-down": "^3.0.1",
     "helmet": "^8.1.0",
@@ -34,7 +34,7 @@
     "qrcode": "^1.5.4",
     "sanitize-html": "^2.17.0",
     "socket.io": "^4.7.2",
-    "stripe": "^20.0.0",
+    "stripe": "^20.3.1",
     "uuid": "^13.0.0",
     "web-push": "^3.6.7",
     "zod": "^3.22.4"
@@ -56,8 +56,8 @@
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
-    "eslint": "^8.56.0",
     "@vitest/coverage-v8": "^1.6.0",
+    "eslint": "^8.56.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitest": "^1.6.0"
