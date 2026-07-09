@@ -29,7 +29,7 @@ const createGroupSchema = z.object({
 router.get('/workspace/:workspaceId', asyncHandler(async (req: AuthRequest, res) => {
   const conversations = await prisma.conversation.findMany({
     where: {
-      workspaceId: req.params.workspaceId,
+      workspaceId: req.params.workspaceId!,
       members: {
         some: {
           userId: req.userId,
@@ -171,7 +171,7 @@ router.get('/:id/messages', asyncHandler(async (req: AuthRequest, res) => {
     where: {
       userId_conversationId: {
         userId: req.userId!,
-        conversationId: req.params.id,
+        conversationId: req.params.id!,
       },
     },
   });
@@ -181,7 +181,7 @@ router.get('/:id/messages', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   const messages = await prisma.directMessage.findMany({
-    where: { conversationId: req.params.id },
+    where: { conversationId: req.params.id! },
     include: {
       user: {
         select: {
@@ -205,7 +205,7 @@ router.get('/:id/messages', asyncHandler(async (req: AuthRequest, res) => {
     where: {
       userId_conversationId: {
         userId: req.userId!,
-        conversationId: req.params.id,
+        conversationId: req.params.id!,
       },
     },
     data: { lastReadAt: new Date() },
@@ -228,7 +228,7 @@ router.post('/:id/messages', validate(sendMessageSchema), asyncHandler(async (re
     where: {
       userId_conversationId: {
         userId: req.userId!,
-        conversationId: req.params.id,
+        conversationId: req.params.id!,
       },
     },
   });
@@ -239,7 +239,7 @@ router.post('/:id/messages', validate(sendMessageSchema), asyncHandler(async (re
 
   // Get conversation for workspaceId
   const conversation = await prisma.conversation.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     select: { workspaceId: true },
   });
 
@@ -250,7 +250,7 @@ router.post('/:id/messages', validate(sendMessageSchema), asyncHandler(async (re
   const message = await prisma.directMessage.create({
     data: {
       content,
-      conversationId: req.params.id,
+      conversationId: req.params.id!,
       workspaceId: conversation.workspaceId,
       userId: req.userId!,
     },
@@ -267,14 +267,14 @@ router.post('/:id/messages', validate(sendMessageSchema), asyncHandler(async (re
   });
 
   await prisma.conversation.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     data: { updatedAt: new Date() },
   });
 
   // Emit via socket
   const io = req.app.get('io');
   if (io) {
-    io.to(`dm:${req.params.id}`).emit('dm:message', message);
+    io.to(`dm:${req.params.id!}`).emit('dm:message', message);
   }
 
   res.status(201).json(message);

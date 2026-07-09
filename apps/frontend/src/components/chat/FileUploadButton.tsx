@@ -112,6 +112,7 @@ export function FilePreview({ file, onRemove }: FilePreviewProps) {
   };
 
   const getIcon = () => {
+    // eslint-disable-next-line jsx-a11y/alt-text -- lucide Image icon, not an img element
     if (isImage) return <Image className="h-4 w-4" />;
     if (isPdf) return <FileText className="h-4 w-4" />;
     return <File className="h-4 w-4" />;
@@ -120,6 +121,7 @@ export function FilePreview({ file, onRemove }: FilePreviewProps) {
   return (
     <div className="relative group flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
       {isImage ? (
+        // eslint-disable-next-line @next/next/no-img-element -- dynamic file URL not supported by next/image
         <img
           src={file.url}
           alt={file.originalName}

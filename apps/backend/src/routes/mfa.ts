@@ -18,6 +18,8 @@ import {
   renameWebAuthnCredential,
 } from '../services/mfa';
 
+import { logger } from '../utils/logger';
+import { wrapRouter } from '../middleware/error-handler';
 const router = Router();
 
 // ============================================================================
@@ -50,7 +52,7 @@ router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
       webauthnCredentials,
     });
   } catch (error) {
-    console.error('Get MFA status error:', error);
+    logger.error('Get MFA status error:', error);
     res.status(500).json({ error: 'Failed to get MFA status' });
   }
 });
@@ -82,7 +84,7 @@ router.post('/totp/setup', authenticateToken, async (req: AuthRequest, res) => {
     // Store temporarily - will be confirmed on enable
     res.json({ secret, qrCodeDataUrl });
   } catch (error) {
-    console.error('TOTP setup error:', error);
+    logger.error('TOTP setup error:', error);
     res.status(500).json({ error: 'Failed to setup TOTP' });
   }
 });
@@ -114,7 +116,7 @@ router.post('/totp/enable', authenticateToken, async (req: AuthRequest, res) => 
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Enable TOTP error:', error);
+    logger.error('Enable TOTP error:', error);
     res.status(500).json({ error: 'Failed to enable TOTP' });
   }
 });
@@ -141,7 +143,7 @@ router.post('/totp/disable', authenticateToken, async (req: AuthRequest, res) =>
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Disable TOTP error:', error);
+    logger.error('Disable TOTP error:', error);
     res.status(500).json({ error: 'Failed to disable TOTP' });
   }
 });
@@ -177,7 +179,7 @@ router.post('/totp/verify', authenticateToken, async (req: AuthRequest, res) => 
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Verify TOTP error:', error);
+    logger.error('Verify TOTP error:', error);
     res.status(500).json({ error: 'Failed to verify TOTP' });
   }
 });
@@ -208,7 +210,7 @@ router.post('/backup/verify', authenticateToken, async (req: AuthRequest, res) =
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Verify backup code error:', error);
+    logger.error('Verify backup code error:', error);
     res.status(500).json({ error: 'Failed to verify backup code' });
   }
 });
@@ -239,7 +241,7 @@ router.post('/backup/regenerate', authenticateToken, async (req: AuthRequest, re
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Regenerate backup codes error:', error);
+    logger.error('Regenerate backup codes error:', error);
     res.status(500).json({ error: 'Failed to regenerate backup codes' });
   }
 });
@@ -256,13 +258,13 @@ router.post('/webauthn/register/options', authenticateToken, async (req: AuthReq
     const options = await generateWebAuthnRegistrationOptions(req.userId!);
     res.json(options);
   } catch (error) {
-    console.error('WebAuthn registration options error:', error);
+    logger.error('WebAuthn registration options error:', error);
     res.status(500).json({ error: 'Failed to generate registration options' });
   }
 });
 
 const webauthnRegisterSchema = z.object({
-  response: z.any(),
+  response: z.unknown(),
   name: z.string().min(1).max(50).optional(),
 });
 
@@ -275,7 +277,7 @@ router.post('/webauthn/register/verify', authenticateToken, async (req: AuthRequ
 
     const result = await verifyWebAuthnRegistration(
       req.userId!,
-      response,
+      response as Parameters<typeof verifyWebAuthnRegistration>[1],
       name || 'Security Key'
     );
 
@@ -288,7 +290,7 @@ router.post('/webauthn/register/verify', authenticateToken, async (req: AuthRequ
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('WebAuthn registration verify error:', error);
+    logger.error('WebAuthn registration verify error:', error);
     res.status(500).json({ error: 'Failed to register security key' });
   }
 });
@@ -300,17 +302,17 @@ router.post('/webauthn/authenticate/options', authenticateToken, async (req: Aut
   try {
     const options = await generateWebAuthnAuthenticationOptions(req.userId!);
     res.json(options);
-  } catch (error: any) {
-    if (error.message === 'No WebAuthn credentials found') {
+  } catch (error: unknown) {
+    if ((error as Error).message === 'No WebAuthn credentials found') {
       return res.status(400).json({ error: 'No security keys registered' });
     }
-    console.error('WebAuthn authentication options error:', error);
+    logger.error('WebAuthn authentication options error:', error);
     res.status(500).json({ error: 'Failed to generate authentication options' });
   }
 });
 
 const webauthnAuthenticateSchema = z.object({
-  response: z.any(),
+  response: z.unknown(),
 });
 
 /**
@@ -320,7 +322,7 @@ router.post('/webauthn/authenticate/verify', authenticateToken, async (req: Auth
   try {
     const { response } = webauthnAuthenticateSchema.parse(req.body);
 
-    const result = await verifyWebAuthnAuthentication(req.userId!, response);
+    const result = await verifyWebAuthnAuthentication(req.userId!, response as Parameters<typeof verifyWebAuthnAuthentication>[1]);
 
     if (!result.success) {
       return res.status(401).json({ error: result.error });
@@ -331,7 +333,7 @@ router.post('/webauthn/authenticate/verify', authenticateToken, async (req: Auth
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('WebAuthn authentication verify error:', error);
+    logger.error('WebAuthn authentication verify error:', error);
     res.status(500).json({ error: 'Failed to authenticate with security key' });
   }
 });
@@ -344,7 +346,7 @@ router.get('/webauthn/credentials', authenticateToken, async (req: AuthRequest, 
     const credentials = await getWebAuthnCredentials(req.userId!);
     res.json(credentials);
   } catch (error) {
-    console.error('Get WebAuthn credentials error:', error);
+    logger.error('Get WebAuthn credentials error:', error);
     res.status(500).json({ error: 'Failed to get security keys' });
   }
 });
@@ -358,7 +360,7 @@ const renameCredentialSchema = z.object({
  */
 router.patch('/webauthn/credentials/:credentialId', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { credentialId } = req.params;
+    const { credentialId } = req.params as { credentialId: string };
     const { name } = renameCredentialSchema.parse(req.body);
 
     const result = await renameWebAuthnCredential(req.userId!, credentialId, name);
@@ -372,7 +374,7 @@ router.patch('/webauthn/credentials/:credentialId', authenticateToken, async (re
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Rename WebAuthn credential error:', error);
+    logger.error('Rename WebAuthn credential error:', error);
     res.status(500).json({ error: 'Failed to rename security key' });
   }
 });
@@ -382,7 +384,7 @@ router.patch('/webauthn/credentials/:credentialId', authenticateToken, async (re
  */
 router.delete('/webauthn/credentials/:credentialId', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { credentialId } = req.params;
+    const { credentialId } = req.params as { credentialId: string };
 
     const result = await deleteWebAuthnCredential(req.userId!, credentialId);
 
@@ -392,9 +394,10 @@ router.delete('/webauthn/credentials/:credentialId', authenticateToken, async (r
 
     res.json({ success: true, message: 'Security key removed' });
   } catch (error) {
-    console.error('Delete WebAuthn credential error:', error);
+    logger.error('Delete WebAuthn credential error:', error);
     res.status(500).json({ error: 'Failed to remove security key' });
   }
 });
 
-export { router as mfaRouter };
+const wrappedMfaRouter = wrapRouter(router);
+export { wrappedMfaRouter as mfaRouter };

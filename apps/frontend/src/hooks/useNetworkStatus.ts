@@ -37,6 +37,7 @@ export function useNetworkStatus(): NetworkStatus {
 
   useEffect(() => {
     // Set initial state
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading initial navigator.onLine value
     setStatus((prev) => ({
       ...prev,
       isOnline: navigator.onLine,

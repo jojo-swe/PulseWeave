@@ -144,14 +144,16 @@ export function sanitizePlainText(input: string): string {
  * Note: Prisma handles this automatically, but useful for raw queries.
  */
 export function escapeForQuery(input: string): string {
+  const NUL = String.fromCharCode(0);
+  const SUB = String.fromCharCode(26);
   return input
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
     .replace(/"/g, '\\"')
-    .replace(/\x00/g, '\\0')
+    .replace(new RegExp(NUL, 'g'), '\\0')
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')
-    .replace(/\x1a/g, '\\Z');
+    .replace(new RegExp(SUB, 'g'), '\\Z');
 }
 
 /**

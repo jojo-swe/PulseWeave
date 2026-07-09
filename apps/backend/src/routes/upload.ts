@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -6,6 +6,8 @@ import { prisma } from '@pulseweave/database';
 import { AuthRequest, authenticateToken } from '../middleware/auth';
 import { uploadLimiter } from '../middleware/security';
 import { StorageService } from '../services/storage';
+import { logger } from '../utils/logger';
+import { wrapRouter } from '../middleware/error-handler';
 
 const router = Router();
 
@@ -13,7 +15,7 @@ const router = Router();
 // Note: limits are applied here
 const upload = multer({
   storage: StorageService.getStorageEngine(),
-  fileFilter: (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const ALLOWED_MIMES = [
       'image/jpeg',
       'image/png',
@@ -38,8 +40,9 @@ const upload = multer({
 /**
  * Helper to normalize file object attributes across Local/S3 providers
  */
-const normalizeFile = (file: any) => {
+const normalizeFile = (file: Express.Multer.File & { key?: string }) => {
   const filename = file.filename || file.key;
+  if (!filename) throw new Error('No filename generated');
   const url = StorageService.getFileUrl(filename);
   return {
     filename,
@@ -126,11 +129,11 @@ router.post('/', authenticateToken, uploadLimiter, upload.single('file'), async 
       uploadedAt: attachment.createdAt,
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error('Upload error:', error);
     // Attempt cleanup
     if (uploadedFile) {
-      const filename = uploadedFile.filename || (uploadedFile as any).key;
-      if (filename) await StorageService.deleteFile(filename).catch(console.error);
+      const filename = uploadedFile.filename || (uploadedFile as Express.Multer.File & { key?: string }).key;
+      if (filename) await StorageService.deleteFile(filename).catch((err: unknown) => logger.error('File cleanup failed:', err));
     }
     res.status(500).json({ error: 'Failed to upload file' });
   }
@@ -138,7 +141,7 @@ router.post('/', authenticateToken, uploadLimiter, upload.single('file'), async 
 
 // Upload multiple files
 router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files', 5), async (req: AuthRequest, res) => {
-  const uploadedFiles = req.files as Express.Multer.File[];
+  const uploadedFiles = req.files as (Express.Multer.File & { key?: string })[];
 
   try {
     if (!uploadedFiles || uploadedFiles.length === 0) {
@@ -193,12 +196,12 @@ router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files',
 
     res.json(results);
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error('Upload error:', error);
     // Cleanup on catastrophe
     if (uploadedFiles) {
       for (const file of uploadedFiles) {
         const norm = normalizeFile(file);
-        await StorageService.deleteFile(norm.filename).catch(console.error);
+        await StorageService.deleteFile(norm.filename).catch((err: unknown) => logger.error('File cleanup failed:', err));
       }
     }
     res.status(500).json({ error: 'Failed to upload files' });
@@ -208,7 +211,7 @@ router.post('/multiple', authenticateToken, uploadLimiter, upload.array('files',
 // Delete file
 router.delete('/:filename', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { filename } = req.params;
+    const { filename } = req.params as { filename: string };
 
     // Use StorageService URL generation to match
     const fileUrl = StorageService.getFileUrl(filename);
@@ -242,7 +245,7 @@ router.delete('/:filename', authenticateToken, async (req: AuthRequest, res) => 
     if (!deleted && StorageService.getDriver() === 'local') {
         // If local delete failed, it might be gone already or permission error
         // We log but continue to delete DB record if it was "not found"
-        console.warn(`File ${filename} not found on disk during delete`);
+        logger.warn(`File ${filename} not found on disk during delete`);
     }
 
     // Delete from database
@@ -250,9 +253,9 @@ router.delete('/:filename', authenticateToken, async (req: AuthRequest, res) => 
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Delete error:', error);
+    logger.error('Delete error:', error);
     res.status(500).json({ error: 'Failed to delete file' });
   }
 });
 
-export default router;
+export default wrapRouter(router);

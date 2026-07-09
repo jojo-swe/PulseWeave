@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import sanitizeHtml from 'sanitize-html';
+import { logger } from '../utils/logger';
 
 /**
  * Rate limiter for general API requests.
@@ -159,7 +160,7 @@ export function validateEnvironment(): void {
 
   // Log warnings
   for (const warning of warnings) {
-    console.warn(warning);
+    logger.warn(warning);
   }
 
   // Throw on errors
@@ -192,9 +193,9 @@ export const helmetConfig = {
 /**
  * Logs security-relevant events.
  */
-export function logSecurityEvent(event: string, details: Record<string, any>) {
+export function logSecurityEvent(event: string, details: Record<string, unknown>) {
   const timestamp = new Date().toISOString();
-  console.log(JSON.stringify({
+  logger.info(JSON.stringify({
     type: 'SECURITY_EVENT',
     timestamp,
     event,

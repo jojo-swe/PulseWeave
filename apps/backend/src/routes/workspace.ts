@@ -46,7 +46,7 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const workspace = await prisma.workspace.findFirst({
     where: {
-      id: req.params.id,
+      id: req.params.id!,
       members: { some: { userId: req.userId } },
     },
     include: {
@@ -127,7 +127,7 @@ const updateWorkspaceSchema = z.object({
  * Update workspace (owner/admin only).
  */
 router.patch('/:id', validate(updateWorkspaceSchema), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const { name, iconUrl } = req.body;
 
   // Check membership and role
@@ -159,7 +159,7 @@ router.patch('/:id', validate(updateWorkspaceSchema), asyncHandler(async (req: A
  * This is a hard delete with cascade - all data will be permanently removed.
  */
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   // Verify ownership
   const workspace = await prisma.workspace.findFirst({
@@ -210,7 +210,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
  * Leave workspace (for non-owners).
  */
 router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   // Check membership
   const membership = await prisma.workspaceMember.findFirst({
@@ -247,7 +247,7 @@ router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
  * Get workspace by slug (public info for join page).
  */
 router.get('/join/:slug', asyncHandler(async (req: AuthRequest, res) => {
-  const { slug } = req.params;
+  const { slug } = req.params as { slug: string };
 
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
@@ -291,7 +291,7 @@ router.get('/join/:slug', asyncHandler(async (req: AuthRequest, res) => {
  * Join workspace by slug.
  */
 router.post('/join/:slug', asyncHandler(async (req: AuthRequest, res) => {
-  const { slug } = req.params;
+  const { slug } = req.params as { slug: string };
 
   if (!req.userId) {
     throw Errors.unauthorized();

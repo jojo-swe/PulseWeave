@@ -1,6 +1,6 @@
 import { Router, Request } from 'express';
 import { z } from 'zod';
-import { prisma } from '@pulseweave/database';
+import { prisma, Prisma } from '@pulseweave/database';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
 import { authenticateApiKey, hasScope } from './apikey';
@@ -12,7 +12,7 @@ const router = Router();
  * Extended request with API key data.
  */
 interface ApiRequest extends Request {
-  apiKey: any;
+  apiKey: { id: string; name: string; scopes: string; workspaceId: string; userId: string };
   apiScopes: string[];
   workspaceId: string;
   userId: string;
@@ -88,7 +88,7 @@ router.get(
   authenticateApiKey('channels:read'),
   asyncHandler(async (req, res) => {
     const { workspaceId } = req as ApiRequest;
-    const { channelId } = req.params;
+    const { channelId } = req.params as { channelId: string };
 
     const channel = await prisma.channel.findFirst({
       where: { id: channelId, workspaceId },
@@ -120,7 +120,7 @@ router.get(
   authenticateApiKey('messages:read'),
   asyncHandler(async (req, res) => {
     const { workspaceId } = req as ApiRequest;
-    const { channelId } = req.params;
+    const { channelId } = req.params as { channelId: string };
     const { limit = '50', before, after } = req.query;
 
     // Verify channel exists
@@ -134,7 +134,7 @@ router.get(
 
     const limitNum = Math.min(parseInt(limit as string, 10), 100);
 
-    const where: any = { channelId };
+    const where: Prisma.MessageWhereInput = { channelId };
     if (before) {
       where.createdAt = { lt: new Date(before as string) };
     } else if (after) {
@@ -207,7 +207,7 @@ router.post(
   validate(sendMessageSchema),
   asyncHandler(async (req, res) => {
     const { workspaceId, userId } = req as ApiRequest;
-    const { channelId } = req.params;
+    const { channelId } = req.params as { channelId: string };
     const { content, attachments } = req.body;
 
     // Verify channel exists
@@ -228,7 +228,7 @@ router.post(
         userId,
         attachments: attachments
           ? {
-              create: attachments.map((a: any) => ({
+              create: attachments.map((a: { type: string; url: string; name: string; size: number; mimeType: string }) => ({
                 type: a.type,
                 url: a.url,
                 name: a.name,
@@ -331,7 +331,7 @@ router.get(
   authenticateApiKey('users:read'),
   asyncHandler(async (req, res) => {
     const { workspaceId } = req as ApiRequest;
-    const { userId } = req.params;
+    const { userId } = req.params as { userId: string };
 
     // Verify user is in workspace
     const membership = await prisma.workspaceMember.findUnique({

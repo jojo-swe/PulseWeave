@@ -385,7 +385,7 @@ export default function AdminPage() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Shield className="h-16 w-16 text-muted-foreground" />
         <h1 className="text-xl font-semibold">Access Denied</h1>
-        <p className="text-muted-foreground">You don't have permission to access this page.</p>
+        <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
         <Button asChild>
           <Link href="/">Return to Chat</Link>
         </Button>

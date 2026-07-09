@@ -1,7 +1,8 @@
 import rateLimit from 'express-rate-limit';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@pulseweave/database';
 import { AuthRequest } from './auth';
+import { logger } from '../utils/logger';
 
 // Rate Limits per Minute
 const TIER_LIMITS = {
@@ -45,7 +46,7 @@ const keyGenerator = (req: Request): string => {
  * Dynamic rate limit handler.
  * Fetches workspace tier (simulated or real) to determine limit.
  */
-const handler = async (req: Request, res: Response, next: any, options: any) => {
+const handler = async (req: Request, res: Response, next: NextFunction, options: { statusCode: number; windowMs: number }) => {
   res.status(options.statusCode).json({
     error: 'Rate limit exceeded',
     message: 'Too many requests for this workspace/IP. Please upgrade your plan or slow down.',
@@ -79,7 +80,7 @@ function cleanupTierCache(): number {
 setInterval(() => {
   const removed = cleanupTierCache();
   if (removed > 0) {
-    console.log(`[TierCache] Cleaned up ${removed} expired entries, ${tierCache.size} remaining`);
+    logger.info(`[TierCache] Cleaned up ${removed} expired entries, ${tierCache.size} remaining`);
   }
 }, 5 * 60 * 1000);
 

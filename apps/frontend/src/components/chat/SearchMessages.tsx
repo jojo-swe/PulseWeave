@@ -144,7 +144,7 @@ export function SearchMessages({ onClose, onSelectMessage }: SearchMessagesProps
             </div>
           ) : results.length === 0 ? (
             <div className="px-4 py-12 text-center text-gray-400">
-              <p>No messages found for "{query}"</p>
+              <p>No messages found for &quot;{query}&quot;</p>
               <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
             </div>
           ) : (

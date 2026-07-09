@@ -55,7 +55,7 @@ router.get(
   '/workspace/:workspaceId',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
 
     // Verify admin access (workspace owner OR admin role)
     if (!(await hasAdminAccess(req.userId!, workspaceId))) {
@@ -95,7 +95,7 @@ router.post(
   authenticateToken,
   validate(createWebhookSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
     const { name, url, events, secret, headers, retryCount, timeoutMs } = req.body;
 
     // Verify admin access (workspace owner OR admin role)
@@ -148,7 +148,7 @@ router.patch(
   authenticateToken,
   validate(updateWebhookSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { name, url, events, secret, headers, isActive, retryCount, timeoutMs } =
       req.body;
 
@@ -213,7 +213,7 @@ router.delete(
   '/:id',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const webhook = await prisma.webhook.findUnique({
       where: { id },
@@ -241,7 +241,7 @@ router.get(
   '/:id/deliveries',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { page = '1', limit = '50' } = req.query;
 
     const webhook = await prisma.webhook.findUnique({
@@ -293,7 +293,7 @@ router.post(
   '/:id/test',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const webhook = await prisma.webhook.findUnique({
       where: { id },
@@ -375,7 +375,7 @@ router.post(
         statusCode: response.status,
         response: responseText.slice(0, 500),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Log failed delivery
       await prisma.webhookDelivery.create({
         data: {
@@ -383,13 +383,13 @@ router.post(
           event: 'test',
           payload: payloadString,
           success: false,
-          error: error.message?.slice(0, 500),
+          error: (error as Error)?.message?.slice(0, 500),
         },
       });
 
       res.json({
         success: false,
-        error: error.message,
+        error: (error as Error).message,
       });
     }
   })
@@ -419,7 +419,7 @@ router.get(
   '/incoming/workspace/:workspaceId',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
 
     // Verify admin access (workspace owner OR admin role)
     if (!(await hasAdminAccess(req.userId!, workspaceId))) {
@@ -457,7 +457,7 @@ router.post(
   authenticateToken,
   validate(createIncomingWebhookSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
     const { name, channelId, allowedIps } = req.body;
 
     // Verify admin access (workspace owner OR admin role)
@@ -509,7 +509,7 @@ router.patch(
   authenticateToken,
   validate(updateIncomingWebhookSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { name, channelId, allowedIps, isActive } = req.body;
 
     const webhook = await prisma.incomingWebhook.findUnique({
@@ -567,7 +567,7 @@ router.delete(
   '/incoming/:id',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const webhook = await prisma.incomingWebhook.findUnique({
       where: { id },
@@ -595,7 +595,7 @@ router.post(
   '/incoming/:id/regenerate',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const webhook = await prisma.incomingWebhook.findUnique({
       where: { id },
@@ -646,7 +646,7 @@ const incomingWebhookLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Use the webhook token as part of the key to allow per-webhook limits
-    return `${(ipKeyGenerator as any)(req)}-${req.params.token}`;
+    return `${ipKeyGenerator(req.ip || '')}-${req.params.token!}`;
   },
 });
 
@@ -658,7 +658,7 @@ router.post(
   '/hooks/:token',
   incomingWebhookLimiter,
   asyncHandler(async (req, res) => {
-    const { token } = req.params;
+    const { token } = req.params as { token: string };
     const sourceIp =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
       req.socket.remoteAddress ||
@@ -673,7 +673,8 @@ router.post(
     // Emit socket event for new message
     const io = req.app.get('io');
     if (io && result.message) {
-      io.to(`channel:${result.message.channelId}`).emit('message:new', result.message);
+      const message = result.message as { channelId: string };
+      io.to(`channel:${message.channelId}`).emit('message:new', result.message);
     }
 
     res.json({ success: true, message: result.message });

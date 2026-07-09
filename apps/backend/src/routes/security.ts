@@ -1,6 +1,6 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
-import { prisma } from '@pulseweave/database';
+import { prisma, Prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requirePermission, requireAdmin } from '../middleware/rbac';
 import { PERMISSIONS } from '../services/rbac';
@@ -10,7 +10,8 @@ import {
   getClientIp,
 } from '../middleware/advanced-security';
 import { getSslConfig } from '../middleware/ssl';
-import { asyncHandler, Errors } from '../middleware/error-handler';
+import { asyncHandler, Errors, wrapRouter } from '../middleware/error-handler';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -94,7 +95,7 @@ router.get('/status', authenticateToken, requireAdmin((req) => req.query.workspa
       recentSecurityEvents: recentEvents,
     });
   } catch (error) {
-    console.error('Get security status error:', error);
+    logger.error('Get security status error:', error);
     res.status(500).json({ error: 'Failed to get security status' });
   }
 }));
@@ -113,7 +114,7 @@ const blockIpSchema = z.object({
  * Block an IP address.
  * SECURITY: Requires admin privileges.
  */
-router.post('/block-ip', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
+router.post('/block-ip', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { ip, reason, durationMinutes } = blockIpSchema.parse(req.body);
 
@@ -143,7 +144,7 @@ router.post('/block-ip', authenticateToken, requireAdmin, async (req: AuthReques
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Block IP error:', error);
+    logger.error('Block IP error:', error);
     res.status(500).json({ error: 'Failed to block IP' });
   }
 });
@@ -153,7 +154,7 @@ router.post('/block-ip', authenticateToken, requireAdmin, async (req: AuthReques
  */
 router.get('/check-ip/:ip', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { ip } = req.params;
+    const { ip } = req.params as { ip: string };
     const status = isIpBlocked(ip);
 
     res.json({
@@ -163,7 +164,7 @@ router.get('/check-ip/:ip', authenticateToken, async (req: AuthRequest, res) => 
       blockedUntil: status.until,
     });
   } catch (error) {
-    console.error('Check IP error:', error);
+    logger.error('Check IP error:', error);
     res.status(500).json({ error: 'Failed to check IP status' });
   }
 });
@@ -176,7 +177,7 @@ router.get('/check-ip/:ip', authenticateToken, async (req: AuthRequest, res) => 
  * Get locked accounts.
  * SECURITY: Requires admin privileges.
  */
-router.get('/locked-accounts', authenticateToken, requireAdmin((req) => req.query.workspaceId as string), async (req: AuthRequest, res: any) => {
+router.get('/locked-accounts', authenticateToken, requireAdmin((req) => req.query.workspaceId as string), async (req: AuthRequest, res: Response) => {
   try {
     const lockedAccounts = await prisma.user.findMany({
       where: {
@@ -201,7 +202,7 @@ router.get('/locked-accounts', authenticateToken, requireAdmin((req) => req.quer
 
     res.json(lockedAccounts);
   } catch (error) {
-    console.error('Get locked accounts error:', error);
+    logger.error('Get locked accounts error:', error);
     res.status(500).json({ error: 'Failed to get locked accounts' });
   }
 });
@@ -210,9 +211,9 @@ router.get('/locked-accounts', authenticateToken, requireAdmin((req) => req.quer
  * Unlock a user account.
  * SECURITY: Requires admin privileges.
  */
-router.post('/unlock-account/:userId', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
+router.post('/unlock-account/:userId', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params as { userId: string };
 
     await prisma.user.update({
       where: { id: userId },
@@ -237,7 +238,7 @@ router.post('/unlock-account/:userId', authenticateToken, requireAdmin, async (r
 
     res.json({ success: true, message: 'Account unlocked' });
   } catch (error) {
-    console.error('Unlock account error:', error);
+    logger.error('Unlock account error:', error);
     res.status(500).json({ error: 'Failed to unlock account' });
   }
 });
@@ -250,7 +251,7 @@ router.post('/unlock-account/:userId', authenticateToken, requireAdmin, async (r
  * Get security audit log with filters.
  * SECURITY: Requires admin privileges.
  */
-router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
+router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { 
       action, 
@@ -266,18 +267,18 @@ router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, r
     const limitNum = Math.min(parseInt(limit as string, 10), 100);
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
 
     if (action) {
-      where.action = action;
+      where.action = String(action);
     }
 
     if (userId) {
-      where.userId = userId;
+      where.userId = String(userId);
     }
 
     if (ip) {
-      where.ipAddress = ip;
+      where.ipAddress = String(ip);
     }
 
     if (startDate || endDate) {
@@ -320,7 +321,7 @@ router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, r
       },
     });
   } catch (error) {
-    console.error('Get audit log error:', error);
+    logger.error('Get audit log error:', error);
     res.status(500).json({ error: 'Failed to get audit log' });
   }
 });
@@ -329,7 +330,7 @@ router.get('/audit', authenticateToken, requireAdmin, async (req: AuthRequest, r
  * Get security event summary.
  * SECURITY: Requires admin privileges.
  */
-router.get('/summary', authenticateToken, requireAdmin, async (req: AuthRequest, res: any) => {
+router.get('/summary', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const now = new Date();
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -379,9 +380,10 @@ router.get('/summary', authenticateToken, requireAdmin, async (req: AuthRequest,
       },
     });
   } catch (error) {
-    console.error('Get summary error:', error);
+    logger.error('Get summary error:', error);
     res.status(500).json({ error: 'Failed to get security summary' });
   }
 });
 
-export { router as securityRouter };
+const wrappedSecurityRouter = wrapRouter(router);
+export { wrappedSecurityRouter as securityRouter };

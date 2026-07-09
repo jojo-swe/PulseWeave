@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@pulseweave/database';
 import { JWT_SECRET } from '../middleware/auth';
 import { sanitizeInput } from '../middleware/security';
+import { logger } from '../utils/logger';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -48,12 +49,12 @@ export function setupSocketHandlers(io: Server) {
 
   io.on('connection', async (socket: AuthenticatedSocket) => {
     const userId = socket.userId!;
-    console.log(`User connected: ${userId}`);
+    logger.info(`User connected: ${userId}`);
 
     // Verify user exists before proceeding
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      console.warn(`Socket connection rejected: user ${userId} not found (stale token?)`);
+      logger.warn(`Socket connection rejected: user ${userId} not found (stale token?)`);
       socket.emit('error', { message: 'User not found. Please log in again.' });
       socket.disconnect(true);
       return;
@@ -87,7 +88,7 @@ export function setupSocketHandlers(io: Server) {
 
       if (membership) {
         socket.join(`workspace:${workspaceId}`);
-        console.log(`User ${userId} joined workspace ${workspaceId}`);
+        logger.info(`User ${userId} joined workspace ${workspaceId}`);
       }
     });
 
@@ -131,7 +132,7 @@ export function setupSocketHandlers(io: Server) {
       }
 
       socket.join(`channel:${channelId}`);
-      console.log(`User ${userId} joined channel ${channelId}`);
+      logger.info(`User ${userId} joined channel ${channelId}`);
     });
 
     // Leave channel room
@@ -150,7 +151,7 @@ export function setupSocketHandlers(io: Server) {
 
       if (membership) {
         socket.join(`dm:${conversationId}`);
-        console.log(`User ${userId} joined DM ${conversationId}`);
+        logger.info(`User ${userId} joined DM ${conversationId}`);
       }
     });
 
@@ -242,7 +243,7 @@ export function setupSocketHandlers(io: Server) {
         // Broadcast to channel
         io.to(`channel:${data.channelId}`).emit('message:new', message);
       } catch (error) {
-        console.error('Socket message error:', error);
+        logger.error('Socket message error:', error);
         socket.emit('error', { message: 'Failed to send message' });
       }
     });
@@ -338,7 +339,7 @@ export function setupSocketHandlers(io: Server) {
           action: 'add',
         });
       } catch (error) {
-        console.error('Reaction error:', error);
+        logger.error('Reaction error:', error);
       }
     });
 
@@ -381,13 +382,13 @@ export function setupSocketHandlers(io: Server) {
           });
         }
       } catch (error) {
-        console.error('Reaction remove error:', error);
+        logger.error('Reaction remove error:', error);
       }
     });
 
     // Handle disconnect
     socket.on('disconnect', async () => {
-      console.log(`User disconnected: ${userId}`);
+      logger.info(`User disconnected: ${userId}`);
       
       const sockets = userSockets.get(userId);
       if (sockets) {

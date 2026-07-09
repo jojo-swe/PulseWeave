@@ -21,6 +21,7 @@ export function NetworkStatusBanner({ className }: NetworkStatusBannerProps) {
   // Show banner when offline or API unreachable
   useEffect(() => {
     if (!isOnline || !isApiReachable) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to external network state
       setIsVisible(true);
     } else {
       // Delay hiding to show "reconnected" message briefly
@@ -58,7 +59,7 @@ export function NetworkStatusBanner({ className }: NetworkStatusBannerProps) {
         ) : !isOnline ? (
           <>
             <WifiOff className="w-4 h-4" />
-            <span>You're offline. Check your internet connection.</span>
+            <span>You&apos;re offline. Check your internet connection.</span>
           </>
         ) : (
           <>
@@ -113,7 +114,9 @@ export function ConnectionToast() {
     const isConnected = isOnline && isApiReachable;
 
     if (!isConnected) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to external network state
       setWasOffline(true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to external network state
       setShowToast(true);
     } else if (wasOffline) {
       // Show reconnected toast

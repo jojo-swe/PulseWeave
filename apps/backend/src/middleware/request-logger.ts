@@ -10,13 +10,13 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
   const requestId = generateRequestId();
   
   // Attach request ID for tracing
-  (req as any).requestId = requestId;
+  (req as Request & { requestId?: string }).requestId = requestId;
   res.setHeader('X-Request-ID', requestId);
 
   // Log when response finishes
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    const userId = (req as any).userId;
+    const userId = (req as Request & { userId?: string }).userId;
     
     // Skip logging for health checks and static files
     if (req.path === '/health' || req.path.startsWith('/uploads/')) {

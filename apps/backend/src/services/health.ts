@@ -137,7 +137,7 @@ function checkMemory(): MemoryHealth {
 function checkCpu(): CpuHealth {
   const load = os.loadavg();
   const cpuCount = os.cpus().length;
-  const percentage = (load[0] / cpuCount) * 100;
+  const percentage = (load[0]! / cpuCount) * 100;
 
   let status: 'healthy' | 'warning' | 'critical' = 'healthy';
   if (percentage > 90) status = 'critical';

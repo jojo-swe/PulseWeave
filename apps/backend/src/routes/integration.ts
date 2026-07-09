@@ -118,7 +118,7 @@ router.get(
   '/workspace/:workspaceId',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
 
     // Verify admin access (workspace owner OR admin role)
     if (!(await hasAdminAccess(req.userId!, workspaceId))) {
@@ -152,7 +152,7 @@ router.get(
   '/:id',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const integration = await prisma.integration.findUnique({
       where: { id },
@@ -188,7 +188,7 @@ router.post(
   authenticateToken,
   validate(createIntegrationSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
     const { type, name, config } = req.body;
 
     // Verify admin access (workspace owner OR admin role)
@@ -204,7 +204,7 @@ router.post(
 
     // Check required fields
     for (const [field, schema] of Object.entries(typeInfo.configSchema)) {
-      if ((schema as any).required && !config[field]) {
+      if ((schema as { required?: boolean }).required && !config[field]) {
         throw Errors.badRequest(`Missing required field: ${field}`);
       }
     }
@@ -285,7 +285,7 @@ router.patch(
   authenticateToken,
   validate(updateIntegrationSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { name, config, isActive } = req.body;
 
     const integration = await prisma.integration.findUnique({
@@ -330,7 +330,7 @@ router.delete(
   '/:id',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const integration = await prisma.integration.findUnique({
       where: { id },
@@ -358,7 +358,7 @@ router.post(
   '/:id/test',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const integration = await prisma.integration.findUnique({
       where: { id },
@@ -416,7 +416,7 @@ router.post(
         statusCode: response.status,
         response: responseText.slice(0, 500),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Update status
       await prisma.integration.update({
         where: { id },
@@ -425,7 +425,7 @@ router.post(
 
       res.json({
         success: false,
-        error: error.name === 'AbortError' ? 'Request timed out' : error.message,
+        error: (error as Error).name === 'AbortError' ? 'Request timed out' : (error as Error).message,
       });
     }
   })

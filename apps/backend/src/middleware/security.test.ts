@@ -61,6 +61,7 @@ describe('middleware/security', () => {
     process.env.DATABASE_URL = 'postgres://example';
     delete process.env.JWT_SECRET;
 
+    // logger.warn internally calls console.warn with formatted output
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     expect(() => validateEnvironment()).not.toThrow();
@@ -73,7 +74,10 @@ describe('middleware/security', () => {
     logSecurityEvent('LOGIN_FAILED', { ip: '1.2.3.4' });
 
     const callArg = String(logSpy.mock.calls[0]?.[0]);
-    const parsed = JSON.parse(callArg) as { type: string; event: string; ip: string };
+    // logger.info formats as [timestamp] INFO: <message>, extract the JSON part
+    const jsonStart = callArg.indexOf('{');
+    const jsonStr = jsonStart >= 0 ? callArg.slice(jsonStart) : callArg;
+    const parsed = JSON.parse(jsonStr) as { type: string; event: string; ip: string };
 
     expect(parsed.type).toBe('SECURITY_EVENT');
     expect(parsed.event).toBe('LOGIN_FAILED');

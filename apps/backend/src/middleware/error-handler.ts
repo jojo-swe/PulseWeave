@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, Router } from 'express';
 import { ZodError } from 'zod';
 import { prisma, Prisma } from '@pulseweave/database';
 import { logger } from '../utils/logger';
+import type { AuthRequest } from './auth';
 
 /**
  * Custom application error class with status code and error code.
@@ -100,7 +101,7 @@ export function errorHandler(
     method: req.method,
     path: req.path,
     ip: req.ip,
-    userId: (req as any).userId,
+    userId: (req as AuthRequest).userId,
   };
 
   // Handle known error types
@@ -190,6 +191,28 @@ export function asyncHandler<T>(
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
+}
+
+/**
+ * Wraps all async route handlers on an Express router to catch unhandled rejections.
+ * This is a safety net for routes that aren't wrapped with asyncHandler individually.
+ */
+export function wrapRouter(router: Router): Router {
+  const methods = ['get', 'post', 'put', 'patch', 'delete'] as const;
+  for (const method of methods) {
+    const original = router[method].bind(router) as (path: string, ...handlers: unknown[]) => void;
+    (router as unknown as Record<string, unknown>)[method] = (path: string, ...handlers: unknown[]) => {
+      const wrappedHandlers = handlers.map((handler) => {
+        if (typeof handler !== 'function') return handler;
+        if (handler.constructor?.name === 'AsyncFunction') {
+          return asyncHandler(handler as (req: Request, res: Response, next: NextFunction) => Promise<unknown>);
+        }
+        return handler;
+      });
+      return original(path, ...wrappedHandlers);
+    };
+  }
+  return router;
 }
 
 /**

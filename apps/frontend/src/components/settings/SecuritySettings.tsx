@@ -304,6 +304,7 @@ export function SecuritySettings() {
             <div className="p-4 rounded-lg border space-y-4">
               <div className="text-sm font-medium">Scan QR Code</div>
               <div className="flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element -- data URL QR code not supported by next/image */}
                 <img
                   src={totpSetup.qrCodeDataUrl}
                   alt="TOTP QR Code"
@@ -365,7 +366,7 @@ export function SecuritySettings() {
                 className="ml-2"
                 onClick={() => setBackupCodes([])}
               >
-                I've Saved My Codes
+                I&apos;ve Saved My Codes
               </Button>
             </div>
           )}

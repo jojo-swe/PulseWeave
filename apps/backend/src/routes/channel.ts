@@ -26,7 +26,7 @@ const updateChannelSchema = z.object({
  */
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const channel = await prisma.channel.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: {
       workspace: true,
       members: {
@@ -133,7 +133,7 @@ router.patch('/:id', validate(updateChannelSchema), asyncHandler(async (req: Aut
 
   // Verify user is channel creator or workspace owner
   const channel = await prisma.channel.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { workspace: true },
   });
 
@@ -146,7 +146,7 @@ router.patch('/:id', validate(updateChannelSchema), asyncHandler(async (req: Aut
   }
 
   const updated = await prisma.channel.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     data: {
       ...(name && { name }),
       ...(description !== undefined && { description }),
@@ -163,7 +163,7 @@ router.patch('/:id', validate(updateChannelSchema), asyncHandler(async (req: Aut
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   // Verify user is channel creator or workspace owner
   const channel = await prisma.channel.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { workspace: true },
   });
 
@@ -176,7 +176,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   await prisma.channel.delete({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
   });
 
   res.json({ success: true });
@@ -187,7 +187,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.get('/:id/members', asyncHandler(async (req: AuthRequest, res) => {
   const channel = await prisma.channel.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
   });
 
   if (!channel) {
@@ -226,7 +226,7 @@ router.get('/:id/members', asyncHandler(async (req: AuthRequest, res) => {
 
   // Get channel members with user details
   const members = await prisma.channelMember.findMany({
-    where: { channelId: req.params.id },
+    where: { channelId: req.params.id! },
     include: {
       user: {
         select: {
@@ -273,7 +273,7 @@ router.get('/:id/members', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.post('/:id/join', asyncHandler(async (req: AuthRequest, res) => {
   const channel = await prisma.channel.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
   });
 
   if (!channel) {
@@ -302,12 +302,12 @@ router.post('/:id/join', asyncHandler(async (req: AuthRequest, res) => {
     where: {
       userId_channelId: {
         userId: req.userId!,
-        channelId: req.params.id,
+        channelId: req.params.id!,
       },
     },
     create: {
       userId: req.userId!,
-      channelId: req.params.id,
+      channelId: req.params.id!,
     },
     update: {},
   });
@@ -320,7 +320,7 @@ router.post('/:id/join', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
   const channel = await prisma.channel.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { workspace: true },
   });
 
@@ -333,7 +333,7 @@ router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
     where: {
       userId_channelId: {
         userId: req.userId!,
-        channelId: req.params.id,
+        channelId: req.params.id!,
       },
     },
   });
@@ -352,7 +352,7 @@ router.post('/:id/leave', asyncHandler(async (req: AuthRequest, res) => {
     where: {
       userId_channelId: {
         userId: req.userId!,
-        channelId: req.params.id,
+        channelId: req.params.id!,
       },
     },
   });

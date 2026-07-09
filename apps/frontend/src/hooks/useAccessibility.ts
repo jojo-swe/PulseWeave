@@ -85,6 +85,7 @@ export function useKeyboardNavigation({
   // Reset active index when item count changes
   useEffect(() => {
     if (activeIndex >= itemCount) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clamping index when item count changes
       setActiveIndex(itemCount - 1);
     }
   }, [itemCount, activeIndex]);
@@ -225,6 +226,7 @@ export function useReducedMotion(): boolean {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading initial media query value
     setReducedMotion(mediaQuery.matches);
 
     const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);

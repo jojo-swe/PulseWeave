@@ -41,8 +41,10 @@ export function ThemeProvider({
   useEffect(() => {
     const stored = localStorage.getItem(storageKey) as Theme | null;
     if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- loading persisted theme on mount
       setTheme(stored);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR mount detection
     setMounted(true);
   }, [storageKey]);
 
@@ -66,6 +68,7 @@ export function ThemeProvider({
     }
 
     root.classList.add(resolved);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing resolved theme with DOM
     setResolvedTheme(resolved);
   }, [theme, mounted]);
 

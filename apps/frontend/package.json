@@ -6,7 +6,7 @@
     "dev": "next dev -p 9797",
     "build": "next build",
     "start": "next start -p 9797",
-    "lint": "next lint"
+    "lint": "eslint"
   },
   "dependencies": {
     "@pulseweave/types": "workspace:*",

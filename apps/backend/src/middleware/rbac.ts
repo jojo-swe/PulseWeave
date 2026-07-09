@@ -9,7 +9,7 @@ import { hasPermission, hasAnyPermission, hasAllPermissions, getUserRole } from 
  */
 export function requirePermission(
   permission: string,
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.userId) {
@@ -37,7 +37,7 @@ export function requirePermission(
  */
 export function requireAnyPermission(
   permissions: string[],
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.userId) {
@@ -65,7 +65,7 @@ export function requireAnyPermission(
  */
 export function requireAllPermissions(
   permissions: string[],
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.userId) {
@@ -93,7 +93,7 @@ export function requireAllPermissions(
  */
 export function requireRole(
   roles: string[],
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.userId) {
@@ -121,7 +121,7 @@ export function requireRole(
  * @param getWorkspaceId - Function to extract workspace ID from request
  */
 export function requireOwner(
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return requireRole(['owner'], getWorkspaceId);
 }
@@ -131,7 +131,7 @@ export function requireOwner(
  * @param getWorkspaceId - Function to extract workspace ID from request
  */
 export function requireAdmin(
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return requireRole(['owner', 'admin'], getWorkspaceId);
 }
@@ -141,7 +141,7 @@ export function requireAdmin(
  * @param getWorkspaceId - Function to extract workspace ID from request
  */
 export function requireModerator(
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId || req.body.workspaceId
+  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return requireRole(['owner', 'admin', 'moderator'], getWorkspaceId);
 }

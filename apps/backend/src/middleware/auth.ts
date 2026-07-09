@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '@pulseweave/database';
 import { jwtConfig } from '../config/security';
+import { logger } from '../utils/logger';
 
 /**
  * SECURITY: All JWT configuration is centralized in config/security.ts.
@@ -96,7 +97,7 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    console.error('Auth middleware error:', error);
+    logger.error('Auth middleware error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -166,7 +167,7 @@ export async function revokeToken(tokenId: string): Promise<void> {
     });
   } catch (error) {
     // Ignore error if session doesn't exist (already deleted or never stored)
-    console.warn(`Failed to revoke token ${tokenId}:`, error);
+    logger.warn(`Failed to revoke token ${tokenId}:`, error);
   }
 }
 

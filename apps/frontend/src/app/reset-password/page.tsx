@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
 
               <h1 className="text-2xl font-bold text-foreground mb-2">Reset your password</h1>
               <p className="text-muted-foreground mb-6">
-                Enter your new password below. Make sure it's strong and unique.
+                Enter your new password below. Make sure it&apos;s strong and unique.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">

@@ -46,5 +46,20 @@
     
     // Allow any type (we're gradually typing)
     "@typescript-eslint/no-explicit-any": "warn"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/services/logger.ts", "src/utils/logger.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "no-console": "off",
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
 }

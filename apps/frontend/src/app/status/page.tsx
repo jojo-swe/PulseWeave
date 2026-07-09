@@ -96,6 +96,7 @@ export default function StatusPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial status check triggers state updates
     checkStatus();
     const interval = setInterval(checkStatus, 30000);
     return () => clearInterval(interval);

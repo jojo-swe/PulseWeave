@@ -1,10 +1,12 @@
 import { S3Client, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+import { Request } from 'express';
 import multer from 'multer';
 import multerS3 from 'multer-s3';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 
 export type StorageDriver = 'local' | 's3';
 
@@ -35,7 +37,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Generate unique filename
-const generateFilename = (req: any, file: Express.Multer.File, cb: (error: any, filename: string) => void) => {
+const generateFilename = (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
   const ext = path.extname(file.originalname).toLowerCase().replace(/[^a-z0-9.]/g, '');
   const uniqueName = `${uuidv4()}${ext}`;
   cb(null, uniqueName);
@@ -53,14 +55,14 @@ export class StorageService {
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: generateFilename,
         metadata: (
-          req: any,
+          req: Request,
           file: Express.Multer.File,
           cb: (error: Error | null, metadata?: Record<string, string>) => void
         ) => {
           cb(null, {
             fieldName: file.fieldname,
             originalName: file.originalname,
-            uploadedBy: (req as any).user?.userId || 'unknown'
+            uploadedBy: (req as Request & { user?: { userId?: string } }).user?.userId || 'unknown'
           });
         }
       });
@@ -87,7 +89,7 @@ export class StorageService {
         }));
         return true;
       } catch (error) {
-        console.error('S3 Delete Error:', error);
+        logger.error('S3 Delete Error:', error);
         return false;
       }
     }
@@ -106,7 +108,7 @@ export class StorageService {
         return true;
       }
     } catch (error) {
-      console.error('Local Delete Error:', error);
+      logger.error('Local Delete Error:', error);
     }
     return false;
   }
@@ -134,7 +136,7 @@ export class StorageService {
         }
         return Buffer.concat(chunks);
       } catch (error) {
-        console.error('S3 Read Error:', error);
+        logger.error('S3 Read Error:', error);
         return null;
       }
     }
@@ -154,7 +156,7 @@ export class StorageService {
       fs.closeSync(fd);
       return buffer.slice(0, bytesRead);
     } catch (error) {
-      console.error('Local Read Error:', error);
+      logger.error('Local Read Error:', error);
       return null;
     }
   }
@@ -183,7 +185,7 @@ export class StorageService {
         if (!response.Body) return null;
         return response.Body as Readable;
       } catch (error) {
-        console.error('S3 Stream Error:', error);
+        logger.error('S3 Stream Error:', error);
         return null;
       }
     }
@@ -195,7 +197,7 @@ export class StorageService {
       if (!fs.existsSync(resolvedPath)) return null;
       return fs.createReadStream(resolvedPath);
     } catch (error) {
-      console.error('Local Stream Error:', error);
+      logger.error('Local Stream Error:', error);
       return null;
     }
   }

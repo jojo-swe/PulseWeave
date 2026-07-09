@@ -261,6 +261,7 @@ export function AttachedFiles({ files, onRemove }: AttachedFilesProps) {
             className="relative group flex items-center gap-2 px-2 py-1 rounded bg-gray-800 text-sm"
           >
             {isImage ? (
+              // eslint-disable-next-line @next/next/no-img-element -- blob URL not supported by next/image
               <img
                 src={URL.createObjectURL(file)}
                 alt={file.name}

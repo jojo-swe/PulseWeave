@@ -232,6 +232,7 @@ export function OnboardingChecklist() {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('pulseweave-onboarding-steps');
       if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading persisted onboarding steps on mount
         setCompletedSteps(JSON.parse(stored));
       }
     }

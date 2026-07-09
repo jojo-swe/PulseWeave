@@ -61,11 +61,19 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
   }
 }
 
+function argsToMessage(args: unknown[]): string {
+  return args.map(arg =>
+    typeof arg === 'string' ? arg :
+    arg instanceof Error ? arg.message :
+    JSON.stringify(arg)
+  ).join(' ');
+}
+
 export const logger = {
-  debug: (message: string, context?: Record<string, unknown>) => log('debug', message, context),
-  info: (message: string, context?: Record<string, unknown>) => log('info', message, context),
-  warn: (message: string, context?: Record<string, unknown>) => log('warn', message, context),
-  error: (message: string, context?: Record<string, unknown>) => log('error', message, context),
+  debug: (...args: unknown[]) => log('debug', argsToMessage(args)),
+  info: (...args: unknown[]) => log('info', argsToMessage(args)),
+  warn: (...args: unknown[]) => log('warn', argsToMessage(args)),
+  error: (...args: unknown[]) => log('error', argsToMessage(args)),
   
   /**
    * Log an HTTP request.

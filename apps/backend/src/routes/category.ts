@@ -28,7 +28,7 @@ const updateCategorySchema = z.object({
  * Get all categories for a workspace.
  */
 router.get('/workspace/:workspaceId', asyncHandler(async (req: AuthRequest, res) => {
-  const { workspaceId } = req.params;
+  const { workspaceId } = req.params as { workspaceId: string };
 
   // Verify user is a member of the workspace
   const membership = await prisma.workspaceMember.findUnique({
@@ -107,7 +107,7 @@ router.post('/', validate(createCategorySchema), asyncHandler(async (req: AuthRe
  * Update a category.
  */
 router.patch('/:id', validate(updateCategorySchema), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const { name, position, isCollapsed } = req.body;
 
   const category = await prisma.channelCategory.findUnique({
@@ -151,7 +151,7 @@ router.patch('/:id', validate(updateCategorySchema), asyncHandler(async (req: Au
  * Delete a category.
  */
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const category = await prisma.channelCategory.findUnique({
     where: { id },
@@ -192,7 +192,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
  * Move a channel to a category.
  */
 router.post('/:id/channels/:channelId', asyncHandler(async (req: AuthRequest, res) => {
-  const { id, channelId } = req.params;
+  const { id, channelId } = req.params as { id: string; channelId: string };
   const { position } = req.body;
 
   const category = await prisma.channelCategory.findUnique({

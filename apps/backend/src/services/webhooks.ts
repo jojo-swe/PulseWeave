@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '@pulseweave/database';
+import { logger } from '../utils/logger';
 
 /**
  * Available webhook events.
@@ -40,7 +41,7 @@ interface WebhookPayload {
     id: string;
     name: string;
   };
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 /**
@@ -81,7 +82,7 @@ export function verifySignature(
 export async function dispatchWebhookEvent(
   workspaceId: string,
   event: WebhookEvent,
-  data: Record<string, any>
+  data: Record<string, unknown>
 ): Promise<void> {
   try {
     // Get workspace info
@@ -123,7 +124,7 @@ export async function dispatchWebhookEvent(
       matchingWebhooks.map((webhook) => deliverWebhook(webhook, payload))
     );
   } catch (error) {
-    console.error('Error dispatching webhook event:', error);
+    logger.error('Error dispatching webhook event:', error);
   }
 }
 
@@ -210,8 +211,8 @@ async function deliverWebhook(
       }
 
       lastError = new Error(`HTTP ${res.status}: ${response?.slice(0, 200)}`);
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      lastError = error as Error;
     }
 
     // Exponential backoff before retry (not after last attempt)
@@ -263,7 +264,7 @@ export async function processIncomingWebhook(
     attachments?: Array<{ url: string; name: string }>;
   },
   sourceIp: string
-): Promise<{ success: boolean; error?: string; message?: any }> {
+): Promise<{ success: boolean; error?: string; message?: unknown }> {
   // Find webhook
   const webhook = await prisma.incomingWebhook.findUnique({
     where: { token },

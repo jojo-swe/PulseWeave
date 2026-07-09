@@ -5,6 +5,7 @@ import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
+import { logger } from '../utils/logger';
 
 // Plan mapping from Stripe price IDs to plan names
 // PRODUCTION: Update these with your actual Stripe price IDs
@@ -55,7 +56,7 @@ function getStripeClient(): Stripe | null {
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
-    console.warn('STRIPE_SECRET_KEY not configured - payments disabled');
+    logger.warn('STRIPE_SECRET_KEY not configured - payments disabled');
     stripeChecked = true;
     return null;
   }
@@ -131,7 +132,7 @@ router.post(
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET not configured');
+      logger.error('STRIPE_WEBHOOK_SECRET not configured');
       throw Errors.internal('Webhook not configured');
     }
 
@@ -146,7 +147,7 @@ router.post(
       // Verify webhook signature
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      logger.error('Webhook signature verification failed:', err);
       throw Errors.badRequest('Invalid webhook signature');
     }
 
@@ -155,7 +156,7 @@ router.post(
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId || session.client_reference_id;
-        console.log(`[Stripe] Checkout completed for user: ${userId}`);
+        logger.info(`[Stripe] Checkout completed for user: ${userId}`);
         
         if (userId && session.customer && session.subscription) {
           // Create or update subscription record
@@ -181,7 +182,7 @@ router.post(
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] Subscription ${event.type === 'customer.subscription.created' ? 'created' : 'updated'}: ${subscription.id}, status: ${subscription.status}`);
+        logger.info(`[Stripe] Subscription ${event.type === 'customer.subscription.created' ? 'created' : 'updated'}: ${subscription.id}, status: ${subscription.status}`);
         
         // Find user by Stripe customer ID
         const existingSub = await prisma.subscription.findFirst({
@@ -199,8 +200,8 @@ router.post(
               stripePriceId: priceId,
               status: subscription.status,
               plan,
-              currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-              currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+              currentPeriodStart: new Date((subscription as unknown as Record<string, number>).current_period_start! * 1000),
+              currentPeriodEnd: new Date((subscription as unknown as Record<string, number>).current_period_end! * 1000),
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             },
           });
@@ -210,7 +211,7 @@ router.post(
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] Subscription cancelled: ${subscription.id}`);
+        logger.info(`[Stripe] Subscription cancelled: ${subscription.id}`);
         
         // Mark subscription as canceled
         await prisma.subscription.updateMany({
@@ -225,13 +226,13 @@ router.post(
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
+        logger.info(`[Stripe] Payment succeeded for invoice: ${invoice.id}`);
         
         // Update subscription status to active if it was past_due
-        if ((invoice as any).subscription) {
+        if ((invoice as unknown as Record<string, string | null>).subscription) {
           await prisma.subscription.updateMany({
             where: { 
-              stripeSubscriptionId: (invoice as any).subscription as string,
+              stripeSubscriptionId: (invoice as unknown as Record<string, string | null>).subscription as string,
               status: 'past_due',
             },
             data: { status: 'active' },
@@ -242,12 +243,12 @@ router.post(
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[Stripe] Payment failed for invoice: ${invoice.id}`);
+        logger.info(`[Stripe] Payment failed for invoice: ${invoice.id}`);
         
         // Mark subscription as past_due
-        if ((invoice as any).subscription) {
+        if ((invoice as unknown as Record<string, string | null>).subscription) {
           await prisma.subscription.updateMany({
-            where: { stripeSubscriptionId: (invoice as any).subscription as string },
+            where: { stripeSubscriptionId: (invoice as unknown as Record<string, string | null>).subscription as string },
             data: { status: 'past_due' },
           });
         }
@@ -255,7 +256,7 @@ router.post(
       }
 
       default:
-        console.log(`[Stripe] Unhandled event type: ${event.type}`);
+        logger.info(`[Stripe] Unhandled event type: ${event.type}`);
     }
 
     // Return 200 to acknowledge receipt

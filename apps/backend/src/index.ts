@@ -72,7 +72,7 @@ import {
 // Validate all security configuration before starting the server
 const securityValidation = validateSecurityConfig();
 if (!securityValidation.valid && securityConfig.isProduction) {
-  console.error('❌ Security validation failed. Server cannot start in production with invalid configuration.');
+  logger.error('❌ Security validation failed. Server cannot start in production with invalid configuration.');
   process.exit(1);
 }
 
@@ -248,7 +248,7 @@ app.use('/api/notifications', authenticateToken, notificationRouter);
 // Serve uploaded files with authentication
 app.get('/uploads/:filename', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const filename = req.params.filename;
+    const filename = req.params.filename!;
     if (!filename || path.basename(filename) !== filename) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
@@ -303,7 +303,7 @@ app.get('/uploads/:filename', authenticateToken, async (req: AuthRequest, res) =
     }
 
     stream.on('error', (error) => {
-      console.error('File stream error:', error);
+      logger.error('File stream error:', error);
       if (!res.headersSent) {
         res.status(500).json({ error: 'Failed to read file' });
       } else {
@@ -313,7 +313,7 @@ app.get('/uploads/:filename', authenticateToken, async (req: AuthRequest, res) =
 
     stream.pipe(res);
   } catch (error) {
-    console.error('File download error:', error);
+    logger.error('File download error:', error);
     res.status(500).json({ error: 'Failed to download file' });
   }
 });
@@ -403,6 +403,18 @@ async function startServer(): Promise<void> {
     process.exit(1);
   }
 }
+
+// Handle unhandled promise rejections and uncaught exceptions
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error('Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception:', error);
+  // Give the process a moment to flush logs, then exit
+  // Uncaught exceptions leave the process in an unpredictable state
+  setTimeout(() => process.exit(1), 1000);
+});
 
 startServer();
 

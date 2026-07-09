@@ -18,6 +18,7 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- setting no-token state on mount
       setStatus('no-token');
       return;
     }
@@ -110,7 +111,7 @@ export default function VerifyEmailPage() {
                   Go to Login
                 </Button>
                 <p className="text-sm text-muted-foreground">
-                  Didn't receive an email?{' '}
+                  Didn&apos;t receive an email?{' '}
                   <Link href="/resend-verification" className="text-primary hover:underline">
                     Resend verification email
                   </Link>

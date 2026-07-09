@@ -106,7 +106,7 @@ export function MessageList({ onReaction, onEdit, onDelete, onOpenThread, onPin 
           <p className="text-muted-foreground mb-6">
             This is the very beginning of the <span className="font-medium text-foreground">#{currentChannel?.name}</span> channel.
             {currentChannel?.description && (
-              <span className="block mt-2 text-sm italic">"{currentChannel.description}"</span>
+              <span className="block mt-2 text-sm italic">&quot;{currentChannel.description}&quot;</span>
             )}
           </p>
           <div className="flex flex-wrap justify-center gap-2 text-sm text-muted-foreground">

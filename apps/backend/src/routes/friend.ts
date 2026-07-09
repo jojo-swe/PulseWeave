@@ -221,7 +221,7 @@ router.post('/request', validate(sendRequestSchema), asyncHandler(async (req: Au
  */
 router.post('/request/:id/accept', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const request = await prisma.friendship.findUnique({
     where: { id },
@@ -265,7 +265,7 @@ router.post('/request/:id/accept', asyncHandler(async (req: AuthRequest, res) =>
  */
 router.post('/request/:id/decline', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const request = await prisma.friendship.findUnique({
     where: { id },
@@ -296,7 +296,7 @@ router.post('/request/:id/decline', asyncHandler(async (req: AuthRequest, res) =
  */
 router.delete('/request/:id', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const request = await prisma.friendship.findUnique({
     where: { id },
@@ -326,7 +326,7 @@ router.delete('/request/:id', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const friendship = await prisma.friendship.findUnique({
     where: { id },
@@ -356,7 +356,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.post('/block/:userId', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const targetUserId = req.params.userId;
+  const targetUserId = req.params.userId!;
 
   if (targetUserId === userId) {
     throw Errors.badRequest('Cannot block yourself');
@@ -408,7 +408,7 @@ router.post('/block/:userId', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.delete('/block/:userId', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const targetUserId = req.params.userId;
+  const targetUserId = req.params.userId!;
 
   const friendship = await prisma.friendship.findFirst({
     where: {

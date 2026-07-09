@@ -161,7 +161,7 @@ router.post(
 router.get(
   '/channel/:channelId/keys',
   asyncHandler(async (req: AuthRequest, res) => {
-    const { channelId } = req.params;
+    const { channelId } = req.params as { channelId: string };
 
     // Verify user has access to channel
     const channel = await prisma.channel.findFirst({
@@ -253,7 +253,7 @@ router.patch(
   '/channel/:channelId',
   validate(toggleEncryptionSchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { channelId } = req.params;
+    const { channelId } = req.params as { channelId: string };
     const { enabled } = req.body;
 
     // Verify channel exists and user is admin/owner
@@ -354,7 +354,7 @@ router.patch(
 router.get(
   '/conversation/:conversationId/status',
   asyncHandler(async (req: AuthRequest, res) => {
-    const { conversationId } = req.params;
+    const { conversationId } = req.params as { conversationId: string };
 
     const conversation = await prisma.conversation.findFirst({
       where: {

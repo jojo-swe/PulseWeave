@@ -52,9 +52,10 @@ export class NotificationService {
               notificationPayload
             );
             return { status: 'fulfilled', id: sub.id };
-          } catch (error: any) {
+          } catch (error: unknown) {
             // Check for expired subscription (410 Gone or 404 Not Found)
-            if (error.statusCode === 410 || error.statusCode === 404) {
+            const statusCode = (error as { statusCode?: number }).statusCode;
+            if (statusCode === 410 || statusCode === 404) {
               logger.info(`Cleaning up expired subscription ${sub.id}`);
               await prisma.pushSubscription.delete({ where: { id: sub.id } });
             }
@@ -74,7 +75,7 @@ export class NotificationService {
   /**
    * Trigger notifications for a new message
    */
-  static async notifyNewMessage(message: any, channel: any) {
+  static async notifyNewMessage(message: { content: string; userId: string; user?: { displayName: string } }, channel: { id: string; name: string; workspaceId: string }) {
     try {
       // Don't notify the sender
       if (!message.user) {
@@ -87,7 +88,7 @@ export class NotificationService {
       const mentionedUserIds = new Set<string>();
 
       while ((match = mentionRegex.exec(message.content)) !== null) {
-        mentionedUserIds.add(match[1]);
+        mentionedUserIds.add(match[1]!);
       }
 
       // 1. Notify mentioned users

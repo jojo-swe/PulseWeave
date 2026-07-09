@@ -9,6 +9,13 @@ import { hasAdminAccess } from '../utils/workspace-access';
 
 const router = Router();
 
+interface ApiKeyRequest extends Request {
+  apiKey: unknown;
+  apiScopes: string[];
+  workspaceId: string;
+  userId: string;
+}
+
 /**
  * Available API key scopes.
  */
@@ -43,7 +50,7 @@ function generateApiKey(): { key: string; hash: string; prefix: string } {
  * @returns API key data or null
  */
 export async function verifyApiKey(key: string): Promise<{
-  apiKey: any;
+  apiKey: { id: string; name: string; scopes: string; workspaceId: string; userId: string };
   scopes: string[];
   workspaceId: string;
   userId: string;
@@ -131,10 +138,10 @@ export function authenticateApiKey(requiredScope?: ApiScope) {
     }
 
     // Attach to request
-    (req as any).apiKey = result.apiKey;
-    (req as any).apiScopes = result.scopes;
-    (req as any).workspaceId = result.workspaceId;
-    (req as any).userId = result.userId;
+    (req as ApiKeyRequest).apiKey = result.apiKey;
+    (req as ApiKeyRequest).apiScopes = result.scopes;
+    (req as ApiKeyRequest).workspaceId = result.workspaceId;
+    (req as ApiKeyRequest).userId = result.userId;
 
     next();
   };
@@ -171,7 +178,7 @@ router.get(
   '/workspace/:workspaceId',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
 
     // Verify admin access (workspace owner OR admin role)
     if (!(await hasAdminAccess(req.userId!, workspaceId))) {
@@ -213,7 +220,7 @@ router.post(
   authenticateToken,
   validate(createApiKeySchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
     const { name, scopes, expiresAt } = req.body;
 
     // Verify admin access (workspace owner OR admin role)
@@ -270,7 +277,7 @@ router.patch(
   authenticateToken,
   validate(updateApiKeySchema),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { name, scopes, isActive, expiresAt } = req.body;
 
     const apiKey = await prisma.apiKey.findUnique({
@@ -332,7 +339,7 @@ router.delete(
   '/:id',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const apiKey = await prisma.apiKey.findUnique({
       where: { id },
@@ -360,7 +367,7 @@ router.post(
   '/:id/regenerate',
   authenticateToken,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const apiKey = await prisma.apiKey.findUnique({
       where: { id },

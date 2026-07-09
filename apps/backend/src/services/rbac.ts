@@ -1,4 +1,5 @@
 import { prisma } from '@pulseweave/database';
+import { logger } from '../utils/logger';
 
 /**
  * Permission categories and their permissions.
@@ -120,7 +121,7 @@ export const DEFAULT_ROLES = {
  * Initializes default roles and permissions in the database.
  */
 export async function initializeRbac(): Promise<void> {
-  console.log('Initializing RBAC system...');
+  logger.info('Initializing RBAC system...');
 
   // Create all permissions
   const allPermissions = Object.entries(PERMISSIONS).flatMap(([category, perms]) =>
@@ -171,7 +172,7 @@ export async function initializeRbac(): Promise<void> {
     }
   }
 
-  console.log('RBAC system initialized successfully');
+  logger.info('RBAC system initialized successfully');
 }
 
 /**

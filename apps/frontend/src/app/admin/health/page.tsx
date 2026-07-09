@@ -156,6 +156,7 @@ export default function HealthPage() {
     }
 
     // Initial fetch
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setting loading state before initial fetch
     setLoading(true);
     Promise.all([fetchHealth(), fetchMetrics()]).finally(() => setLoading(false));
 

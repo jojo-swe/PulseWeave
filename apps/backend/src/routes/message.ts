@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate, paginationSchema, idParamsSchema } from '../middleware/validate';
 import { NotificationService } from '../services/notifications';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
 
   const hasMore = messages.length > take;
   const results = hasMore ? messages.slice(0, take) : messages;
-  const nextCursor = hasMore ? results[results.length - 1].id : null;
+  const nextCursor = hasMore ? results[results.length - 1]!.id : null;
 
   res.json({ messages: results, nextCursor });
 }));
@@ -82,7 +83,7 @@ router.get('/channel/:channelId', asyncHandler(async (req: AuthRequest, res) => 
   // Verify channel exists and user has access
   const channel = await prisma.channel.findFirst({
     where: {
-      id: req.params.channelId,
+      id: req.params.channelId!,
       OR: [
         { isPrivate: false },
         { members: { some: { userId: req.userId } } },
@@ -96,7 +97,7 @@ router.get('/channel/:channelId', asyncHandler(async (req: AuthRequest, res) => 
 
   const messages = await prisma.message.findMany({
     where: {
-      channelId: req.params.channelId,
+      channelId: req.params.channelId!,
       parentId: null, // Only top-level messages
     },
     include: {
@@ -136,7 +137,7 @@ router.get('/channel/:channelId', asyncHandler(async (req: AuthRequest, res) => 
 // Get thread replies
 router.get('/:id/replies', asyncHandler(async (req: AuthRequest, res) => {
   const parentMessage = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { channel: { select: { id: true, workspaceId: true, isPrivate: true } } },
   });
 
@@ -168,7 +169,7 @@ router.get('/:id/replies', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   const replies = await prisma.message.findMany({
-    where: { parentId: req.params.id },
+    where: { parentId: req.params.id! },
     include: {
       user: {
         select: {
@@ -267,7 +268,7 @@ router.post('/', validate(createMessageSchema), asyncHandler(async (req: AuthReq
   // Using setImmediate to not block the response
   setImmediate(() => {
     NotificationService.notifyNewMessage(message, channel).catch(err => 
-      console.error('Failed to send notifications:', err)
+      logger.error('Failed to send notifications:', err)
     );
   });
 
@@ -284,7 +285,7 @@ router.patch('/:id', validate(updateMessageSchema), asyncHandler(async (req: Aut
   const { content } = req.body;
 
   const message = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
   });
 
   if (!message) {
@@ -296,7 +297,7 @@ router.patch('/:id', validate(updateMessageSchema), asyncHandler(async (req: Aut
   }
 
   const updated = await prisma.message.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     data: {
       content,
       isEdited: true,
@@ -319,7 +320,7 @@ router.patch('/:id', validate(updateMessageSchema), asyncHandler(async (req: Aut
 // Delete message
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const message = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: {
       channel: {
         include: { workspace: true },
@@ -340,7 +341,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   await prisma.message.delete({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
   });
 
   res.json({ success: true });
@@ -357,7 +358,7 @@ router.post('/:id/reactions', validate(reactionSchema), asyncHandler(async (req:
 
   // Verify message exists and user has access to channel
   const message = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { channel: true },
   });
 
@@ -384,13 +385,13 @@ router.post('/:id/reactions', validate(reactionSchema), asyncHandler(async (req:
   const reaction = await prisma.reaction.upsert({
     where: {
       messageId_userId_emoji: {
-        messageId: req.params.id,
+        messageId: req.params.id!,
         userId: req.userId!,
         emoji,
       },
     },
     create: {
-      messageId: req.params.id,
+      messageId: req.params.id!,
       workspaceId: message.channel.workspaceId,
       userId: req.userId!,
       emoji,
@@ -405,7 +406,7 @@ router.post('/:id/reactions', validate(reactionSchema), asyncHandler(async (req:
 router.delete('/:id/reactions/:emoji', asyncHandler(async (req: AuthRequest, res) => {
   // Verify message exists and user has access to channel
   const message = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { channel: true },
   });
 
@@ -432,9 +433,9 @@ router.delete('/:id/reactions/:emoji', asyncHandler(async (req: AuthRequest, res
   await prisma.reaction.delete({
     where: {
       messageId_userId_emoji: {
-        messageId: req.params.id,
+        messageId: req.params.id!,
         userId: req.userId!,
-        emoji: req.params.emoji,
+        emoji: req.params.emoji!,
       },
     },
   });
@@ -446,7 +447,7 @@ router.delete('/:id/reactions/:emoji', asyncHandler(async (req: AuthRequest, res
 router.post('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
   // Verify message exists and user has access
   const existing = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { channel: true },
   });
 
@@ -471,7 +472,7 @@ router.post('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   const message = await prisma.message.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     data: {
       isPinned: true,
       pinnedAt: new Date(),
@@ -496,7 +497,7 @@ router.post('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
 router.delete('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
   // Verify message exists
   const existing = await prisma.message.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     include: { channel: true },
   });
 
@@ -521,7 +522,7 @@ router.delete('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   const message = await prisma.message.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id! },
     data: {
       isPinned: false,
       pinnedAt: null,
@@ -547,7 +548,7 @@ router.get('/channel/:channelId/pinned', asyncHandler(async (req: AuthRequest, r
   // Verify channel exists and user has access
   const channel = await prisma.channel.findFirst({
     where: {
-      id: req.params.channelId,
+      id: req.params.channelId!,
       OR: [
         { isPrivate: false },
         { members: { some: { userId: req.userId } } },
@@ -561,7 +562,7 @@ router.get('/channel/:channelId/pinned', asyncHandler(async (req: AuthRequest, r
 
   const messages = await prisma.message.findMany({
     where: {
-      channelId: req.params.channelId,
+      channelId: req.params.channelId!,
       isPinned: true,
     },
     include: {

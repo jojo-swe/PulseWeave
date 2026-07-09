@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '@pulseweave/database';
 import { slowDown } from 'express-slow-down';
 import hpp from 'hpp';
+import { logger } from '../utils/logger';
 
 // ============================================================================
 // IP-based Security
@@ -44,7 +45,7 @@ function cleanupSecurityCaches(): void {
   }
 
   if (blockedRemoved > 0 || attemptsRemoved > 0) {
-    console.log(`[SecurityCache] Cleaned up ${blockedRemoved} blocked IPs, ${attemptsRemoved} failed attempts`);
+    logger.info(`[SecurityCache] Cleaned up ${blockedRemoved} blocked IPs, ${attemptsRemoved} failed attempts`);
   }
 }
 
@@ -66,7 +67,7 @@ const IP_BLOCK_CONFIG = {
 export function getClientIp(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
+    return forwarded.split(',')[0]!.trim();
   }
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
@@ -96,7 +97,7 @@ export function blockIp(ip: string, reason: string, durationMinutes?: number): v
   const until = new Date(Date.now() + duration * 60 * 1000);
   
   blockedIps.set(ip, { until, reason });
-  console.warn(`IP blocked: ${ip} - Reason: ${reason} - Until: ${until.toISOString()}`);
+  logger.warn(`IP blocked: ${ip} - Reason: ${reason} - Until: ${until.toISOString()}`);
 }
 
 /**
@@ -254,7 +255,7 @@ export async function clearFailedLogins(userId: string): Promise<void> {
 export function generateRequestSignature(
   method: string,
   path: string,
-  body: any,
+  body: unknown,
   timestamp: number,
   secret: string
 ): string {
@@ -378,7 +379,7 @@ function cleanupCsrfTokens(): void {
   }
   
   if (removed > 0) {
-    console.log(`[CsrfTokens] Cleaned up ${removed} expired tokens, ${csrfTokens.size} remaining`);
+    logger.info(`[CsrfTokens] Cleaned up ${removed} expired tokens, ${csrfTokens.size} remaining`);
   }
 }
 
@@ -490,7 +491,7 @@ export async function logSecurityAudit(
     userAgent?: string;
     resource?: string;
     resourceId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }
 ): Promise<void> {
   try {
@@ -506,11 +507,11 @@ export async function logSecurityAudit(
       },
     });
   } catch (error) {
-    console.error('Failed to log security audit:', error);
+    logger.error('Failed to log security audit:', error);
   }
 
   // Also log to console for immediate visibility
-  console.log(JSON.stringify({
+  logger.info(JSON.stringify({
     type: 'SECURITY_AUDIT',
     timestamp: new Date().toISOString(),
     event,
@@ -538,7 +539,7 @@ export function requestAuditMiddleware(req: Request, res: Response, next: NextFu
 
     // Log errors and suspicious activity
     if (res.statusCode >= 400) {
-      console.warn(JSON.stringify({ type: 'REQUEST_ERROR', ...logEntry }));
+      logger.warn(JSON.stringify({ type: 'REQUEST_ERROR', ...logEntry }));
     }
   });
 
@@ -567,7 +568,7 @@ export async function isPasswordCompromised(password: string): Promise<{
     });
 
     if (!response.ok) {
-      console.error('HIBP API error:', response.status);
+      logger.error('HIBP API error:', response.status);
       return { compromised: false }; // Fail open to not block users
     }
 
@@ -576,14 +577,14 @@ export async function isPasswordCompromised(password: string): Promise<{
 
     for (const line of lines) {
       const [hashSuffix, count] = line.split(':');
-      if (hashSuffix.trim() === suffix) {
-        return { compromised: true, count: parseInt(count.trim(), 10) };
+      if (hashSuffix && hashSuffix.trim() === suffix) {
+        return { compromised: true, count: parseInt((count || '').trim(), 10) };
       }
     }
 
     return { compromised: false };
   } catch (error) {
-    console.error('Password breach check failed:', error);
+    logger.error('Password breach check failed:', error);
     return { compromised: false }; // Fail open
   }
 }

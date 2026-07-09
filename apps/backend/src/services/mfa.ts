@@ -17,6 +17,8 @@ import type {
   AuthenticatorTransportFuture,
 } from '@simplewebauthn/server';
 
+
+import { logger } from '../utils/logger';
 /**
  * App configuration for TOTP.
  */
@@ -61,7 +63,7 @@ function cleanupChallenges(): void {
   }
   
   if (removed > 0) {
-    console.log(`[ChallengeStore] Cleaned up ${removed} expired challenges, ${challengeStore.size} remaining`);
+    logger.info(`[ChallengeStore] Cleaned up ${removed} expired challenges, ${challengeStore.size} remaining`);
   }
 }
 
@@ -222,7 +224,7 @@ export async function verifyBackupCode(
   const formattedCode = `${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4)}`;
 
   for (let i = 0; i < hashedCodes.length; i++) {
-    const isValid = await bcrypt.compare(formattedCode, hashedCodes[i]);
+    const isValid = await bcrypt.compare(formattedCode, hashedCodes[i]!);
     if (isValid) {
       // Remove the used code
       hashedCodes.splice(i, 1);
@@ -387,7 +389,7 @@ export async function verifyWebAuthnRegistration(
 
     return { success: true };
   } catch (error) {
-    console.error('WebAuthn registration error:', error);
+    logger.error('WebAuthn registration error:', error);
     return { success: false, error: 'Registration failed' };
   }
 }
@@ -483,7 +485,7 @@ export async function verifyWebAuthnAuthentication(
 
     return { success: true };
   } catch (error) {
-    console.error('WebAuthn authentication error:', error);
+    logger.error('WebAuthn authentication error:', error);
     return { success: false, error: 'Authentication failed' };
   }
 }

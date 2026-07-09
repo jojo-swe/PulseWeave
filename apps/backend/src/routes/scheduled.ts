@@ -43,7 +43,7 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
  * Get scheduled messages for a specific channel.
  */
 router.get('/channel/:channelId', asyncHandler(async (req: AuthRequest, res) => {
-  const { channelId } = req.params;
+  const { channelId } = req.params as { channelId: string };
 
   // Verify channel access
   const channel = await prisma.channel.findFirst({
@@ -114,7 +114,7 @@ router.post('/', validate(createScheduledSchema), asyncHandler(async (req: AuthR
  * Update a scheduled message.
  */
 router.patch('/:id', validate(updateScheduledSchema), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const { content, scheduledAt } = req.body;
 
   const message = await prisma.scheduledMessage.findUnique({
@@ -156,7 +156,7 @@ router.patch('/:id', validate(updateScheduledSchema), asyncHandler(async (req: A
  * Cancel a scheduled message.
  */
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const message = await prisma.scheduledMessage.findUnique({
     where: { id },
@@ -186,7 +186,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
  * Send scheduled message now (skip the schedule).
  */
 router.post('/:id/send-now', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const message = await prisma.scheduledMessage.findUnique({
     where: { id },

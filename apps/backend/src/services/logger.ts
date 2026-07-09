@@ -3,6 +3,8 @@
  * Supports console logging and optional Sentry integration.
  */
 
+import { Request, Response, NextFunction } from 'express';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -236,7 +238,7 @@ export function addBreadcrumb(
  * Express error handler middleware
  */
 export function errorHandler() {
-  return (err: Error, req: any, res: any, next: any) => {
+  return (err: Error, req: Request & { id?: string; userId?: string }, res: Response, next: NextFunction) => {
     logError('Unhandled error', err, {
       requestId: req.id,
       userId: req.userId,

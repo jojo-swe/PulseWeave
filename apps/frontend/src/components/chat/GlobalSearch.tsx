@@ -194,7 +194,7 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
           ) : query.length >= 2 ? (
             <div className="p-8 text-center text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No messages found for "{query}"</p>
+              <p>No messages found for &quot;{query}&quot;</p>
             </div>
           ) : (
             <div className="p-8 text-center text-muted-foreground">

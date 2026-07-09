@@ -141,12 +141,14 @@ export function CommandPalette() {
 
   // Reset selection when search changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting selection on search change
     setSelectedIndex(0);
   }, [search]);
 
   // Reset when opened
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when palette opens
       setSearch('');
       setSelectedIndex(0);
     }

@@ -27,41 +27,43 @@ interface NotificationCenterProps {
   onClose: () => void;
 }
 
+const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: '1',
+    type: 'mention',
+    title: 'New mention',
+    message: 'John mentioned you in #general: "Hey @you, check this out!"',
+    channelName: 'general',
+    user: { displayName: 'John Doe' },
+    read: false,
+    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
+  },
+  {
+    id: '2',
+    type: 'reply',
+    title: 'New reply',
+    message: 'Sarah replied to your message in #random',
+    channelName: 'random',
+    user: { displayName: 'Sarah Smith' },
+    read: false,
+    createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
+  },
+  {
+    id: '3',
+    type: 'reaction',
+    title: 'New reaction',
+    message: 'Mike reacted 👍 to your message',
+    user: { displayName: 'Mike Johnson' },
+    read: true,
+    createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+  },
+];
+
 export function NotificationCenter({ onClose }: NotificationCenterProps) {
   const { channels, setCurrentChannel } = useStore();
   
   // Mock notifications for demo - in production, these would come from the backend
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'mention',
-      title: 'New mention',
-      message: 'John mentioned you in #general: "Hey @you, check this out!"',
-      channelName: 'general',
-      user: { displayName: 'John Doe' },
-      read: false,
-      createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
-    },
-    {
-      id: '2',
-      type: 'reply',
-      title: 'New reply',
-      message: 'Sarah replied to your message in #random',
-      channelName: 'random',
-      user: { displayName: 'Sarah Smith' },
-      read: false,
-      createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
-    },
-    {
-      id: '3',
-      type: 'reaction',
-      title: 'New reaction',
-      message: 'Mike reacted 👍 to your message',
-      user: { displayName: 'Mike Johnson' },
-      read: true,
-      createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -206,7 +208,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             <div className="p-8 text-center text-muted-foreground">
               <BellOff className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p>No notifications</p>
-              <p className="text-sm mt-1">You're all caught up!</p>
+              <p className="text-sm mt-1">You&apos;re all caught up!</p>
             </div>
           )}
         </ScrollArea>

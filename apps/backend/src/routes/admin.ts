@@ -1,12 +1,13 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { prisma } from '@pulseweave/database';
+import { prisma, Prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireAdmin, requireOwner, requirePermission } from '../middleware/rbac';
 import { assignRole, getUserPermissions, PERMISSIONS } from '../services/rbac';
-import { asyncHandler, Errors } from '../middleware/error-handler';
+import { asyncHandler, Errors, wrapRouter } from '../middleware/error-handler';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -22,7 +23,7 @@ router.get(
   authenticateToken,
   requirePermission(PERMISSIONS.workspace.read),
   asyncHandler(async (req: AuthRequest, res) => {
-    const { workspaceId } = req.params;
+    const { workspaceId } = req.params as { workspaceId: string };
     const { search, role, status, page = '1', limit = '20' } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -30,14 +31,14 @@ router.get(
     const skip = (pageNum - 1) * limitNum;
 
     // Build where clause with all filters at database level for scalability
-    const where: any = { workspaceId };
+    const where: Prisma.WorkspaceMemberWhereInput = { workspaceId };
 
     if (role) {
-      where.roleName = role;
+      where.roleName = String(role);
     }
 
     // Add user-level filters directly in the query for better performance
-    const userWhere: any = {};
+    const userWhere: Prisma.UserWhereInput = {};
     if (search) {
       const searchLower = (search as string).toLowerCase();
       userWhere.OR = [
@@ -47,7 +48,7 @@ router.get(
       ];
     }
     if (status) {
-      userWhere.status = status;
+      userWhere.status = String(status);
     }
 
     if (Object.keys(userWhere).length > 0) {
@@ -119,7 +120,7 @@ router.get(
   requirePermission(PERMISSIONS.user.read),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId, userId } = req.params;
+      const { workspaceId, userId } = req.params as { workspaceId: string; userId: string };
 
       const member = await prisma.workspaceMember.findUnique({
         where: {
@@ -169,7 +170,7 @@ router.get(
         permissions,
       });
     } catch (error) {
-      console.error('Get user error:', error);
+      logger.error('Get user error:', error);
       res.status(500).json({ error: 'Failed to get user' });
     }
   }
@@ -188,7 +189,7 @@ router.patch(
   requirePermission(PERMISSIONS.workspace.manageRoles),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId, userId } = req.params;
+      const { workspaceId, userId } = req.params as { workspaceId: string; userId: string };
       const { roleName } = updateUserRoleSchema.parse(req.body);
 
       // Can't change your own role
@@ -241,7 +242,7 @@ router.patch(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Update user role error:', error);
+      logger.error('Update user role error:', error);
       res.status(500).json({ error: 'Failed to update user role' });
     }
   }
@@ -256,7 +257,7 @@ router.delete(
   requirePermission(PERMISSIONS.workspace.manageMembers),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId, userId } = req.params;
+      const { workspaceId, userId } = req.params as { workspaceId: string; userId: string };
 
       // Can't remove yourself
       if (userId === req.userId) {
@@ -308,7 +309,7 @@ router.delete(
 
       res.json({ success: true, message: 'User removed from workspace' });
     } catch (error) {
-      console.error('Remove user error:', error);
+      logger.error('Remove user error:', error);
       res.status(500).json({ error: 'Failed to remove user' });
     }
   }
@@ -328,7 +329,7 @@ router.post(
   requirePermission(PERMISSIONS.user.ban),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId, userId } = req.params;
+      const { workspaceId, userId } = req.params as { workspaceId: string; userId: string };
       const { reason, duration } = banUserSchema.parse(req.body);
 
       if (userId === req.userId) {
@@ -394,7 +395,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Ban user error:', error);
+      logger.error('Ban user error:', error);
       res.status(500).json({ error: 'Failed to ban user' });
     }
   }
@@ -409,7 +410,7 @@ router.post(
   requirePermission(PERMISSIONS.user.ban),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId, userId } = req.params;
+      const { workspaceId, userId } = req.params as { workspaceId: string; userId: string };
 
       await prisma.user.update({
         where: { id: userId },
@@ -436,7 +437,7 @@ router.post(
 
       res.json({ success: true, message: 'User unbanned successfully' });
     } catch (error) {
-      console.error('Unban user error:', error);
+      logger.error('Unban user error:', error);
       res.status(500).json({ error: 'Failed to unban user' });
     }
   }
@@ -459,7 +460,7 @@ router.post(
   requirePermission(PERMISSIONS.workspace.manageMembers),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId } = req.params;
+      const { workspaceId } = req.params as { workspaceId: string };
       const data = createUserSchema.parse(req.body);
 
       // Check if user already exists
@@ -513,7 +514,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Create user error:', error);
+      logger.error('Create user error:', error);
       res.status(500).json({ error: 'Failed to create user' });
     }
   }
@@ -528,7 +529,7 @@ router.post(
   requirePermission(PERMISSIONS.user.ban), // Reuse ban permission for password reset
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId, userId } = req.params;
+      const { workspaceId, userId } = req.params as { workspaceId: string; userId: string };
       const { newPassword } = z.object({ newPassword: z.string().min(8) }).parse(req.body);
 
       // Check user exists in workspace
@@ -575,7 +576,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Reset password error:', error);
+      logger.error('Reset password error:', error);
       res.status(500).json({ error: 'Failed to reset password' });
     }
   }
@@ -588,9 +589,9 @@ router.delete(
   '/users/:userId',
   authenticateToken,
   requireAdmin,
-  async (req: AuthRequest, res: any) => {
+  async (req: AuthRequest, res: Response) => {
     try {
-      const { userId } = req.params;
+      const { userId } = req.params as { userId: string };
 
       if (userId === req.userId) {
         return res.status(400).json({ error: 'Cannot delete yourself' });
@@ -625,7 +626,7 @@ router.delete(
 
       res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
-      console.error('Delete user error:', error);
+      logger.error('Delete user error:', error);
       res.status(500).json({ error: 'Failed to delete user' });
     }
   }
@@ -658,7 +659,7 @@ router.get('/roles', authenticateToken, async (req: AuthRequest, res) => {
       }))
     );
   } catch (error) {
-    console.error('List roles error:', error);
+    logger.error('List roles error:', error);
     res.status(500).json({ error: 'Failed to list roles' });
   }
 });
@@ -677,13 +678,13 @@ router.get('/permissions', authenticateToken, async (req: AuthRequest, res) => {
       if (!acc[perm.category]) {
         acc[perm.category] = [];
       }
-      acc[perm.category].push(perm);
+      acc[perm.category]!.push(perm);
       return acc;
     }, {} as Record<string, typeof permissions>);
 
     res.json({ permissions, grouped });
   } catch (error) {
-    console.error('List permissions error:', error);
+    logger.error('List permissions error:', error);
     res.status(500).json({ error: 'Failed to list permissions' });
   }
 });
@@ -701,21 +702,21 @@ router.get(
   requirePermission(PERMISSIONS.workspace.viewAuditLog),
   async (req: AuthRequest, res) => {
     try {
-      const { workspaceId } = req.params;
+      const { workspaceId } = req.params as { workspaceId: string };
       const { action, userId, startDate, endDate, page = '1', limit = '50' } = req.query;
 
       const pageNum = parseInt(page as string, 10);
       const limitNum = Math.min(parseInt(limit as string, 10), 100);
       const skip = (pageNum - 1) * limitNum;
 
-      const where: any = {};
+      const where: Prisma.AuditLogWhereInput = {};
 
       if (action) {
-        where.action = action;
+        where.action = String(action);
       }
 
       if (userId) {
-        where.userId = userId;
+        where.userId = String(userId);
       }
 
       if (startDate || endDate) {
@@ -760,10 +761,11 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Get audit log error:', error);
+      logger.error('Get audit log error:', error);
       res.status(500).json({ error: 'Failed to get audit log' });
     }
   }
 );
 
-export { router as adminRouter };
+const wrappedAdminRouter = wrapRouter(router);
+export { wrappedAdminRouter as adminRouter };

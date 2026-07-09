@@ -41,8 +41,10 @@ export function CookieConsent() {
     } else {
       try {
         const parsed = JSON.parse(stored) as ConsentPreferences;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading persisted consent on mount
         setPreferences(parsed);
       } catch {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- showing banner on parse error
         setIsVisible(true);
       }
     }
@@ -215,6 +217,7 @@ export function useCookieConsent() {
     const stored = localStorage.getItem(CONSENT_KEY);
     if (stored) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading persisted consent on mount
         setConsent(JSON.parse(stored));
       } catch {
         setConsent(null);

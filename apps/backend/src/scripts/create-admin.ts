@@ -1,9 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '@pulseweave/database';
+import { logger } from '../utils/logger';
 
 function usage() {
-  console.log('Usage: pnpm --filter backend create:admin <email> <username> <password> [displayName] [workspaceName]');
-  console.log('Example: pnpm --filter backend create:admin admin@example.com admin P@ssw0rd! "Admin User" "Default Workspace"');
+  logger.info('Usage: pnpm --filter backend create:admin <email> <username> <password> [displayName] [workspaceName]');
+  logger.info('Example: pnpm --filter backend create:admin admin@example.com admin P@ssw0rd! "Admin User" "Default Workspace"');
 }
 
 function slugify(value: string): string {
@@ -26,7 +27,7 @@ async function main() {
   const workspaceName = workspaceNameArg || "Default Workspace";
   const workspaceSlug = slugify(workspaceName);
 
-  console.log('Ensuring admin user exists...');
+  logger.info('Ensuring admin user exists...');
 
   // Find or create user
   let user = await prisma.user.findFirst({
@@ -46,9 +47,9 @@ async function main() {
         status: 'online',
       },
     });
-    console.log(`Created user ${user.email}`);
+    logger.info(`Created user ${user.email}`);
   } else {
-    console.log(`User already exists (${user.email}), ensuring admin role...`);
+    logger.info(`User already exists (${user.email}), ensuring admin role...`);
   }
 
   // Find or create workspace
@@ -64,7 +65,7 @@ async function main() {
         ownerId: user.id,
       },
     });
-    console.log(`Created workspace "${workspace.name}"`);
+    logger.info(`Created workspace "${workspace.name}"`);
   }
 
   // Ensure membership as owner
@@ -100,7 +101,7 @@ async function main() {
         isPrivate: false,
       },
     });
-    console.log('Created #general channel');
+    logger.info('Created #general channel');
   }
 
   await prisma.channelMember.upsert({
@@ -117,15 +118,15 @@ async function main() {
     update: {},
   });
 
-  console.log('✅ Admin user ensured:');
-  console.log(`   Email: ${email}`);
-  console.log(`   Username: ${username}`);
-  console.log(`   Workspace: ${workspace.name} (role: owner)`);
+  logger.info('✅ Admin user ensured:');
+  logger.info(`   Email: ${email}`);
+  logger.info(`   Username: ${username}`);
+  logger.info(`   Workspace: ${workspace.name} (role: owner)`);
 }
 
 main()
   .catch((err) => {
-    console.error('Failed to create admin user:', err);
+    logger.error('Failed to create admin user:', err);
     process.exit(1);
   })
   .finally(async () => {
