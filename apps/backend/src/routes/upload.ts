@@ -1,7 +1,5 @@
 import { Router, Request } from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { prisma } from '@pulseweave/database';
 import { AuthRequest, authenticateToken } from '../middleware/auth';
 import { uploadLimiter } from '../middleware/security';

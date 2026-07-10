@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma, Prisma } from '@pulseweave/database';
 import { asyncHandler, Errors } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
-import { authenticateApiKey, hasScope } from './apikey';
+import { authenticateApiKey } from './apikey';
 import { dispatchWebhookEvent } from '../services/webhooks';
 
 const router = Router();

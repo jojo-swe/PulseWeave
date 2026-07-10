@@ -4,6 +4,16 @@ All notable changes to the "PulseWeave" project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Code Quality Pass**:
+    - Fixed all ESLint errors and warnings (3 errors, 25 warnings → 0).
+    - Removed unused imports, variables, and parameters across 19 files.
+    - Fixed unnecessary regex escapes in password validation (`config/security.ts`).
+    - Replaced `require()` with ES module import in `encryption.test.ts`.
+    - Refactored `middleware/rbac.ts` — extracted `createPermissionMiddleware` helper to eliminate duplicated auth/workspaceId boilerplate across `requirePermission`, `requireAnyPermission`, `requireAllPermissions`.
+    - Refactored `routes/message.ts` — extracted `verifyMessageAccess` helper to eliminate duplicated message verification + channel access check across pin, unpin, and reactions routes.
+    - TypeScript `tsc --noEmit` passes clean. All 613 tests pass across 48 test files.
+
 ### Added
 - **Multi-tenancy Architecture**:
     - Implemented strict data isolation per workspace using `workspaceId` schema updates.

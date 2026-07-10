@@ -296,7 +296,7 @@ export async function testLdapConnection(): Promise<{
     await client.bind(LDAP_CONFIG.bindDN, LDAP_CONFIG.bindPassword);
     
     // Try a simple search to verify configuration
-    const { searchEntries } = await client.search(LDAP_CONFIG.searchBase, {
+    const { searchEntries: _searchEntries } = await client.search(LDAP_CONFIG.searchBase, {
       filter: '(objectClass=*)',
       scope: 'base',
       sizeLimit: 1,

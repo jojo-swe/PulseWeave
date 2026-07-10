@@ -68,7 +68,7 @@ async function checkDatabase(): Promise<ServiceHealth> {
   
   try {
     // Race between DB query and timeout
-    const result = await Promise.race([
+    await Promise.race([
       prisma.$queryRawUnsafe('SELECT 1 as health_check'),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Database health check timeout')), TIMEOUT_MS)

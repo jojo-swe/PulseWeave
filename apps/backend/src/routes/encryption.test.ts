@@ -40,10 +40,21 @@ const { isValidPublicKey, generateKeyId, checkEncryptionReadiness } = vi.hoisted
   })),
 }));
 
+const { publicKeySchema } = vi.hoisted(() => ({
+  publicKeySchema: {
+    parse: (data: unknown) => {
+      const obj = data as Record<string, unknown>;
+      if (!obj || typeof obj.publicKey !== 'string' || !obj.publicKey) {
+        throw { errors: [{ message: 'Invalid' }] };
+      }
+      return obj;
+    },
+  },
+}));
+
 vi.mock('../services/encryption', () => {
-  const { z } = require('zod') as typeof import('zod');
   return {
-    publicKeySchema: z.object({ publicKey: z.string().min(1) }),
+    publicKeySchema,
     generateKeyId,
     isValidPublicKey,
     checkEncryptionReadiness,

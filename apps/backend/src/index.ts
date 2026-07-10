@@ -54,7 +54,7 @@ import {
 } from './middleware/advanced-security';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
-import { setupGracefulShutdown, checkDatabaseHealth } from './utils/graceful-shutdown';
+import { setupGracefulShutdown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
 import { initErrorReporting } from './services/logger';
 import { 

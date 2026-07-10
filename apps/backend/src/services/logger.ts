@@ -238,7 +238,7 @@ export function addBreadcrumb(
  * Express error handler middleware
  */
 export function errorHandler() {
-  return (err: Error, req: Request & { id?: string; userId?: string }, res: Response, next: NextFunction) => {
+  return (err: Error, req: Request & { id?: string; userId?: string }, res: Response, _next: NextFunction) => {
     logError('Unhandled error', err, {
       requestId: req.id,
       userId: req.userId,

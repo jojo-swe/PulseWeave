@@ -83,7 +83,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   // Remove workspace details from response (don't leak workspace info)
-  const { workspace, ...channelData } = channel;
+  const { workspace: _workspace, ...channelData } = channel;
   res.json(channelData);
 }));
 

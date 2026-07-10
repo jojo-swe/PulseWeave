@@ -3,10 +3,14 @@ import fs from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
 
+const { mockS3Send } = vi.hoisted(() => ({
+  mockS3Send: vi.fn(),
+}));
+
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(),
-  DeleteObjectCommand: vi.fn(),
-  GetObjectCommand: vi.fn(),
+  S3Client: vi.fn(() => ({ send: mockS3Send })),
+  DeleteObjectCommand: vi.fn((args) => args),
+  GetObjectCommand: vi.fn((args) => args),
 }));
 
 vi.mock('multer-s3', () => ({
@@ -155,6 +159,97 @@ describe('StorageService', () => {
     it('should return a storage engine (local by default)', () => {
       const engine = StorageService.getStorageEngine();
       expect(engine).toBeDefined();
+    });
+  });
+
+  describe('S3 driver', () => {
+    let originalDriver: string | undefined;
+    let originalKeyId: string | undefined;
+
+    beforeEach(() => {
+      originalDriver = process.env.STORAGE_DRIVER;
+      originalKeyId = process.env.AWS_ACCESS_KEY_ID;
+      process.env.STORAGE_DRIVER = 's3';
+      process.env.AWS_ACCESS_KEY_ID = 'test-key';
+      process.env.AWS_SECRET_ACCESS_KEY = 'test-secret';
+      process.env.AWS_REGION = 'us-east-1';
+      process.env.AWS_S3_BUCKET = 'test-bucket';
+      mockS3Send.mockReset();
+      vi.resetModules();
+    });
+
+    afterEach(() => {
+      if (originalDriver === undefined) delete process.env.STORAGE_DRIVER;
+      else process.env.STORAGE_DRIVER = originalDriver;
+      if (originalKeyId === undefined) delete process.env.AWS_ACCESS_KEY_ID;
+      else process.env.AWS_ACCESS_KEY_ID = originalKeyId;
+      delete process.env.AWS_SECRET_ACCESS_KEY;
+      vi.resetModules();
+    });
+
+    it('should return S3 storage engine when configured', async () => {
+      const { StorageService } = await import('./storage');
+      const engine = StorageService.getStorageEngine();
+      expect(engine).toBeDefined();
+    });
+
+    it('should delete file from S3', async () => {
+      mockS3Send.mockResolvedValue({});
+      const { StorageService } = await import('./storage');
+      const result = await StorageService.deleteFile('test-file.txt');
+      expect(result).toBe(true);
+    });
+
+    it('should return false on S3 delete error', async () => {
+      mockS3Send.mockRejectedValue(new Error('S3 error'));
+      const { StorageService } = await import('./storage');
+      const result = await StorageService.deleteFile('test-file.txt');
+      expect(result).toBe(false);
+    });
+
+    it('should read first bytes from S3', async () => {
+      mockS3Send.mockResolvedValue({
+        Body: Readable.from(Buffer.from('hello world')),
+      });
+      const { StorageService } = await import('./storage');
+      const buffer = await StorageService.readFirstBytes('test.txt', 5);
+      expect(buffer).not.toBeNull();
+      expect(buffer!.toString()).toBe('hello world');
+    });
+
+    it('should return null when S3 response has no body', async () => {
+      mockS3Send.mockResolvedValue({ Body: null });
+      const { StorageService } = await import('./storage');
+      const buffer = await StorageService.readFirstBytes('test.txt', 5);
+      expect(buffer).toBeNull();
+    });
+
+    it('should return null on S3 read error', async () => {
+      mockS3Send.mockRejectedValue(new Error('S3 error'));
+      const { StorageService } = await import('./storage');
+      const buffer = await StorageService.readFirstBytes('test.txt', 5);
+      expect(buffer).toBeNull();
+    });
+
+    it('should get file stream from S3', async () => {
+      mockS3Send.mockResolvedValue({
+        Body: Readable.from('stream data'),
+      });
+      const { StorageService } = await import('./storage');
+      const stream = await StorageService.getFileStream('test.txt');
+      expect(stream).not.toBeNull();
+    });
+
+    it('should return null on S3 stream error', async () => {
+      mockS3Send.mockRejectedValue(new Error('S3 error'));
+      const { StorageService } = await import('./storage');
+      const stream = await StorageService.getFileStream('test.txt');
+      expect(stream).toBeNull();
+    });
+
+    it('should return S3 driver type', async () => {
+      const { StorageService } = await import('./storage');
+      expect(StorageService.getDriver()).toBe('s3');
     });
   });
 });

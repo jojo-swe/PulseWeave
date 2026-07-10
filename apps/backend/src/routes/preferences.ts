@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { asyncHandler, Errors } from '../middleware/error-handler';
+import { asyncHandler } from '../middleware/error-handler';
 import { validate } from '../middleware/validate';
 
 const router = Router();

@@ -13,7 +13,7 @@ vi.mock('@pulseweave/database', () => ({
 }));
 
 vi.mock('./apikey', () => ({
-  authenticateApiKey: (scope?: string) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  authenticateApiKey: (_scope?: string) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'API key required' });

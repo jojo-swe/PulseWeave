@@ -29,6 +29,8 @@
     "lint": "pnpm lint:frontend && pnpm lint:backend",
     "lint:frontend": "pnpm --filter frontend lint",
     "lint:backend": "cd apps/backend && eslint src --ext .ts",
+    "test": "pnpm test:backend",
+    "test:backend": "pnpm --filter backend test",
     "typecheck": "pnpm --filter backend build && pnpm --filter frontend build",
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",

@@ -1,12 +1,11 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import { prisma, Prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { requireAdmin, requireOwner, requirePermission } from '../middleware/rbac';
+import { requireAdmin, requirePermission } from '../middleware/rbac';
 import { assignRole, getUserPermissions, PERMISSIONS } from '../services/rbac';
-import { asyncHandler, Errors, wrapRouter } from '../middleware/error-handler';
+import { asyncHandler, wrapRouter } from '../middleware/error-handler';
 import { logger } from '../utils/logger';
 
 const router = Router();

@@ -2,13 +2,12 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth';
 import { hasPermission, hasAnyPermission, hasAllPermissions, getUserRole } from '../services/rbac';
 
-/**
- * Middleware to check if user has a specific permission.
- * @param permission - The permission to check
- * @param getWorkspaceId - Function to extract workspace ID from request
- */
-export function requirePermission(
-  permission: string,
+type PermissionCheck = (userId: string, workspaceId: string) => Promise<boolean>;
+type PermissionError = Record<string, unknown>;
+
+function createPermissionMiddleware(
+  check: PermissionCheck,
+  errorDetail: PermissionError,
   getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
 ) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -21,13 +20,29 @@ export function requirePermission(
       return res.status(400).json({ error: 'Workspace ID required' });
     }
 
-    const allowed = await hasPermission(req.userId, workspaceId, permission);
+    const allowed = await check(req.userId, workspaceId);
     if (!allowed) {
-      return res.status(403).json({ error: 'Permission denied', requiredPermission: permission });
+      return res.status(403).json({ error: 'Permission denied', ...errorDetail });
     }
 
     next();
   };
+}
+
+/**
+ * Middleware to check if user has a specific permission.
+ * @param permission - The permission to check
+ * @param getWorkspaceId - Function to extract workspace ID from request
+ */
+export function requirePermission(
+  permission: string,
+  getWorkspaceId?: (req: AuthRequest) => string | undefined
+) {
+  return createPermissionMiddleware(
+    (userId, workspaceId) => hasPermission(userId, workspaceId, permission),
+    { requiredPermission: permission },
+    getWorkspaceId
+  );
 }
 
 /**
@@ -37,25 +52,13 @@ export function requirePermission(
  */
 export function requireAnyPermission(
   permissions: string[],
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
+  getWorkspaceId?: (req: AuthRequest) => string | undefined
 ) {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const workspaceId = getWorkspaceId(req);
-    if (!workspaceId) {
-      return res.status(400).json({ error: 'Workspace ID required' });
-    }
-
-    const allowed = await hasAnyPermission(req.userId, workspaceId, permissions);
-    if (!allowed) {
-      return res.status(403).json({ error: 'Permission denied', requiredPermissions: permissions });
-    }
-
-    next();
-  };
+  return createPermissionMiddleware(
+    (userId, workspaceId) => hasAnyPermission(userId, workspaceId, permissions),
+    { requiredPermissions: permissions },
+    getWorkspaceId
+  );
 }
 
 /**
@@ -65,25 +68,13 @@ export function requireAnyPermission(
  */
 export function requireAllPermissions(
   permissions: string[],
-  getWorkspaceId: (req: AuthRequest) => string | undefined = (req) => req.params.workspaceId! || req.body.workspaceId
+  getWorkspaceId?: (req: AuthRequest) => string | undefined
 ) {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const workspaceId = getWorkspaceId(req);
-    if (!workspaceId) {
-      return res.status(400).json({ error: 'Workspace ID required' });
-    }
-
-    const allowed = await hasAllPermissions(req.userId, workspaceId, permissions);
-    if (!allowed) {
-      return res.status(403).json({ error: 'Permission denied', requiredPermissions: permissions });
-    }
-
-    next();
-  };
+  return createPermissionMiddleware(
+    (userId, workspaceId) => hasAllPermissions(userId, workspaceId, permissions),
+    { requiredPermissions: permissions },
+    getWorkspaceId
+  );
 }
 
 /**

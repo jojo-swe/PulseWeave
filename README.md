@@ -67,6 +67,10 @@ pnpm lint                  # Lint frontend + backend
 pnpm lint:frontend         # Lint frontend only
 pnpm lint:backend          # Lint backend only
 
+# Testing
+pnpm test                  # Run all tests
+pnpm test:backend          # Backend tests only (Vitest)
+
 # Database
 pnpm db:generate           # Generate Prisma client
 pnpm db:push               # Push schema changes

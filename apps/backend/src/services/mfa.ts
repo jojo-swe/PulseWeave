@@ -46,7 +46,7 @@ const ORIGIN = process.env.WEBAUTHN_ORIGIN || 'http://localhost:3000';
  */
 const challengeStore = new Map<string, { challenge: string; createdAt: number }>();
 const CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CHALLENGE_MAX_SIZE = 10000;
+const _CHALLENGE_MAX_SIZE = 10000;
 
 /**
  * Cleanup expired challenges.

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, Router } from 'express';
 import { ZodError } from 'zod';
-import { prisma, Prisma } from '@pulseweave/database';
+import { Prisma } from '@pulseweave/database';
 import { logger } from '../utils/logger';
 import type { AuthRequest } from './auth';
 

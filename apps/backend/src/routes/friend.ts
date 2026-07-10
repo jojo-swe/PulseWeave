@@ -283,7 +283,7 @@ router.post('/request/:id/decline', asyncHandler(async (req: AuthRequest, res) =
     throw Errors.badRequest('Request is no longer pending');
   }
 
-  const updated = await prisma.friendship.update({
+  await prisma.friendship.update({
     where: { id },
     data: { status: 'declined' },
   });

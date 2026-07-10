@@ -22,7 +22,6 @@ import {
   recordFailedAttempt,
   clearFailedAttempts,
   getClientIp,
-  isPasswordCompromised,
   logSecurityAudit,
 } from '../middleware/advanced-security';
 import {

@@ -1,0 +1,89 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mP:/Development/personal/apps/PulseWeave/apps/backend[39m
+[2m      Coverage enabled with [22m[33mv8[39m
+
+ [32mΓ£ô[39m src/services/webhooks.test.ts [2m ([22m[2m21 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32mΓ£ô[39m src/services/rbac.test.ts [2m ([22m[2m20 tests[22m[2m)[22m[90m 89[2mms[22m[39m
+ [32mΓ£ô[39m src/services/logger.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[90m 183[2mms[22m[39m
+ [32mΓ£ô[39m src/services/ldap.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 85[2mms[22m[39m
+ [32mΓ£ô[39m src/middleware/auth.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[33m 825[2mms[22m[39m
+ [32mΓ£ô[39m src/services/session-store.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+ [32mΓ£ô[39m src/middleware/rbac.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+stderr | src/middleware/advanced-security.test.ts > middleware/advanced-security > recordFailedAttempt blocks IP after threshold
+[2025-01-01T00:00:00.000Z] WARN: IP blocked: 203.0.113.10 - Reason: Too many failed authentication attempts - Until: 2025-01-01T00:30:00.000Z
+
+stderr | src/middleware/advanced-security.test.ts > middleware/advanced-security > ipBlockMiddleware returns 403 when blocked
+[2025-01-01T00:00:00.000Z] WARN: IP blocked: 203.0.113.11 - Reason: test - Until: 2025-01-01T00:30:00.000Z
+
+ [32mΓ£ô[39m src/middleware/advanced-security.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 268[2mms[22m[39m
+ [32mΓ£ô[39m src/services/notifications.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+ [32mΓ£ô[39m src/middleware/ssl.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 137[2mms[22m[39m
+ [32mΓ£ô[39m src/middleware/error-handler.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/security.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[33m 1110[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/payments.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[33m 1228[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/category.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[33m 1284[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/dm.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[33m 1391[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/encryption.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[33m 1453[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/external.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[33m 1489[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/integration.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[33m 1557[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/user.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[33m 1567[2mms[22m[39m
+ [32mΓ£ô[39m src/services/storage.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 54[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/apikey.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[33m 1086[2mms[22m[39m
+ [32mΓ£ô[39m src/services/email.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32mΓ£ô[39m src/services/health.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32mΓ£ô[39m src/services/validation.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32mΓ£ô[39m src/utils/graceful-shutdown.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/scheduled.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[33m 2008[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/channel.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[33m 2059[2mms[22m[39m
+ [32mΓ£ô[39m src/middleware/request-logger.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32mΓ£ô[39m src/middleware/validate.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32mΓ£ô[39m src/utils/logger.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+ [32mΓ£ô[39m src/utils/workspace-access.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [33mΓ¥»[39m src/routes/webhook.test.ts [2m ([22m[2m20 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 2361[2mms[22m[39m
+[31m   [33mΓ¥»[31m src/routes/webhook.test.ts[2m > [22mwebhook routes[2m > [22mIncoming webhooks[2m > [22mPOST /webhooks/incoming/:id/regenerate[2m > [22mshould regenerate token[39m
+[31m     ΓåÆ ETIMEDOUT: Operation timed out[39m
+ [33mΓ¥»[39m src/routes/upload.test.ts [2m ([22m[2m7 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 1090[2mms[22m[39m
+[31m   [33mΓ¥»[31m src/routes/upload.test.ts[2m > [22mupload routes[2m > [22mDELETE /upload/:filename[2m > [22mshould delete a file owned by user[39m
+[31m     ΓåÆ ETIMEDOUT: Operation timed out[39m
+stderr | src/middleware/security.test.ts > middleware/security > validateEnvironment throws when DATABASE_URL is missing
+[2026-07-10T12:51:49.155Z] WARN: ΓÜá∩╕Å  JWT_SECRET is using default value. Set a secure secret in production!
+
+ [32mΓ£ô[39m src/middleware/security.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [33mΓ¥»[39m src/routes/workspace.test.ts [2m ([22m[2m18 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 2517[2mms[22m[39m
+[31m   [33mΓ¥»[31m src/routes/workspace.test.ts[2m > [22mworkspace routes[2m > [22mGET /workspaces/join/:slug[2m > [22mshould return 404 if workspace not found[39m
+[31m     ΓåÆ ETIMEDOUT: Operation timed out[39m
+ [32mΓ£ô[39m src/routes/friend.test.ts [2m ([22m[2m22 tests[22m[2m)[22m[33m 2579[2mms[22m[39m
+ [32mΓ£ô[39m src/config/environment.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 202[2mms[22m[39m
+ [32mΓ£ô[39m src/utils/url-validator.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32mΓ£ô[39m src/services/encryption.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32mΓ£ô[39m src/config/security.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 53[2mms[22m[39m
+ [32mΓ£ô[39m src/services/memory-manager.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 106[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/preferences.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 697[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/notifications.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 949[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/admin.test.ts [2m ([22m[2m24 tests[22m[2m)[22m[33m 2793[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/message.test.ts [2m ([22m[2m25 tests[22m[2m)[22m[33m 2757[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/mfa.test.ts [2m ([22m[2m29 tests[22m[2m)[22m[33m 2999[2mms[22m[39m
+ [32mΓ£ô[39m src/routes/auth.test.ts [2m ([22m[2m42 tests[22m[2m)[22m[33m 3266[2mms[22m[39m
+ [32mΓ£ô[39m src/services/mfa.test.ts [2m ([22m[2m39 tests[22m[2m)[22m[33m 4338[2mms[22m[39m
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ» Failed Tests 3 ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+ FAIL  src/routes/upload.test.ts > upload routes > DELETE /upload/:filename > should delete a file owned by user
+ FAIL  src/routes/webhook.test.ts > webhook routes > Incoming webhooks > POST /webhooks/incoming/:id/regenerate > should regenerate token
+ FAIL  src/routes/workspace.test.ts > workspace routes > GET /workspaces/join/:slug > should return 404 if workspace not found
+Error: ETIMEDOUT: Operation timed out
+ Γ¥» Test.assert ../../node_modules/.pnpm/supertest@7.2.2/node_modules/supertest/lib/test.js:187:20
+ Γ¥» localAssert ../../node_modules/.pnpm/supertest@7.2.2/node_modules/supertest/lib/test.js:138:14
+ Γ¥» Server.<anonymous> ../../node_modules/.pnpm/supertest@7.2.2/node_modules/supertest/lib/test.js:152:11
+ Γ¥» Object.onceWrapper node:events:630:28
+ Γ¥» Server.emit node:events:509:20
+ Γ¥» emitCloseNT node:net:2661:8
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/3]ΓÄ»
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m45 passed[39m[22m[90m (48)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m610 passed[39m[22m[90m (613)[39m
+[2m   Start at [22m 14:51:44
+[2m   Duration [22m 5.83s[2m (transform 8.81s, setup 2.59s, collect 29.47s, tests 44.86s, environment 12ms, prepare 19.79s)[22m
+

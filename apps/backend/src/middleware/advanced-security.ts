@@ -16,8 +16,8 @@ const blockedIps = new Map<string, { until: Date; reason: string }>();
 const failedAttempts = new Map<string, { count: number; firstAttempt: Date }>();
 
 // Maximum cache sizes to prevent memory leaks
-const MAX_BLOCKED_IPS = 10000;
-const MAX_FAILED_ATTEMPTS = 50000;
+const _MAX_BLOCKED_IPS = 10000;
+const _MAX_FAILED_ATTEMPTS = 50000;
 
 /**
  * Cleanup expired entries from security caches.

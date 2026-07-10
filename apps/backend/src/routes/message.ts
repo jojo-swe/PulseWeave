@@ -3,11 +3,44 @@ import { z } from 'zod';
 import { prisma } from '@pulseweave/database';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler, Errors } from '../middleware/error-handler';
-import { validate, paginationSchema, idParamsSchema } from '../middleware/validate';
+import { validate } from '../middleware/validate';
 import { NotificationService } from '../services/notifications';
 import { logger } from '../utils/logger';
 
 const router = Router();
+
+/**
+ * Verify a message exists and the user has access to its channel.
+ * @throws Errors.notFound if message doesn't exist
+ * @throws Errors.forbidden if user lacks access to private channel
+ */
+async function verifyMessageAccess(messageId: string, userId: string) {
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    include: { channel: true },
+  });
+
+  if (!message) {
+    throw Errors.notFound('Message');
+  }
+
+  if (message.channel.isPrivate) {
+    const membership = await prisma.channelMember.findUnique({
+      where: {
+        userId_channelId: {
+          userId,
+          channelId: message.channelId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw Errors.forbidden('You do not have access to this channel');
+    }
+  }
+
+  return message;
+}
 
 // Search messages
 router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
@@ -356,31 +389,7 @@ const reactionSchema = z.object({
 router.post('/:id/reactions', validate(reactionSchema), asyncHandler(async (req: AuthRequest, res) => {
   const { emoji } = req.body;
 
-  // Verify message exists and user has access to channel
-  const message = await prisma.message.findUnique({
-    where: { id: req.params.id! },
-    include: { channel: true },
-  });
-
-  if (!message) {
-    throw Errors.notFound('Message');
-  }
-
-  // Check channel access
-  if (message.channel.isPrivate) {
-    const membership = await prisma.channelMember.findUnique({
-      where: {
-        userId_channelId: {
-          userId: req.userId!,
-          channelId: message.channelId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw Errors.forbidden('You do not have access to this channel');
-    }
-  }
+  const message = await verifyMessageAccess(req.params.id!, req.userId!);
 
   const reaction = await prisma.reaction.upsert({
     where: {
@@ -445,31 +454,7 @@ router.delete('/:id/reactions/:emoji', asyncHandler(async (req: AuthRequest, res
 
 // Pin message
 router.post('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
-  // Verify message exists and user has access
-  const existing = await prisma.message.findUnique({
-    where: { id: req.params.id! },
-    include: { channel: true },
-  });
-
-  if (!existing) {
-    throw Errors.notFound('Message');
-  }
-
-  // Check channel access
-  if (existing.channel.isPrivate) {
-    const membership = await prisma.channelMember.findUnique({
-      where: {
-        userId_channelId: {
-          userId: req.userId!,
-          channelId: existing.channelId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw Errors.forbidden('You do not have access to this channel');
-    }
-  }
+  await verifyMessageAccess(req.params.id!, req.userId!);
 
   const message = await prisma.message.update({
     where: { id: req.params.id! },
@@ -495,31 +480,7 @@ router.post('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
 
 // Unpin message
 router.delete('/:id/pin', asyncHandler(async (req: AuthRequest, res) => {
-  // Verify message exists
-  const existing = await prisma.message.findUnique({
-    where: { id: req.params.id! },
-    include: { channel: true },
-  });
-
-  if (!existing) {
-    throw Errors.notFound('Message');
-  }
-
-  // Check channel access
-  if (existing.channel.isPrivate) {
-    const membership = await prisma.channelMember.findUnique({
-      where: {
-        userId_channelId: {
-          userId: req.userId!,
-          channelId: existing.channelId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw Errors.forbidden('You do not have access to this channel');
-    }
-  }
+  await verifyMessageAccess(req.params.id!, req.userId!);
 
   const message = await prisma.message.update({
     where: { id: req.params.id! },

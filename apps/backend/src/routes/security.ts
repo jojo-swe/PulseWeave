@@ -2,15 +2,14 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma, Prisma } from '@pulseweave/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { requirePermission, requireAdmin } from '../middleware/rbac';
-import { PERMISSIONS } from '../services/rbac';
+import { requireAdmin } from '../middleware/rbac';
 import {
   isIpBlocked,
   blockIp,
   getClientIp,
 } from '../middleware/advanced-security';
 import { getSslConfig } from '../middleware/ssl';
-import { asyncHandler, Errors, wrapRouter } from '../middleware/error-handler';
+import { asyncHandler, wrapRouter } from '../middleware/error-handler';
 import { logger } from '../utils/logger';
 
 const router = Router();
