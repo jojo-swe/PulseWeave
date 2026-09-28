@@ -1,763 +1,213 @@
-# CLAUDE.md - AI Assistant Guide for PulseWeave
+# CLAUDE.md
 
-This document provides comprehensive guidance for AI assistants working on the PulseWeave codebase. It covers architecture, conventions, workflows, and best practices specific to this project.
+Guidance for AI assistants working in the PulseWeave repo. Every path, name and command below was checked against the code on `master`.
 
-**Last Updated**: 2026-01-14
-
----
-
-## Table of Contents
-
-1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Codebase Structure](#codebase-structure)
-4. [Development Workflows](#development-workflows)
-5. [Key Conventions](#key-conventions)
-6. [Security Guidelines](#security-guidelines)
-7. [Common Tasks](#common-tasks)
-8. [Testing](#testing)
-9. [Troubleshooting](#troubleshooting)
-10. [Important Files Reference](#important-files-reference)
+**Last verified:** 2026-09-28 (against `master` @ `f195bea`)
 
 ---
 
-## Project Overview
+## What this is
 
-**PulseWeave** is a modern, secure team communication platform built as a monorepo using pnpm workspaces.
+PulseWeave is a team chat platform (channels, DMs, threads, reactions, E2E-encrypted DMs, RBAC, MFA, file uploads). It is a **pnpm workspace monorepo** (`pnpm@10`, Node 20+).
 
-### Tech Stack Summary
+| Package | Path | Stack | Notes |
+|---|---|---|---|
+| `frontend` | `apps/frontend` | Next.js 16.1 (App Router, Turbopack), **React 18.3**, Tailwind, Radix UI, Zustand 4 | The main web client. Dev port **9797** |
+| `backend` | `apps/backend` | Express 4, Socket.io, Prisma 5, Zod, Vitest | REST API + realtime. Dev port **9090** |
+| `web` | `apps/web` | Next.js 16.1 | **Marketing landing page only**, not the chat client |
+| `pulseweave-desktop` | `apps/desktop` | Electron 35 + electron-vite | |
+| `pulseweave-mobile` | `apps/mobile` | Expo 50 / React Native 0.73 | |
+| `@pulseweave/database` | `packages/database` | Prisma schema + client singleton | |
+| `@pulseweave/types` | `packages/types` | Shared TS interfaces + socket event types | |
 
-**Frontend:**
-- Next.js 16 (App Router + Turbopack)
-- React 19
-- TypeScript (strict mode)
-- Tailwind CSS + Radix UI
-- Zustand (state management)
-- Socket.io client
-
-**Backend:**
-- Express.js
-- Socket.io server
-- Prisma ORM (PostgreSQL/SQLite)
-- JWT authentication + session tracking
-- Comprehensive security middleware
-
-**Shared:**
-- pnpm workspaces
-- Shared types package
-- Shared database package
-
-### Key Features
-- Real-time messaging with Socket.io
-- End-to-end encryption for DMs
-- RBAC (Role-Based Access Control)
-- Multi-factor authentication (TOTP, backup codes)
-- File uploads with S3 support
-- Thread conversations, reactions, scheduled messages
-- Dark mode with CSS variables
-- Desktop (Electron) and Mobile (React Native) apps
+The README says React 19; the installed version is **18.3.1**. Trust `package.json`.
 
 ---
 
-## Architecture
+## Commands
 
-### Monorepo Structure
-
-```
-PulseWeave/
-├── apps/
-│   ├── frontend/          # Next.js web app
-│   ├── backend/           # Express API + Socket.io
-│   ├── desktop/           # Electron app
-│   └── mobile/            # React Native app
-├── packages/
-│   ├── types/             # Shared TypeScript types
-│   └── database/          # Prisma schema & client
-├── docs/                  # Documentation
-├── deploy/                # Deployment configs
-└── package.json           # Root workspace config
-```
-
-### Frontend Architecture (`apps/frontend/`)
-
-```
-apps/frontend/src/
-├── app/                   # Next.js App Router pages
-│   ├── login/
-│   ├── register/
-│   ├── admin/
-│   ├── settings/
-│   └── page.tsx           # Main chat interface
-├── components/
-│   ├── chat/              # Chat-related components
-│   │   ├── ChatArea.tsx
-│   │   ├── MessageList.tsx
-│   │   ├── VirtualizedMessageList.tsx
-│   │   ├── ThreadPanel.tsx
-│   │   └── ...
-│   ├── ui/                # Radix UI components
-│   │   ├── button.tsx
-│   │   ├── dialog.tsx
-│   │   ├── input.tsx
-│   │   └── ...
-│   └── settings/          # Settings components
-├── hooks/                 # Custom React hooks
-│   ├── useEncryption.ts
-│   ├── usePermissions.ts
-│   ├── useFormValidation.ts
-│   └── ...
-├── lib/                   # Utilities and services
-│   ├── api.ts            # HTTP client (IMPORTANT!)
-│   ├── socket.ts         # Socket.io client
-│   ├── encryption.ts     # E2E encryption
-│   └── utils.ts
-├── store/                 # Zustand store
-│   └── index.ts          # Global state management
-└── config/
-    └── env.ts            # Centralized env config
-```
-
-**Key Points:**
-- **State Management**: Single Zustand store with persist middleware at `src/store/index.ts`
-- **API Calls**: ALWAYS use `src/lib/api.ts` - see [API Conventions](#api-conventions)
-- **Environment Variables**: ALWAYS import from `src/config/env.ts`, never use `process.env` directly
-- **Path Alias**: `@/` maps to `src/`
-
-### Backend Architecture (`apps/backend/`)
-
-```
-apps/backend/src/
-├── index.ts               # Express app entry point
-├── routes/                # API endpoints (17 files)
-│   ├── auth.ts
-│   ├── user.ts
-│   ├── workspace.ts
-│   ├── channel.ts
-│   ├── message.ts
-│   ├── dm.ts
-│   └── ...
-├── middleware/            # Express middleware
-│   ├── auth.ts           # JWT validation + workspace context
-│   ├── security.ts       # Request sanitization
-│   ├── advanced-security.ts  # IP blocking, rate limiting
-│   ├── rbac.ts           # Permission checks
-│   ├── error-handler.ts  # Global error handling
-│   └── ...
-├── services/              # Business logic
-│   ├── auth.ts
-│   ├── encryption.ts
-│   ├── mfa.ts
-│   ├── rbac.ts
-│   ├── email.ts
-│   └── ...
-├── config/
-│   ├── environment.ts    # Zod-validated env schema
-│   └── security.ts       # Security policies
-├── socket/
-│   └── index.ts          # Socket.io handlers
-└── utils/
-    ├── graceful-shutdown.ts
-    ├── logger.ts
-    └── ...
-```
-
-**Key Points:**
-- **Authentication**: JWT with session tracking in database
-- **Authorization**: RBAC system via `services/rbac.ts` and `middleware/rbac.ts`
-- **Error Handling**: Custom `AppError` class with `statusCode`, `code`, `isOperational`
-- **Logging**: Use `logger` from `utils/logger.ts`, NEVER `console.log`
-- **Validation**: Zod schemas for all inputs
-
-### Shared Packages
-
-**`packages/types/`**: Shared TypeScript interfaces
-- User, Workspace, Channel, Message, DirectMessage, Reaction, Attachment
-- SocketEvent types (message:new, typing, presence, etc.)
-
-**`packages/database/`**: Prisma client
-- Single export: Prisma client singleton
-- Scripts: generate, push, migrate, studio
-
----
-
-## Codebase Structure
-
-### Important Directories
-
-| Path | Purpose |
-|------|---------|
-| `apps/frontend/src/app/` | Next.js pages (App Router) |
-| `apps/frontend/src/components/` | React components |
-| `apps/frontend/src/lib/api.ts` | **HTTP client (critical)** |
-| `apps/frontend/src/store/index.ts` | Zustand global state |
-| `apps/backend/src/routes/` | API endpoints |
-| `apps/backend/src/middleware/` | Express middleware |
-| `apps/backend/src/services/` | Business logic |
-| `apps/backend/src/config/environment.ts` | Backend env config |
-| `packages/database/prisma/schema.prisma` | Database schema |
-| `docs/` | Project documentation |
-
-### Configuration Files
-
-| File | Purpose |
-|------|---------|
-| `pnpm-workspace.yaml` | Workspace configuration |
-| `apps/frontend/next.config.mjs` | Next.js config |
-| `apps/frontend/tsconfig.json` | Frontend TypeScript config |
-| `apps/backend/tsconfig.json` | Backend TypeScript config |
-| `apps/frontend/.eslintrc.json` | Frontend linting rules |
-| `apps/backend/.eslintrc.json` | Backend linting rules |
-| `apps/backend/.env` | Backend environment variables (gitignored) |
-
----
-
-## Development Workflows
-
-### Setup
+Run from the repo root unless noted.
 
 ```bash
-# Install dependencies
 pnpm install
+pnpm db:generate                      # Prisma client; required after install and after schema changes
 
-# Generate Prisma client
-pnpm db:generate
+pnpm dev                              # backend + frontend together
+pnpm dev:backend / pnpm dev:frontend
+pnpm dev:desktop
 
-# Start development servers
-pnpm dev                  # Both frontend + backend
-pnpm dev:frontend         # Frontend only (port 9797)
-pnpm dev:backend          # Backend only (port 9090)
+pnpm build                            # db:generate → types → database → backend → frontend
+pnpm typecheck                        # = backend `tsc` + frontend `next build`
+pnpm lint                             # frontend then backend
+pnpm test                             # backend Vitest suite
+
+pnpm db:push                          # sync schema to a dev DB
+pnpm db:migrate                       # create/apply a migration
+pnpm db:studio
 ```
 
-### Building
+Single test file: `cd apps/backend && npx vitest run src/services/rbac.test.ts`
 
-```bash
-# Build everything
-pnpm build
+### Gotchas that will bite you
 
-# Build specific app
-pnpm build:frontend
-pnpm build:backend
-```
-
-### Code Quality Checks
-
-**ALWAYS run before committing:**
-
-```bash
-pnpm typecheck    # TypeScript validation
-pnpm lint         # ESLint
-pnpm build        # Full build test
-```
-
-### Database Operations
-
-```bash
-pnpm db:generate  # Generate Prisma client (after schema changes)
-pnpm db:push      # Push schema to DB (development)
-pnpm db:migrate   # Create migration (production)
-pnpm db:studio    # Open Prisma Studio UI
-```
-
-### Testing
-
-```bash
-# Backend tests (Vitest)
-cd apps/backend
-pnpm test         # Run all tests
-pnpm test:watch   # Watch mode
-pnpm test:coverage # Coverage report
-```
+1. **Build the shared packages before running backend tests.** `@pulseweave/types` and `@pulseweave/database` point `main` at `./dist/index.js`. On a fresh checkout, Vitest fails 36 of 50 suites with `Failed to resolve entry for package "@pulseweave/database"`. Fix:
+   ```bash
+   pnpm db:generate
+   pnpm --filter @pulseweave/types build && pnpm --filter @pulseweave/database build
+   ```
+   After that, all 50 files / 701 tests pass.
+2. **`pnpm dev:mobile` and `pnpm build:mobile:*` are broken.** They filter on `mobile`, but the package is named `pulseweave-mobile`. Use `pnpm --filter pulseweave-mobile start`.
+3. **`pnpm typecheck` does not typecheck backend tests.** `apps/backend/tsconfig.json` excludes `**/*.test.ts`, and the test files currently have ~30 type errors (half in `src/socket/index.test.ts`). Vitest still runs them, since it transpiles without typechecking.
+4. **Frontend `next build` fetches Google Fonts** (`Inter` in `src/app/layout.tsx`). It fails in offline or sandboxed environments; that's a network problem, not a code error.
+5. **The DB is SQLite by default** (`packages/database/prisma/schema.prisma`, `provider = "sqlite"`, `prisma/dev.db`). The comment in the schema explains switching to PostgreSQL for production.
+6. `pnpm stop:dev` is PowerShell and only works on Windows.
 
 ---
 
-## Key Conventions
+## Backend (`apps/backend/src`)
 
-### API Conventions
-
-**CRITICAL**: The frontend API layer automatically prepends `/api` to endpoints.
-
-**✅ CORRECT Usage:**
-
-```typescript
-import { api } from '@/lib/api';
-
-// Generic helpers (DO NOT include /api prefix)
-await api.get('/users/me');           // → GET /api/users/me
-await api.post('/friends/request', {}); // → POST /api/friends/request
-await api.patch('/users/me', data);   // → PATCH /api/users/me
-await api.delete('/friends/123');     // → DELETE /api/friends/123
+```
+index.ts          app setup; ALL routers are mounted here
+routes/           one file per resource (auth, user, workspace, channel, message, dm, …)
+middleware/       auth, rbac, validate, error-handler, security, advanced-security, ssl, rate-limit-tenant, request-logger
+services/         business logic (rbac, mfa, encryption, email, ldap, storage, webhooks, notifications, health, …)
+socket/index.ts   all Socket.io handlers
+config/           environment.ts (Zod env schema), security.ts
+utils/            logger, workspace-access, url-validator, graceful-shutdown
+scripts/          create-admin.ts  (pnpm --filter backend create:admin)
 ```
 
-**❌ WRONG Usage:**
+Tests sit next to their source as `*.test.ts`.
 
-```typescript
-// This creates /api/api/friends (doubled prefix)
-await api.get('/api/friends'); // ❌ NEVER DO THIS
+### Imports
+
+The backend has **no `@/` alias**. Use relative imports plus the workspace packages:
+
+```ts
+import { prisma } from '@pulseweave/database';
+import { AuthRequest } from '../middleware/auth';
+import { asyncHandler, Errors } from '../middleware/error-handler';
+import { validate } from '../middleware/validate';
 ```
 
-**See**: `docs/API_CONVENTIONS.md` for full details.
+There is no `middleware/index.ts` barrel, so import from each file.
 
-### Environment Variables
+### Authentication is applied at mount time, not in the router
 
-**Frontend:**
-```typescript
-// ✅ CORRECT - Always use centralized config
-import { API_URL } from '@/config/env';
+`index.ts` wraps most routers: `app.use('/api/channels', authenticateToken, channelRouter)`. Inside a router, handlers can assume `req.userId` is set (typed as `AuthRequest`).
 
-// ❌ WRONG - Never use process.env directly
-const url = process.env.NEXT_PUBLIC_API_URL;
-```
+Exceptions that mount **without** `authenticateToken` and handle auth themselves: `/api/auth`, `/api/upload`, `/api/mfa`, `/api/payments`, `/api/external` (API-key auth), and the webhook receiver at `/api`. When adding a router, register it in `index.ts` and decide explicitly which case it is.
 
-**Backend:**
-```typescript
-// ✅ CORRECT - Use validated config
-import { config } from '@/config/environment';
-const port = config.PORT;
+### Route handler pattern
 
-// ❌ WRONG - Direct access bypasses validation
-const port = process.env.PORT;
-```
+Copy this shape from `routes/channel.ts`:
 
-### Import Patterns
+```ts
+const createChannelSchema = z.object({ workspaceId: z.string(), name: z.string().min(1).max(50) });
 
-**Frontend:**
-```typescript
-import { Button } from '@/components/ui/button';      // @ alias
-import { useStore } from '@/store';
-import { api } from '@/lib/api';
-```
-
-**Backend:**
-```typescript
-import { prisma } from '@pulseweave/database';        // Workspace package
-import type { User } from '@pulseweave/types';
-import { authenticate } from '@/middleware/auth';     // @ alias (backend)
-```
-
-### Naming Conventions
-
-| Type | Convention | Example |
-|------|-----------|---------|
-| Files | kebab-case | `message-list.tsx`, `auth-middleware.ts` |
-| Components | PascalCase | `MessageList`, `ChatArea` |
-| Functions | camelCase | `handleSubmit`, `getUserById` |
-| Handlers | `handle*` prefix | `handleClick`, `handleSubmit` |
-| Hooks | `use*` prefix | `usePermissions`, `useEncryption` |
-| Types/Interfaces | PascalCase | `User`, `Workspace`, `MessageEvent` |
-| Constants | UPPER_SNAKE_CASE | `MAX_FILE_SIZE`, `API_URL` |
-
-### Code Style
-
-**Debugging:**
-- ❌ **NO** `console.log` in production code (backend will error)
-- ✅ Frontend: Use `console.error()`, `console.warn()`, `console.info()`
-- ✅ Backend: Use `logger.info()`, `logger.error()`, `logger.warn()`
-
-**TypeScript:**
-- ✅ Strict mode enabled (both apps)
-- ❌ Avoid `any` type - use proper typing or `unknown`
-- ❌ NO `@ts-ignore` without descriptive comment (minimum 10 chars)
-
-**Error Handling:**
-```typescript
-// Frontend
-try {
-  const data = await api.get('/users/me');
-} catch (error) {
-  console.error('Failed to load user:', error);
-  // Handle error appropriately
-}
-
-// Backend
-throw new AppError('User not found', 404, 'USER_NOT_FOUND');
-```
-
-### Authentication & Authorization
-
-**Backend Middleware Pattern:**
-```typescript
-// routes/channel.ts
-router.post(
-  '/channels',
-  authenticate,                    // Validates JWT + session
-  requirePermission('MANAGE_CHANNELS'), // Checks RBAC permission
-  async (req, res) => {
-    const { userId, workspaceId } = req.user; // Available after auth
-    // ...
-  }
-);
-```
-
-**Frontend API Pattern:**
-```typescript
-// Token automatically attached from Zustand store
-const data = await api.get('/users/me');
-
-// Workspace context automatically attached
-const channels = await api.get('/channels'); // Uses current workspace
-```
-
-**Socket.io Authorization:**
-```typescript
-// Backend automatically validates:
-// 1. JWT on connection
-// 2. Session not revoked
-// 3. User has workspace membership
-// 4. User has channel access (for channel events)
-```
-
----
-
-## Security Guidelines
-
-### Critical Security Rules
-
-1. **NEVER commit secrets** - Use `.env` files (gitignored)
-2. **NEVER use hardcoded credentials**
-3. **ALWAYS validate user input** - Use Zod schemas
-4. **ALWAYS check permissions** - Use RBAC middleware
-5. **NEVER trust client data** - Validate on backend
-
-### Pre-Production Checklist
-
-See `docs/SECURITY_CHECKLIST.md` for full list:
-
-- [ ] Change `JWT_SECRET` in `apps/backend/.env` (64+ chars)
-- [ ] Change `COOKIE_SECRET` in `apps/backend/.env` (32+ chars)
-- [ ] Set `SSL_ENABLED=true` or `BEHIND_PROXY=true`
-- [ ] Review all environment variables
-- [ ] Run `pnpm typecheck && pnpm lint && pnpm build`
-
-### Generate Secure Secrets
-
-```bash
-# JWT Secret (64 chars)
-openssl rand -base64 64
-
-# Cookie Secret (32 chars)
-openssl rand -base64 32
-```
-
-### Common Vulnerabilities to Avoid
-
-1. **SQL Injection**: Use Prisma (parameterized queries)
-2. **XSS**: Sanitize user input, use React (auto-escapes)
-3. **Path Traversal**: Use `StorageService.getFileStream()` (sanitizes paths)
-4. **CSRF**: SameSite cookies + CORS configuration
-5. **Authentication Bypass**: Always use `authenticate` middleware
-6. **Authorization Bypass**: Always check permissions with RBAC
-
----
-
-## Common Tasks
-
-### Adding a New API Endpoint
-
-1. **Create route handler** in `apps/backend/src/routes/`
-2. **Add middleware** (authentication, validation)
-3. **Implement business logic** in `services/`
-4. **Add Zod validation schema**
-5. **Update frontend API client** in `apps/frontend/src/lib/api.ts` (optional)
-6. **Test the endpoint**
-
-Example:
-```typescript
-// apps/backend/src/routes/foo.ts
-import { Router } from 'express';
-import { z } from 'zod';
-import { authenticate, validate } from '@/middleware';
-
-const router = Router();
-
-const createFooSchema = z.object({
-  name: z.string().min(1).max(100),
-});
-
-router.post(
-  '/foo',
-  authenticate,
-  validate(createFooSchema),
-  async (req, res, next) => {
-    try {
-      const { userId, workspaceId } = req.user;
-      const { name } = req.body;
-
-      // Business logic here
-      const foo = await prisma.foo.create({
-        data: { name, workspaceId, userId },
-      });
-
-      res.json(foo);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-export default router;
-```
-
-### Adding a New Component
-
-1. **Create component** in `apps/frontend/src/components/`
-2. **Use TypeScript** with proper types
-3. **Import from centralized config** (`@/config/env`, `@/lib/api`)
-4. **Follow naming conventions** (PascalCase for component name)
-5. **Use Radix UI** for base components when possible
-
-### Adding a New Database Model
-
-1. **Update schema** in `packages/database/prisma/schema.prisma`
-2. **Generate client**: `pnpm db:generate`
-3. **Create migration**: `pnpm db:migrate`
-4. **Update types** in `packages/types/` if needed
-5. **Add RBAC permissions** if model is workspace/channel-scoped
-
-### Adding a Socket.io Event
-
-**Backend** (`apps/backend/src/socket/index.ts`):
-```typescript
-socket.on('custom:event', async (data) => {
-  // Validate permissions
-  const hasAccess = await verifyChannelAccess(userId, data.channelId);
-  if (!hasAccess) {
-    return socket.emit('error', { message: 'Unauthorized' });
-  }
-
-  // Emit to channel
-  io.to(`channel:${data.channelId}`).emit('custom:broadcast', data);
-});
-```
-
-**Frontend** (`apps/frontend/src/lib/socket.ts`):
-```typescript
-socket.emit('custom:event', { channelId: '123', data: 'foo' });
-
-socket.on('custom:broadcast', (data) => {
-  // Handle broadcast
-});
-```
-
-### Updating Environment Variables
-
-1. **Update schema** in `apps/backend/src/config/environment.ts` (backend)
-2. **Update schema** in `apps/frontend/src/config/env.ts` (frontend)
-3. **Update `.env.example`** files
-4. **Document in README.md**
-5. **Restart dev servers**
-
----
-
-## Testing
-
-### Backend Testing (Vitest)
-
-**Location**: `apps/backend/src/**/*.test.ts`
-
-**Run tests**:
-```bash
-cd apps/backend
-pnpm test           # All tests
-pnpm test:watch     # Watch mode
-pnpm test:coverage  # Coverage report
-```
-
-**Test Structure**:
-```typescript
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
-describe('ServiceName', () => {
-  beforeEach(() => {
-    // Setup
+router.post('/', validate(createChannelSchema), asyncHandler(async (req: AuthRequest, res) => {
+  const { workspaceId, name } = req.body;
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: req.userId!, workspaceId } },
   });
-
-  afterEach(() => {
-    // Cleanup
-    vi.clearAllMocks();
-  });
-
-  it('should do something', async () => {
-    // Arrange
-    const input = { foo: 'bar' };
-
-    // Act
-    const result = await service.doSomething(input);
-
-    // Assert
-    expect(result).toEqual({ success: true });
-  });
-});
+  if (!membership) throw Errors.forbidden();
+  // …
+  res.json(result);
+}));
 ```
 
-**Coverage Targets**:
-- Lines: 40%
-- Functions: 65%
-- Branches: 60%
+- **Validation:** `validate(schema)` from `middleware/validate.ts` (also `validateAll`, and reusable `uuidSchema`, `paginationSchema`, `passwordSchema`, `emailSchema`, `usernameSchema`).
+- **Errors:** throw `Errors.badRequest | unauthorized | forbidden | notFound | conflict | tooManyRequests | validation | internal`, or `new AppError(message, statusCode, code)`. `asyncHandler` forwards them to the global `errorHandler`, which also maps Zod and Prisma errors.
+- **Authorization:** always check workspace/channel membership. The middleware in `middleware/rbac.ts` is `requirePermission(permission, getWorkspaceId?)`, `requireAnyPermission`, `requireAllPermissions`, `requireRole`, `requireOwner`, `requireAdmin` and `requireModerator`. Permission definitions are in `services/rbac.ts`. `utils/workspace-access.ts` has helpers for the membership checks.
 
-### Frontend Testing
+### Config and logging
 
-Currently no test framework configured. Consider adding:
-- Vitest + React Testing Library
-- Playwright for E2E tests
+- **Env:** the Zod schema is in `config/environment.ts`. Read it through `getConfig()` (plus `isProduction()`, `isDevelopment()`, `getCorsOrigins()`). Prefer `getConfig()` in new code; about 20 files still read `process.env` directly.
+- **Logging:** `import { logger } from '../utils/logger'`. That's the one most of the codebase uses; `services/logger.ts` is the Sentry-integrated one used at bootstrap. `no-console` is an ESLint **error** in backend source (it's allowed in tests and scripts).
+- The backend tsconfig is strict, plus `noUncheckedIndexedAccess` (indexed access returns `T | undefined`, so handle it).
+
+### Socket.io (`socket/index.ts`)
+
+Connections require a valid JWT and a non-revoked session. The events it handles are `workspace:join`, `channel:join`/`leave`, `dm:join`/`leave`, `message:send`, `typing:start`/`stop`, `reaction:add`/`remove` and `disconnect`. Every handler that touches a channel or message **re-verifies membership**, so keep that invariant. Shared event types are in `packages/types/src/index.ts`.
 
 ---
 
-## Troubleshooting
+## Frontend (`apps/frontend/src`)
 
-### Build Errors
-
-**"Cannot find module '@/...'"**
-- Check `tsconfig.json` has `"@/*": ["./src/*"]` in paths
-- Run `pnpm install` to ensure workspace links are set up
-
-**"Prisma client not found"**
-- Run `pnpm db:generate`
-- Restart TypeScript server
-
-**TypeScript errors after schema change**
-- Run `pnpm db:generate`
-- Run `pnpm build` to regenerate types
-
-### Runtime Errors
-
-**"401 Unauthorized" on API calls**
-- Check token in Zustand store
-- Verify `authenticate` middleware is working
-- Check session not revoked in database
-
-**"403 Forbidden" on API calls**
-- Check user has required permission
-- Verify RBAC middleware is applied
-- Check workspace membership
-
-**Socket.io not connecting**
-- Check backend is running on port 9090
-- Verify JWT token is valid
-- Check CORS configuration
-
-### Development Issues
-
-**"Port already in use"**
-```bash
-# Kill process on port
-npx kill-port 9090  # Backend
-npx kill-port 9797  # Frontend
+```
+app/            App Router pages (login, register, admin, settings, status, verify-email, …); page.tsx = chat UI
+components/     chat/, settings/, onboarding/, ui/ (Radix-based primitives)
+hooks/          useEncryption, usePermissions, useOptimistic, useNetworkStatus, …
+lib/            api.ts (HTTP client), socket.ts, encryption.ts, push.ts, stripe.ts, revenuecat.ts, utils.ts
+store/index.ts  single Zustand store: `useStore` (persisted: token, user, currentWorkspace, …)
+config/env.ts   API_URL, STRIPE_PUBLISHABLE_KEY, REVENUECAT_API_KEY, VAPID_PUBLIC_KEY, IS_PRODUCTION
 ```
 
-**"Database connection failed"**
-- Check `DATABASE_URL` in `.env`
-- Ensure PostgreSQL is running
-- Run `pnpm db:push` to create tables
+`@/` maps to `src/` (frontend only).
 
-**"CORS error"**
-- Check `CORS_ORIGINS` in `apps/backend/.env`
-- Ensure frontend URL is included
-- Verify `NEXT_PUBLIC_API_URL` is correct
+### API calls: the rule that matters most
 
----
+Use `api` from `@/lib/api`. Its generic helpers **prepend `/api` for you**:
 
-## Important Files Reference
+```ts
+await api.get('/users/me');          // → GET /api/users/me   ✅
+await api.get('/api/users/me');      // → GET /api/api/users/me ❌
+```
 
-### Must-Read Documentation
+The typed namespaces (`api.users.*`, `api.channels.*`, `api.workspaces.*`, …) already include `/api`. The client attaches the auth token and the `X-Workspace-ID` header from the store, retries idempotent requests with backoff, and throws `ApiError` (`status`, `code`, `isNetworkError`, `isRetryable`). See `docs/API_CONVENTIONS.md`.
 
-1. **`README.md`** - Quick start, project overview
-2. **`docs/BEST_PRACTICES.md`** - Code quality standards
-3. **`docs/API_CONVENTIONS.md`** - How to make API calls correctly
-4. **`docs/SECURITY_CHECKLIST.md`** - Pre-production security tasks
-5. **`PRODUCTION.md`** - Production deployment guide
+### Env vars
 
-### Critical Implementation Files
+Import from `@/config/env`; don't read `process.env.NEXT_PUBLIC_*` directly. **About 11 existing files break this rule** (`status-banner.tsx`, `SecuritySettings.tsx`, `SessionManagement.tsx`, `useNetworkStatus.ts`, `useEncryption.ts`, and several auth/status pages). They hard-code `http://localhost:9090` fallbacks and raw `fetch`. Don't copy them; migrate them when you touch them. `useEncryption.ts` puts `/api` in its base URL, unlike the others.
 
-**Frontend:**
-- `apps/frontend/src/lib/api.ts` - HTTP client (READ THIS FIRST)
-- `apps/frontend/src/config/env.ts` - Environment variables
-- `apps/frontend/src/store/index.ts` - Global state management
-- `apps/frontend/src/lib/socket.ts` - Socket.io client
+### Lint state
 
-**Backend:**
-- `apps/backend/src/index.ts` - Express app setup
-- `apps/backend/src/config/environment.ts` - Environment config
-- `apps/backend/src/middleware/auth.ts` - Authentication
-- `apps/backend/src/middleware/rbac.ts` - Authorization
-- `apps/backend/src/services/rbac.ts` - Permission definitions
-- `apps/backend/src/socket/index.ts` - Socket.io handlers
+The frontend uses the ESLint 9 flat config (`eslint.config.mjs`), where `@typescript-eslint/no-explicit-any` is an **error**. `pnpm lint:frontend` currently **fails**: 166 errors, 165 of them `no-explicit-any`. Don't add new `any`s; don't treat the existing failures as caused by your change. The backend still uses the legacy `.eslintrc.json` (ESLint 8) and passes with 1 warning.
 
-**Database:**
-- `packages/database/prisma/schema.prisma` - Database schema
-- `packages/database/src/index.ts` - Prisma client export
+### Naming (as the code actually is)
+
+- Components: PascalCase files (`ChatArea.tsx`, `ThreadPanel.tsx`). Radix primitives in `components/ui/` use kebab-case (`button.tsx`, `command-palette.tsx`).
+- Hooks: `useXxx.ts`. Backend files: lower-case/kebab (`error-handler.ts`, `rate-limit-tenant.ts`).
 
 ---
 
-## Quick Reference Commands
+## Shared packages
+
+- **`packages/database`**: `prisma/schema.prisma`; `src/index.ts` exports the `prisma` singleton and re-exports `@prisma/client` types. After schema edits run `pnpm db:generate`, then `db:push` (dev) or `db:migrate`.
+- **`packages/types`**: domain interfaces (User, Workspace, Channel, Message, DirectMessage, Reaction, Attachment) and socket event types.
+
+Both need `pnpm --filter <name> build` for anything that resolves them through `dist/` (Vitest, `node dist`).
+
+---
+
+## Security rules (non-negotiable)
+
+- Never commit `.env` files or secrets. Document new vars in `.env.example` and the relevant config schema.
+- Validate every request body with Zod, and check membership/permissions server-side for every workspace/channel/message access, including in socket handlers.
+- Files are served only through the authenticated `/uploads/:filename` route and `StorageService` (path sanitization, magic-byte checks). Don't add static upload serving.
+- Production: `JWT_SECRET` must be ≥32 chars (64 recommended); set `COOKIE_SECRET` (≥32 chars); set `SSL_ENABLED=true` or `BEHIND_PROXY=true` so cookies get `Secure`. See `docs/SECURITY_CHECKLIST.md`, `PRODUCTION.md` and `docs/SSL.md`.
+
+---
+
+## Before you commit
 
 ```bash
-# Development
-pnpm dev                  # Start both apps
-pnpm dev:frontend         # Frontend only
-pnpm dev:backend          # Backend only
-
-# Building
-pnpm build                # Build everything
-pnpm typecheck            # TypeScript validation
-
-# Code Quality
-pnpm lint                 # Lint all
-pnpm lint:frontend        # Lint frontend
-pnpm lint:backend         # Lint backend
-
-# Database
-pnpm db:generate          # Generate Prisma client
-pnpm db:push              # Push schema (dev)
-pnpm db:migrate           # Create migration (prod)
-pnpm db:studio            # Prisma Studio UI
-
-# Desktop App
-pnpm dev:desktop          # Run desktop app
-pnpm build:desktop        # Build desktop app
-pnpm build:desktop:all    # Build for all platforms
-
-# Testing
-cd apps/backend && pnpm test  # Run backend tests
+pnpm --filter backend build          # backend types
+pnpm lint:backend                    # must stay error-free
+pnpm test                            # after building the shared packages (see Gotcha 1)
+pnpm --filter frontend build         # needs network for Google Fonts
 ```
 
----
-
-## Getting Help
-
-- **Documentation**: Check `docs/` directory
-- **Issues**: Review existing issues in GitHub
-- **Security**: See `docs/SECURITY_CHECKLIST.md`
-- **API**: See `docs/API_CONVENTIONS.md`
+- Don't introduce new frontend lint errors, even though the baseline already fails.
+- No `console.log` (backend: `logger`; frontend: `console.error`, `console.warn` or `console.info` only).
+- No `@ts-ignore` without a description; avoid `any`.
 
 ---
 
-## Notes for AI Assistants
+## Other docs
 
-### When Making Changes
+`README.md` (overview; some version numbers are stale) · `docs/BEST_PRACTICES.md` · `docs/API_CONVENTIONS.md` · `docs/SECURITY_CHECKLIST.md` · `docs/SSL.md` · `PRODUCTION.md` · `docs/BETA_DEPLOYMENT.md` · `ROADMAP.md` · `CHANGELOG.md`
 
-1. **Read first**: Always read files before modifying
-2. **Follow conventions**: Use existing patterns in the codebase
-3. **Check docs**: Review relevant documentation files
-4. **Run checks**: `pnpm typecheck && pnpm lint && pnpm build`
-5. **Test changes**: Verify functionality works
-6. **No over-engineering**: Keep it simple, avoid premature abstractions
+Deployment: `Dockerfile`, `docker-compose.yml` (services `backend`, `frontend`) and `deploy/beta/`. There's no CI workflow in the repo (`.github/` doesn't exist).
 
-### Common Pitfalls
-
-1. **API calls**: Don't double `/api` prefix (see [API Conventions](#api-conventions))
-2. **Environment vars**: Always use centralized config, never `process.env` directly
-3. **Console.log**: Use proper logging (`logger` in backend, `console.error` in frontend)
-4. **Secrets**: Never commit `.env` files or hardcode secrets
-5. **Authorization**: Always check permissions, don't trust client data
-
-### Best Practices
-
-1. **Security first**: Always validate input, check permissions
-2. **Type safety**: Use TypeScript properly, avoid `any`
-3. **Error handling**: Use try/catch, custom error classes
-4. **Code organization**: Follow existing file structure
-5. **Documentation**: Update docs when making significant changes
-
----
-
-**End of CLAUDE.md**
+**Keep this file honest:** if you change a convention, a command or a known issue listed here, update this file in the same commit.
