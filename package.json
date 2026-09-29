@@ -28,7 +28,7 @@
     "db:studio": "pnpm --filter database studio",
     "lint": "pnpm lint:frontend && pnpm lint:backend",
     "lint:frontend": "pnpm --filter frontend lint",
-    "lint:backend": "cd apps/backend && eslint src --ext .ts",
+    "lint:backend": "pnpm --filter backend lint",
     "test": "pnpm test:backend",
     "test:backend": "pnpm --filter backend test",
     "typecheck": "pnpm --filter backend build && pnpm --filter frontend build",
