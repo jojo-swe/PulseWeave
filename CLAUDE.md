@@ -2,7 +2,7 @@
 
 Guidance for AI assistants working in the PulseWeave repo. Every path, name and command below was checked against the code on `master`.
 
-**Last verified:** 2026-09-28 (against `master` @ `f195bea`)
+**Last verified:** 2026-09-29 (against `master` @ `f195bea`)
 
 ---
 
@@ -35,6 +35,7 @@ pnpm db:generate                      # Prisma client; required after install an
 pnpm dev                              # backend + frontend together
 pnpm dev:backend / pnpm dev:frontend
 pnpm dev:desktop
+pnpm dev:mobile                       # Expo (pulseweave-mobile)
 
 pnpm build                            # db:generate → types → database → backend → frontend
 pnpm typecheck                        # = backend `tsc` + frontend `next build`
@@ -50,13 +51,8 @@ Single test file: `cd apps/backend && npx vitest run src/services/rbac.test.ts`
 
 ### Gotchas that will bite you
 
-1. **Build the shared packages before running backend tests.** `@pulseweave/types` and `@pulseweave/database` point `main` at `./dist/index.js`. On a fresh checkout, Vitest fails 36 of 50 suites with `Failed to resolve entry for package "@pulseweave/database"`. Fix:
-   ```bash
-   pnpm db:generate
-   pnpm --filter @pulseweave/types build && pnpm --filter @pulseweave/database build
-   ```
-   After that, all 50 files / 701 tests pass.
-2. **`pnpm dev:mobile` and `pnpm build:mobile:*` are broken.** They filter on `mobile`, but the package is named `pulseweave-mobile`. Use `pnpm --filter pulseweave-mobile start`.
+1. **The shared packages resolve to `dist/` outside Vitest.** `@pulseweave/types` and `@pulseweave/database` point `main` at `./dist/index.js` (gitignored). Backend **tests** don't need it: `apps/backend/vitest.config.ts` aliases both packages to their `src/index.ts`, so `pnpm db:generate && pnpm test` works on a fresh checkout (50 files / 701 tests). Running the compiled backend (`node dist`) still needs `pnpm --filter @pulseweave/types build && pnpm --filter @pulseweave/database build` (or just `pnpm build`).
+2. **Mobile:** `pnpm dev:mobile` and `pnpm build:mobile:ios|android` run the `pulseweave-mobile` package (Expo).
 3. **`pnpm typecheck` does not typecheck backend tests.** `apps/backend/tsconfig.json` excludes `**/*.test.ts`, and the test files currently have ~30 type errors (half in `src/socket/index.test.ts`). Vitest still runs them, since it transpiles without typechecking.
 4. **Frontend `next build` fetches Google Fonts** (`Inter` in `src/app/layout.tsx`). It fails in offline or sandboxed environments; that's a network problem, not a code error.
 5. **The DB is SQLite by default** (`packages/database/prisma/schema.prisma`, `provider = "sqlite"`, `prisma/dev.db`). The comment in the schema explains switching to PostgreSQL for production.
@@ -176,7 +172,7 @@ The frontend uses the ESLint 9 flat config (`eslint.config.mjs`), where `@typesc
 - **`packages/database`**: `prisma/schema.prisma`; `src/index.ts` exports the `prisma` singleton and re-exports `@prisma/client` types. After schema edits run `pnpm db:generate`, then `db:push` (dev) or `db:migrate`.
 - **`packages/types`**: domain interfaces (User, Workspace, Channel, Message, DirectMessage, Reaction, Attachment) and socket event types.
 
-Both need `pnpm --filter <name> build` for anything that resolves them through `dist/` (Vitest, `node dist`).
+Both need `pnpm --filter <name> build` for anything that resolves them through `dist/` (e.g. `node dist`). Backend Vitest aliases them to `src/` and doesn't.
 
 ---
 
@@ -194,7 +190,7 @@ Both need `pnpm --filter <name> build` for anything that resolves them through `
 ```bash
 pnpm --filter backend build          # backend types
 pnpm lint:backend                    # must stay error-free
-pnpm test                            # after building the shared packages (see Gotcha 1)
+pnpm test                            # needs `pnpm db:generate`, not a package build
 pnpm --filter frontend build         # needs network for Google Fonts
 ```
 
