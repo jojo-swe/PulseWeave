@@ -41,6 +41,7 @@ PulseWeave/
 
 ## 📚 Documentation
 
+- **[AGENTS.md](AGENTS.md)** - Instructions for coding agents
 - **[Best Practices](docs/BEST_PRACTICES.md)** - Developer guidelines & standards
 - **[API Conventions](docs/API_CONVENTIONS.md)** - How to make API calls correctly
 - **[Security Checklist](docs/SECURITY_CHECKLIST.md)** - Pre-production security tasks
