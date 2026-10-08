@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { logger } from '../utils/logger';
 
 // Note: Environment config is accessed lazily to avoid loading before app init
@@ -22,7 +22,7 @@ const createTransporter = () => {
   });
 };
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
 const getTransporter = () => {
   if (!transporter) {
