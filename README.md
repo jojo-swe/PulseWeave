@@ -2,6 +2,40 @@
 
 A modern, secure, and scalable team communication platform built with Next.js, Express, and Socket.io.
 
+## Screenshots
+
+Captured from the local app with fictional demo data.
+
+### Sign in
+
+![Sign-in page](docs/screenshots/login.png)
+
+Email sign-in for a PulseWeave account.
+
+### Channel
+
+![Channel conversation in Lumen Lab](docs/screenshots/channel.png)
+
+#general in the Lumen Lab workspace, with channels, direct messages, and teammates in the sidebar.
+
+### Thread
+
+![Thread beside a design channel](docs/screenshots/thread.png)
+
+A thread open beside #design.
+
+### Settings
+
+![Appearance settings](docs/screenshots/settings.png)
+
+Appearance settings, including the theme choices.
+
+### Mobile
+
+![Mobile channel view](docs/screenshots/mobile.png)
+
+The same #general conversation at a phone width.
+
 ## 🚀 Quick Start
 
 ```bash
