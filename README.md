@@ -30,6 +30,12 @@ A thread open beside #design.
 
 Appearance settings, including the theme choices.
 
+### Security
+
+![Security and multi-factor authentication settings](docs/screenshots/security.png)
+
+Security settings for two-factor authentication, security keys, and active sessions.
+
 ### Mobile
 
 ![Mobile channel view](docs/screenshots/mobile.png)
