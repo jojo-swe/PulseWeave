@@ -2,6 +2,8 @@
 
 A modern, secure, and scalable team communication platform built with Next.js, Express, and Socket.io.
 
+🌐 Website: https://pulseweave.io
+
 ## Screenshots
 
 Captured from the local app with fictional demo data.
