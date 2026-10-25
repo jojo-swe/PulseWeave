@@ -262,11 +262,7 @@ See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
 
 ## 🤝 Contributing
 
-1. Read [BEST_PRACTICES.md](docs/BEST_PRACTICES.md)
-2. Create a feature branch
-3. Make your changes
-4. Run quality checks: `pnpm typecheck && pnpm lint && pnpm build`
-5. Submit a pull request
+External pull requests are not accepted. Issues and feedback are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licensing
 
