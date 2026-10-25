@@ -2,7 +2,7 @@
 
 This document describes how to deploy PulseWeave for a private beta at:
 
-- `https://beta.pulsweave.app`
+- `https://beta.pulseweave.io`
 
 ## Goals
 
@@ -30,7 +30,7 @@ This document describes how to deploy PulseWeave for a private beta at:
 
 ```text
 betaDeploy():
-  set DNS: beta.pulsweave.app -> VPS_PUBLIC_IP
+  set DNS: beta.pulseweave.io -> VPS_PUBLIC_IP
   harden VPS (ssh keys, firewall 22/80/443)
   install docker + docker compose
   clone repo
@@ -46,7 +46,7 @@ betaDeploy():
   - public IPv4
   - Docker installed
   - inbound ports 80/443 reachable from the internet
-- A domain you control (`pulsweave.app`) and DNS access.
+- A domain you control (`pulseweave.io`) and DNS access.
 
 ## Step 1: DNS
 
@@ -58,7 +58,7 @@ Create a DNS record:
 
 Wait until it resolves:
 
-- `beta.pulsweave.app` should resolve to the VPS IP.
+- `beta.pulseweave.io` should resolve to the VPS IP.
 
 ## Step 2: VPS hardening baseline
 
@@ -96,10 +96,10 @@ cp deploy/beta/.env.example deploy/beta/.env
 
 Edit `deploy/beta/.env` and set:
 
-- `BETA_DOMAIN=beta.pulsweave.app`
-- `FRONTEND_URL=https://beta.pulsweave.app`
-- `CORS_ORIGINS=https://beta.pulsweave.app`
-- `NEXT_PUBLIC_API_URL=https://beta.pulsweave.app`
+- `BETA_DOMAIN=beta.pulseweave.io`
+- `FRONTEND_URL=https://beta.pulseweave.io`
+- `CORS_ORIGINS=https://beta.pulseweave.io`
+- `NEXT_PUBLIC_API_URL=https://beta.pulseweave.io`
 
 ### Secrets
 
@@ -133,11 +133,11 @@ docker compose \
 ## Step 6: Verify the deployment
 
 - **Frontend**
-  - Visit `https://beta.pulsweave.app`
+  - Visit `https://beta.pulseweave.io`
 - **Backend health**
-  - `https://beta.pulsweave.app/health/live`
-  - `https://beta.pulsweave.app/health/ready`
-  - `https://beta.pulsweave.app/health`
+  - `https://beta.pulseweave.io/health/live`
+  - `https://beta.pulseweave.io/health/ready`
+  - `https://beta.pulseweave.io/health`
 
 If health works over HTTPS, Caddy routing is correct.
 
@@ -211,8 +211,8 @@ These persist across container restarts.
 
 ### Frontend loads but API calls fail (CORS)
 
-- Ensure `CORS_ORIGINS=https://beta.pulsweave.app` in `deploy/beta/.env`.
-- Ensure `FRONTEND_URL=https://beta.pulsweave.app` in `deploy/beta/.env`.
+- Ensure `CORS_ORIGINS=https://beta.pulseweave.io` in `deploy/beta/.env`.
+- Ensure `FRONTEND_URL=https://beta.pulseweave.io` in `deploy/beta/.env`.
 - Rebuild/restart.
 
 ### WebSockets not connecting
