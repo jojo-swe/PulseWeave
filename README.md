@@ -262,15 +262,23 @@ See [BEST_PRACTICES.md](docs/BEST_PRACTICES.md) for full checklist.
 
 ## 🤝 Contributing
 
-1. Read [BEST_PRACTICES.md](docs/BEST_PRACTICES.md)
-2. Create a feature branch
-3. Make your changes
-4. Run quality checks: `pnpm typecheck && pnpm lint && pnpm build`
-5. Submit a pull request
+External pull requests are not accepted. Issues and feedback are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 📝 License
+## Licensing
 
-AGPL-3.0
+PulseWeave is dual-licensed:
+
+- **AGPL-3.0 (free):** You may use, modify, and self-host PulseWeave under the [GNU AGPL v3.0](LICENSE). If you modify it and make it available over a network, you must publish your source code under the same license.
+- **Commercial license (paid):** For businesses that want to self-host without the obligations of the AGPL. The license is sold per server and per year, includes updates during the term, and comes as-is with no support. See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) or [pulseweave.io](https://pulseweave.io).
+
+Commercial self-hosted licenses are business-to-business only. **No support included.**
+
+| Plan | Price | Users |
+| --- | --- | --- |
+| Team | 299 SEK per server per year | up to 250 users |
+| Business | 990 SEK per server per year | unlimited users |
+
+Prices exclude VAT unless the checkout says otherwise. The purchase URL is not filled in yet. See the TODO in [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
 
 ## 🙏 Acknowledgments
 

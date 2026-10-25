@@ -48,7 +48,7 @@ uploads/
 .idea
 .cache
 
-# Databases
+# SQLite databases anywhere in the tree, including packages/database/prisma/dev.db
 dev.db
 prod.db
 *.db

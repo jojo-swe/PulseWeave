@@ -4,7 +4,7 @@
 
 ```text
 betaDeploy():
-  create DNS A record: beta.pulsweave.app -> VPS_IP
+  create DNS A record: beta.pulseweave.io -> VPS_IP
   on VPS:
     install docker + docker compose
     clone repo
@@ -17,8 +17,8 @@ betaDeploy():
         -f deploy/beta/docker-compose.beta.yml \
         up -d --build
   verify:
-    https://beta.pulsweave.app loads
-    https://beta.pulsweave.app/api/health/live returns ok
+    https://beta.pulseweave.io loads
+    https://beta.pulseweave.io/api/health/live returns ok
 ```
 
 ## Notes
