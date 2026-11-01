@@ -116,10 +116,10 @@ describe('middleware/rate-limit-tenant', () => {
     });
 
     it('should use IP-based key when no workspaceId', () => {
-      const req = { ip: '192.168.1.1', headers: {} } as unknown as Request;
+      const req = { ip: '192.168.x.y', headers: {} } as unknown as Request;
       const key = capturedOptions.keyGenerator!(req);
       expect(key).toContain('ip:');
-      expect(key).toContain('192.168.1.1');
+      expect(key).toContain('192.168.x.y');
     });
 
     it('should normalize IPv4-mapped IPv6 addresses', () => {

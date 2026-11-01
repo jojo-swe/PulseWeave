@@ -105,11 +105,11 @@ describe('security routes', () => {
 
       const res = await request(createApp())
         .post('/security/block-ip')
-        .send({ ip: '192.168.1.100', reason: 'Malicious activity' });
+        .send({ ip: '192.0.2.1', reason: 'Malicious activity' });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(blockIp).toHaveBeenCalledWith('192.168.1.100', 'Malicious activity', undefined);
+      expect(blockIp).toHaveBeenCalledWith('192.0.2.1', 'Malicious activity', undefined);
     });
 
     it('should return 400 for invalid IP', async () => {
@@ -133,7 +133,7 @@ describe('security routes', () => {
     it('should check if IP is blocked', async () => {
       isIpBlocked.mockReturnValue({ blocked: true, reason: 'spam', until: new Date('2099-12-31') });
 
-      const res = await request(createApp()).get('/security/check-ip/192.168.1.100');
+      const res = await request(createApp()).get('/security/check-ip/192.168.x.y');
 
       expect(res.status).toBe(200);
       expect(res.body.blocked).toBe(true);
@@ -143,7 +143,7 @@ describe('security routes', () => {
     it('should return not blocked for clean IP', async () => {
       isIpBlocked.mockReturnValue({ blocked: false, reason: null, until: null });
 
-      const res = await request(createApp()).get('/security/check-ip/10.0.0.1');
+      const res = await request(createApp()).get('/security/check-ip/10.x.y.z');
 
       expect(res.status).toBe(200);
       expect(res.body.blocked).toBe(false);
