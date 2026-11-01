@@ -286,7 +286,7 @@ describe('webhook routes', () => {
           id: 'iw-1', workspaceId: 'ws-1',
         } as never);
         vi.mocked(prisma.incomingWebhook.update).mockResolvedValue({
-          id: 'iw-1', name: 'Updated', token: 'tok-1', allowedIps: '["10.0.0.1"]',
+          id: 'iw-1', name: 'Updated', token: 'tok-1', allowedIps: '["10.x.y.z"]',
           channel: { id: 'ch-1', name: 'general' },
         } as never);
 

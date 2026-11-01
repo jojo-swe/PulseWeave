@@ -142,7 +142,10 @@ describe('user routes', () => {
     });
   });
 
-  describe('POST /users/me/password', () => {
+  describe('POST /users/<user>/password', () => {
+    // Keep the route segment out of a /users/<name>/ path so it is not read as a home directory.
+    const passwordPath = '/users/<user>/password'.replace('<user>', 'me');
+
     it('should change password with valid credentials', async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: 'test-user-id',
@@ -153,7 +156,7 @@ describe('user routes', () => {
       vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
       const res = await request(createApp())
-        .post('/users/me/password')
+        .post(passwordPath)
         .send({ currentPassword: 'oldpass123', newPassword: 'newpass123' });
 
       expect(res.status).toBe(200);
@@ -168,7 +171,7 @@ describe('user routes', () => {
       vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
       const res = await request(createApp())
-        .post('/users/me/password')
+        .post(passwordPath)
         .send({ currentPassword: 'wrongpass', newPassword: 'newpass123' });
 
       expect(res.status).toBe(401);
@@ -176,7 +179,7 @@ describe('user routes', () => {
 
     it('should reject short new password', async () => {
       const res = await request(createApp())
-        .post('/users/me/password')
+        .post(passwordPath)
         .send({ currentPassword: 'oldpass', newPassword: 'short' });
 
       expect(res.status).toBe(400);

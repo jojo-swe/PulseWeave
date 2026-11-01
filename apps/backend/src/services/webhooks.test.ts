@@ -240,7 +240,7 @@ describe('webhooks service', () => {
         channelId: 'ch-1',
         workspaceId: 'ws-1',
         userId: 'user-1',
-        allowedIps: JSON.stringify(['10.0.0.1']),
+        allowedIps: JSON.stringify(['10.x.y.z']),
         channel: { id: 'ch-1' },
       } as never);
 

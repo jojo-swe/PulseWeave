@@ -68,3 +68,13 @@ prod.db
 apps/desktop/release/
 
 apps/desktop/dist/
+
+# privacy-guard: local secrets, logs, and editor state
+logs/
+*.local
+*.local.*
+.vscode/settings.json
+.idea/
+*.pem
+*.key
+secrets/
