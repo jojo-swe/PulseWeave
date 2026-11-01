@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          curl -sSfL -o "/tmp/${archive}" \
+          curl --proto '=https' --proto-redir '=https' --tlsv1.2 -sSfL -o "/tmp/${archive}" \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
           echo "${GITLEAKS_SHA256}  /tmp/${archive}" | sha256sum -c -
           tar -xzf "/tmp/${archive}" -C /tmp gitleaks
