@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/assets/logo.svg" alt="PulseWeave logo" width="128"></p>
+
 # PulseWeave
 
 A modern, secure, and scalable team communication platform built with Next.js, Express, and Socket.io.
